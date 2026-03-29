@@ -1,0 +1,70 @@
+[gd_scene load_steps=7 format=3 uid="uid://dmc4w5wv6dghm"]
+
+[ext_resource type="Script" uid="uid://cf4ihq0qsfxkh" path="res://Play Space/hex_tile.gd" id="1_x0y0z"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_1"]
+top_radius = 1.0
+bottom_radius = 1.0
+height = 0.2
+radial_segments = 6
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_1"]
+height = 0.2
+radius = 1.0
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_1"]
+direction = Vector3(0, 1, 0)
+spread = 40.0
+initial_velocity_min = 1.5
+initial_velocity_max = 2.5
+gravity = Vector3(0, 3, 0)
+scale_min = 0.2
+scale_max = 0.5
+color = Color(1, 0.4, 0.1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 0.4, 0.1, 1)
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+
+[node name="HexTile" type="StaticBody3D"]
+script = ExtResource("1_x0y0z")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CylinderShape3D_1")
+
+[node name="FireParticles" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 10
+amount_ratio = 0.2
+lifetime = 0.5
+process_material = SubResource("ParticleProcessMaterial_1")
+draw_pass_1 = SubResource("QuadMesh_1")
+
+[node name="DebugLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+visible = false
+billboard = 1
+no_depth_test = true
+text = "5"
+font_size = 64
+pixel_size = 0.009
+outline_size = 24
+outline_modulate = Color(0, 0, 0, 1)
+
+[node name="TreeSprite" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+visible = false
+pixel_size = 0.03
+billboard = 2
+texture_filter = 0
