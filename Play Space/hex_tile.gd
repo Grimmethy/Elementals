@@ -107,7 +107,7 @@ func _ready() -> void:
 			material.gravity = Vector3(0.0, 3.0, 0.0)
 			material.scale_min = 0.2
 			material.scale_max = 0.5
-			material.color = Color(1.0, 0.4, 0.1)
+			material.color = Color.WHITE
 			fire_particles.process_material = material
 		if not fire_particles.draw_pass_1:
 			var pass_mesh = QuadMesh.new()
@@ -115,7 +115,9 @@ func _ready() -> void:
 			p_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 			p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			p_mat.vertex_color_use_as_albedo = true
-			p_mat.albedo_color = Color(1.0, 0.4, 0.1)
+			p_mat.albedo_color = Color.WHITE
+			p_mat.albedo_texture = load("res://assets/generated/fire_particle_1774823455.png")
+			p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			pass_mesh.material = p_mat
 			fire_particles.draw_pass_1 = pass_mesh
 

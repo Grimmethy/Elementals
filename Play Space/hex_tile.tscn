@@ -1,6 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://dmc4w5wv6dghm"]
 
 [ext_resource type="Script" uid="uid://cf4ihq0qsfxkh" path="res://Play Space/hex_tile.gd" id="1_x0y0z"]
+[ext_resource type="Texture2D" uid="uid://bw0k7ch7tw2qr" path="res://assets/generated/fire_particle_1774823455.png" id="2_fire_texture"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_1"]
 top_radius = 1.0
@@ -20,12 +21,14 @@ initial_velocity_max = 2.5
 gravity = Vector3(0, 3, 0)
 scale_min = 0.2
 scale_max = 0.5
-color = Color(1, 0.4, 0.1, 1)
+color = Color(1, 1, 1, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+transparency = 1
 shading_mode = 0
 vertex_color_use_as_albedo = true
-albedo_color = Color(1, 0.4, 0.1, 1)
+albedo_color = Color(1, 1, 1, 1)
+albedo_texture = ExtResource("2_fire_texture")
 billboard_mode = 3
 particles_anim_h_frames = 1
 particles_anim_v_frames = 1

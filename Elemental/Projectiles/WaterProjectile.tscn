@@ -1,11 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://ckn0rj0wgmjed"]
 
-[ext_resource type="Script" uid="uid://b1uqxo8prdw7s" path="res://Elemental/Projectiles/BaseProjectile.gd" id="1"]
-
-[sub_resource type="StandardMaterial3D" id="3"]
-albedo_color = Color(0.1, 0.45, 1.0, 1)
-emission_enabled = true
-emission = Color(0, 0.2, 1, 1)
+[ext_resource type="Script" uid="uid://dspj7ub6uuogf" path="res://Elemental/Projectiles/WaterProjectile.gd" id="1"]
 
 [sub_resource type="SphereMesh" id="1"]
 radius = 0.28
@@ -19,7 +14,6 @@ script = ExtResource("1")
 element_type = "water"
 
 [node name="ProjectileVisual" type="MeshInstance3D" parent="."]
-material_override = SubResource("3")
 mesh = SubResource("1")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

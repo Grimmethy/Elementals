@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://dkt6sdrstxpva"]
+[gd_scene load_steps=9 format=3 uid="uid://dkt6sdrstxpva"]
 
 [ext_resource type="Script" uid="uid://bhs35sxpm6yjm" path="res://Elemental/FireElemental.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://bw0k7ch7tw2qr" path="res://assets/generated/fire_particle_1774823455.png" id="2_hob6v"]
 
 [sub_resource type="StandardMaterial3D" id="3"]
 albedo_color = Color(1, 0.4, 0.1, 1)
@@ -20,12 +21,12 @@ initial_velocity_max = 2.0
 gravity = Vector3(0, 3, 0)
 scale_min = 0.3
 scale_max = 0.6
-color = Color(1, 0.4, 0.1, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+transparency = 1
 shading_mode = 0
 vertex_color_use_as_albedo = true
-albedo_color = Color(1, 0.4, 0.1, 1)
+albedo_texture = ExtResource("2_hob6v")
 billboard_mode = 3
 particles_anim_h_frames = 1
 particles_anim_v_frames = 1

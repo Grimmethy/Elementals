@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://d26rhv1m1yr1a"]
+[gd_scene load_steps=9 format=3 uid="uid://d26rhv1m1yr1a"]
 
 [ext_resource type="Script" uid="uid://cyu8sfw3lol7s" path="res://Elemental/WaterElemental.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://cycd03md1rn6a" path="res://assets/generated/magic_water_drop_frame_2_1774826822.png" id="2_fjy1f"]
 
 [sub_resource type="StandardMaterial3D" id="3"]
 transparency = 1
@@ -22,19 +23,19 @@ initial_velocity_max = 2.0
 gravity = Vector3(0, -2, 0)
 scale_min = 0.2
 scale_max = 0.4
-color = Color(0.1, 0.5, 1, 0.8)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
 transparency = 1
 shading_mode = 0
 vertex_color_use_as_albedo = true
-albedo_color = Color(0.1, 0.5, 1, 0.8)
+albedo_texture = ExtResource("2_fjy1f")
 billboard_mode = 3
 particles_anim_h_frames = 1
 particles_anim_v_frames = 1
 particles_anim_loop = false
 
 [sub_resource type="QuadMesh" id="QuadMesh_1"]
+lightmap_size_hint = Vector2i(7, 7)
 material = SubResource("StandardMaterial3D_1")
 
 [node name="WaterElemental" type="CharacterBody3D"]
@@ -52,5 +53,8 @@ shape = SubResource("2")
 amount_ratio = 0.2
 process_material = SubResource("ParticleProcessMaterial_1")
 draw_pass_1 = SubResource("QuadMesh_1")
+
+[node name="DripParticles" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 
 [node name="TileDetector" type="RayCast3D" parent="."]

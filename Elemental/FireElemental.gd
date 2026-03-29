@@ -36,14 +36,11 @@ func _configure_particles(particles: GPUParticles3D) -> void:
 	material.gravity = Vector3(0.0, 3.0, 0.0)
 	material.scale_min = 0.3
 	material.scale_max = 0.6
-	material.color = Color(1.0, 0.4, 0.1)
 	
 	if not particles.draw_pass_1:
 		var pass_mesh = QuadMesh.new()
 		var p_mat = StandardMaterial3D.new()
 		p_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 		p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		p_mat.vertex_color_use_as_albedo = true
-		p_mat.albedo_color = Color(1.0, 0.4, 0.1)
 		pass_mesh.material = p_mat
 		particles.draw_pass_1 = pass_mesh
