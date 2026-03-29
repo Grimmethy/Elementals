@@ -1,0 +1,90 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://MainMenu.gd" id="1_xxx"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_xxx")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.12, 0.14, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Elemental Arena"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ElementalSelection" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/ElementalSelection"]
+layout_mode = 2
+text = "Select Starting Elemental:"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer/ElementalSelection"]
+layout_mode = 2
+alignment = 1
+
+[node name="FireButton" type="Button" parent="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Fire Elemental"
+
+[node name="WaterButton" type="Button" parent="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "Water Elemental"
+
+[node name="ArenaSize" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/ArenaSize"]
+layout_mode = 2
+text = "Arena Size:"
+horizontal_alignment = 1
+
+[node name="SizeInput" type="SpinBox" parent="CenterContainer/VBoxContainer/ArenaSize"]
+layout_mode = 2
+min_value = 10.0
+max_value = 100.0
+step = 10.0
+value = 20.0
+alignment = 1
+
+[node name="PlayButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "PLAY"
+
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/FireButton" to="." method="_on_fire_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/WaterButton" to="." method="_on_water_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/PlayButton" to="." method="_on_play_button_pressed"]

@@ -42,8 +42,6 @@ var _hp_bar_node: ProgressBar
 var _hp_viewport: SubViewport
 var _hp_sprite: Sprite3D
 
-var _base_visual_y: float = 0.0
-
 func _ready() -> void:
 	_rng.randomize()
 	_arena_grid = get_parent() as ArenaGrid
@@ -53,10 +51,6 @@ func _ready() -> void:
 	_origin = global_transform.origin
 	_movement_target = _origin
 	_base_height = global_position.y
-	
-	var body = get_node_or_null("Body")
-	if body:
-		_base_visual_y = body.position.y
 	
 	current_hp = max_hp
 	current_mana = max_mana
@@ -268,7 +262,7 @@ func _apply_bob(delta: float) -> void:
 	
 	var body = get_node_or_null("Body")
 	if body:
-		body.position.y = _base_visual_y + bob_offset
+		body.position.y = bob_offset
 	else:
 		# Fallback if no Body node found
 		if not is_controlled:

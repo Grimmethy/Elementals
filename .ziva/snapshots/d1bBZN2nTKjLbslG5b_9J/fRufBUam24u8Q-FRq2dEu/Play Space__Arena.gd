@@ -9,7 +9,6 @@ extends Node3D
 @export_range(0.25, 3.0, 0.05) var tile_scale: float = 1.5
 @export var fire_elemental_scene: PackedScene = preload("res://Elemental/FireElemental.tscn")
 @export var water_elemental_scene: PackedScene = preload("res://Elemental/WaterElemental.tscn")
-@export var goat_elemental_scene: PackedScene = preload("res://Elemental/GoatElemental.tscn")
 
 const SQRT3: float = sqrt(3.0)
 
@@ -40,11 +39,6 @@ func _ready() -> void:
 		_update_editor_tiles()
 		_setup_minimap()
 		return
-	
-	var gs = get_node_or_null("/root/GameSettings")
-	if gs:
-		grid_width = gs.grid_width
-		grid_height = gs.grid_height
 	
 	_setup_reticle()
 	_create_tiles()
@@ -142,9 +136,6 @@ func spawn_elemental(type: String) -> void:
 		"water":
 			scene = water_elemental_scene
 			name_prefix = "WaterElemental"
-		"goat":
-			scene = goat_elemental_scene
-			name_prefix = "GoatElemental"
 		_:
 			return
 			
@@ -175,42 +166,10 @@ func spawn_elemental(type: String) -> void:
 
 func _spawn_elementals() -> void:
 	elementals.clear()
-	var gs = get_node_or_null("/root/GameSettings")
-	var selected_type = "fire"
-	if gs:
-		selected_type = gs.selected_elemental_type
-		
-	if selected_type == "fire":
-		_spawn_fire_elemental()
-		_spawn_water_elemental()
-		_spawn_goat_elemental()
-	elif selected_type == "water":
-		_spawn_water_elemental()
-		_spawn_fire_elemental()
-		_spawn_goat_elemental()
-	else:
-		_spawn_goat_elemental()
-		_spawn_fire_elemental()
-		_spawn_water_elemental()
+	_spawn_fire_elemental()
+	_spawn_water_elemental()
 	current_target_index = 0
 	_update_camera_target()
-
-func _spawn_goat_elemental() -> void:
-	if not goat_elemental_scene:
-		return
-	var elemental = goat_elemental_scene.instantiate()
-	if not elemental:
-		return
-	elemental.name = "GoatElemental"
-	
-	# Spawn somewhere else
-	var w = _grid_width_clamped()
-	var h = _grid_height_clamped()
-	var spawn_pos = _calculate_hex_position(w/2, h/2)
-	elemental.position = Vector3(spawn_pos.x, 2.0, spawn_pos.y) # Spawn slightly higher
-	
-	add_child(elemental)
-	elementals.append(elemental)
 
 func _update_camera_target() -> void:
 	if elementals.is_empty():
