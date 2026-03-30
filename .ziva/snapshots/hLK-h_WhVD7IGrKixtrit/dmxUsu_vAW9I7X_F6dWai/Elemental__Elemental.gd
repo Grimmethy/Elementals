@@ -45,11 +45,9 @@ var _hp_sprite: Sprite3D
 var _base_visual_y: float = 0.0
 var _mana_particles: Array[Sprite3D] = []
 var _mana_particles_container: Node3D
-var _mana_phase: float = 0.0
 
 func _ready() -> void:
 	_rng.randomize()
-	_mana_phase = _rng.randf_range(0, 100) # Random start
 	_arena_grid = get_parent() as ArenaGrid
 	if not _arena_grid:
 		_arena_grid = get_tree().get_current_scene().get_node_or_null("Arena") as ArenaGrid
@@ -75,11 +73,11 @@ func _ready() -> void:
 func _setup_mana_visuals() -> void:
 	_mana_particles_container = Node3D.new()
 	_mana_particles_container.name = "ManaParticlesContainer"
-	add_child(_mana_particles_container)
-	# Set initial position to match where Body would be
 	var body = get_node_or_null("Body")
 	if body:
-		_mana_particles_container.position.y = body.position.y
+		body.add_child(_mana_particles_container)
+	else:
+		add_child(_mana_particles_container)
 
 
 func _get_mana_particle_texture() -> Texture2D:
@@ -156,67 +154,44 @@ func _process(delta: float) -> void:
 func _update_mana_visuals(delta: float) -> void:
 	var texture = _get_mana_particle_texture()
 	if not texture:
-		# Cleanup if no texture
-		for p in _mana_particles:
-			if is_instance_valid(p): p.queue_free()
-		_mana_particles.clear()
 		return
 		
 	var charges = 0
 	if shot_mana_cost > 0:
-		charges = int(current_mana / 5)
+		charges = int(current_mana / shot_mana_cost)
 	
 	# Sync number of sprites
 	while _mana_particles.size() < charges:
 		var sprite = Sprite3D.new()
 		sprite.texture = texture
 		sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		sprite.pixel_size = 0.03
+		sprite.pixel_size = 0.02
+		sprite.modulate = get_elemental_color()
+		# Add some transparency/glow feel
 		sprite.render_priority = 5
-		sprite.transparent = true
-		if "shading_mode" in sprite:
-			sprite.set("shading_mode", BaseMaterial3D.SHADING_MODE_UNSHADED)
-		
-		# Give it unique movement data
-		# We'll use a random rotation to orient the figure-8 orbit in 3D space
-		var rand_axis = Vector3(_rng.randf_range(-1,1), _rng.randf_range(-1,1), _rng.randf_range(-1,1)).normalized()
-		if rand_axis == Vector3.ZERO: rand_axis = Vector3.UP
-		var orbit_basis = Basis(rand_axis, _rng.randf_range(0, TAU))
-		
-		sprite.set_meta("orbit_rotation", orbit_basis)
-		sprite.set_meta("phase_offset", _rng.randf_range(0, TAU))
-		sprite.set_meta("speed_mult", _rng.randf_range(0.3, 0.6)) # Slow and loitering
-		
-		if _mana_particles_container:
-			_mana_particles_container.add_child(sprite)
-		else:
-			add_child(sprite)
+		_mana_particles_container.add_child(sprite)
 		_mana_particles.append(sprite)
 		
 	while _mana_particles.size() > charges:
 		var sprite = _mana_particles.pop_back()
-		if is_instance_valid(sprite):
-			sprite.queue_free()
+		sprite.queue_free()
 		
-	# Update positions using figure-8 pattern
-	_mana_phase += delta
-	var orbit_radius = 1.1
-	for i in range(_mana_particles.size()):
+	# Animate sprites
+	var time = Time.get_ticks_msec() / 1000.0
+	var count = _mana_particles.size()
+	for i in range(count):
 		var sprite = _mana_particles[i]
-		if not is_instance_valid(sprite): continue
+		# Orbiting pattern
+		var orbit_speed = 2.5
+		var angle = (TAU / max(1, count)) * i + time * orbit_speed
+		var radius = 0.8 + sin(time * 2.0 + i) * 0.1
+		var height_offset = sin(time * 3.0 + i * 0.5) * 0.3
 		
-		var phase = _mana_phase * sprite.get_meta("speed_mult") + sprite.get_meta("phase_offset")
+		var target_pos = Vector3(cos(angle) * radius, height_offset, sin(angle) * radius)
+		sprite.position = sprite.position.lerp(target_pos, delta * 10.0)
 		
-		# Figure 8 in local space: Lissajous curve
-		var lx = sin(phase) * orbit_radius
-		var ly = sin(2.0 * phase) * (orbit_radius * 0.5)
-		var lz = cos(phase) * (orbit_radius * 0.2) # Adds some 3D depth to the path
-		
-		var orbit_rot = sprite.get_meta("orbit_rotation") as Basis
-		sprite.position = orbit_rot * Vector3(lx, ly, lz)
-		
-		# Scale pulse slightly to feel more alive
-		var s = 0.8 + sin(phase * 1.5) * 0.15
+		# Pulse scale slightly
+		var s = 1.0 + sin(time * 4.0 + i) * 0.2
 		sprite.scale = Vector3.ONE * s
 
 func _physics_process(delta: float) -> void:

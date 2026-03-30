@@ -49,7 +49,7 @@ const TEXTURES = {
 	State.GRASS: preload("res://assets/generated/grass_hex_tile_frame_0_1774844697.png"),
 	State.DIRT: preload("res://assets/generated/dirt_hex_tile_frame_0_1774844719.png"),
 	State.MUD: preload("res://assets/generated/mud_hex_tile_frame_0_1774844756.png"),
-	State.PUDDLE: preload("res://assets/generated/water_hex_tile_frame_0_1774844916.png"),
+	State.PUDDLE: preload("res://assets/generated/puddle_hex_tile_frame_0_1774844737.png"),
 	State.STONE: preload("res://assets/generated/stone_hex_tile_frame_0_1774844738.png"),
 	State.TREE: preload("res://assets/generated/grass_hex_tile_frame_0_1774844697.png"),
 	State.STUMP: preload("res://assets/generated/grass_hex_tile_frame_0_1774844697.png"),

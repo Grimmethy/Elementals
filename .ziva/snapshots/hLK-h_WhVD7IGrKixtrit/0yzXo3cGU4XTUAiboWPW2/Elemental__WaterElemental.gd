@@ -5,14 +5,15 @@ func _init() -> void:
 	projectile_scene = preload("res://Elemental/Projectiles/WaterProjectile.tscn")
 	element_type = "water"
 
-func _setup_elemental() -> void:	
-	# Hide the body mesh so the elemental is only represented by particles
-	var body = get_node_or_null("Body")
-	if body:
-		body.visible = false
-
-func _get_mana_particle_texture() -> Texture2D:
-	return load("res://assets/generated/magic_water_drop_frame_0_1774826822.png")
+func _setup_elemental() -> void:
+	# Specifically looking for "WaterParticles" to match scene tree
+	var particles = get_node_or_null("WaterParticles")
+	if particles and particles is GPUParticles3D:
+		_configure_particles(particles)
+	
+	var drips = get_node_or_null("DripParticles")
+	if drips and drips is GPUParticles3D:
+		_configure_drips(drips)
 
 func get_elemental_color() -> Color:
 	return Color(0.1, 0.5, 1.0)

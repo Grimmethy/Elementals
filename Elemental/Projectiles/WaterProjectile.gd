@@ -35,7 +35,7 @@ func _create_sprites(count: int) -> void:
 	# Create a sprite for each charge
 	for i in range(count):
 		var sprite = Sprite3D.new()
-		sprite.texture = load("res://assets/generated/magic_water_drop_frame_2_1774826822.png")
+		sprite.texture = load("res://assets/generated/magic_water_drop_frame_0_1774826822.png")
 		sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		sprite.pixel_size = sprite_pixel_size
 		sprite.modulate = sprite_base_modulate

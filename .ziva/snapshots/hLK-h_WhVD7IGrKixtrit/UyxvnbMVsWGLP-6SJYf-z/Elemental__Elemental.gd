@@ -164,18 +164,18 @@ func _update_mana_visuals(delta: float) -> void:
 		
 	var charges = 0
 	if shot_mana_cost > 0:
-		charges = int(current_mana / 5)
+		charges = int(current_mana / shot_mana_cost)
 	
 	# Sync number of sprites
 	while _mana_particles.size() < charges:
 		var sprite = Sprite3D.new()
 		sprite.texture = texture
 		sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		sprite.pixel_size = 0.03
+		sprite.pixel_size = 0.015
+		sprite.modulate = get_elemental_color()
 		sprite.render_priority = 5
 		sprite.transparent = true
-		if "shading_mode" in sprite:
-			sprite.set("shading_mode", BaseMaterial3D.SHADING_MODE_UNSHADED)
+		sprite.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		
 		# Give it unique movement data
 		# We'll use a random rotation to orient the figure-8 orbit in 3D space

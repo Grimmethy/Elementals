@@ -181,30 +181,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			_start_charge()
 			get_viewport().set_input_as_handled()
 
-func _handle_wandering(delta: float) -> void:
-	if not _arena_grid:
-		return
-		
-	var current_pos_2d = Vector2(global_transform.origin.x, global_transform.origin.z)
-	var target_pos_2d = Vector2(_movement_target.x, _movement_target.z)
-	
-	if current_pos_2d.distance_to(target_pos_2d) < 0.15:
-		_choose_new_target()
-		
-	var multiplier = _get_speed_multiplier()
-	var direction = (target_pos_2d - current_pos_2d).normalized()
-	velocity.x = direction.x * move_speed * multiplier
-	velocity.z = direction.y * move_speed * multiplier
-
-func _get_speed_multiplier() -> float:
-	if not _ground_tile:
-		return 1.0
-	if _ground_tile.tile_type == HexTile.Type.MUD:
-		return 0.5
-	if _ground_tile.tile_type == HexTile.Type.PUDDLE:
-		return 0.25
-	return 1.0
-
 func _start_charge() -> void:
 	if _is_charging or _charge_cooldown_timer > 0:
 		return
@@ -216,12 +192,9 @@ func _start_charge() -> void:
 	if diff.length() > 0.1:
 		var dir = diff.normalized()
 		_is_charging = true
-		
-		var multiplier = _get_speed_multiplier()
-		_charge_remaining_dist = charge_distance * multiplier
+		_charge_remaining_dist = charge_distance
 		_charge_cooldown_timer = charge_cooldown
-		
-		velocity = dir * (charge_speed * multiplier)
+		velocity = dir * charge_speed
 		_scream()
 
 func _get_mouse_3d_position() -> Vector3:
@@ -240,23 +213,14 @@ func _get_mouse_3d_position() -> Vector3:
 	return ray_origin + ray_direction * t
 
 func _handle_controlled_movement(delta: float) -> void:
-	var multiplier = _get_speed_multiplier()
-	
 	if _is_charging:
-		var current_charge_speed = charge_speed * multiplier
+		# In Godot 4, velocity is updated by move_and_slide.
+		# But since this is called BEFORE move_and_slide in the current frame,
+		# the velocity here is what we set in the PREVIOUS frame or in _start_charge.
+		
+		# If we hit something (horizontal velocity decreased significantly), stop charging.
 		var horizontal_vel = Vector3(velocity.x, 0, velocity.z)
-		
-		# Update velocity to account for terrain changes during charge
-		if horizontal_vel.length() > 0.001:
-			var dir = horizontal_vel.normalized()
-			velocity.x = dir.x * current_charge_speed
-			velocity.z = dir.z * current_charge_speed
-		
-		# Re-read horizontal_vel after adjustment
-		horizontal_vel = Vector3(velocity.x, 0, velocity.z)
-		
-		# If we hit something (horizontal velocity decreased significantly below expected speed), stop charging.
-		if horizontal_vel.length() < current_charge_speed * 0.5 and current_charge_speed > 0.1:
+		if horizontal_vel.length() < charge_speed * 0.5:
 			_is_charging = false
 			velocity = Vector3.ZERO
 			return
@@ -267,48 +231,7 @@ func _handle_controlled_movement(delta: float) -> void:
 			velocity = Vector3.ZERO
 		return
 	
-	# Handle manual movement with multiplier
-	var camera = get_viewport().get_camera_3d()
-	if not camera:
-		return
-		
-	var input_dir = Vector2.ZERO
-	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
-		input_dir.y -= 1
-	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
-		input_dir.y += 1
-	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
-		input_dir.x -= 1
-	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
-		input_dir.x += 1
-	
-	input_dir = input_dir.normalized()
-	
-	var cam_basis = camera.global_transform.basis
-	var forward = -cam_basis.z
-	var right = cam_basis.x
-	
-	forward.y = 0
-	right.y = 0
-	forward = forward.normalized()
-	right = right.normalized()
-	
-	var direction = (forward * (-input_dir.y) + right * input_dir.x).normalized()
-	
-	var effective_move_speed = move_speed * multiplier
-	
-	if direction.length() > 0.1:
-		velocity.x = direction.x * effective_move_speed
-		velocity.z = direction.z * effective_move_speed
-	else:
-		velocity.x = move_toward(velocity.x, 0, effective_move_speed)
-		velocity.z = move_toward(velocity.z, 0, effective_move_speed)
-
-	# Jump input
-	if is_on_floor():
-		velocity.y = 0.0
-		if Input.is_action_just_pressed("ui_accept") or Input.is_key_pressed(KEY_SPACE):
-			velocity.y = jump_force
+	super._handle_controlled_movement(delta)
 
 func _scream() -> void:
 	print("Goat is screaming!")

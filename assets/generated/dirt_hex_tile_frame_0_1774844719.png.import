@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c1w1dhpbp4lk0"
-path="res://.godot/imported/water_drop_projectile_1774826712.png-3984545a60b91dd00cf2e4ff1327e62f.ctex"
+uid="uid://bqs83l5h7y6p"
+path="res://.godot/imported/dirt_hex_tile_frame_0_1774844719.png-3d3a9c11522303c3d604c1380f73a7ff.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/generated/water_drop_projectile_1774826712.png"
-dest_files=["res://.godot/imported/water_drop_projectile_1774826712.png-3984545a60b91dd00cf2e4ff1327e62f.ctex"]
+source_file="res://assets/generated/dirt_hex_tile_frame_0_1774844719.png"
+dest_files=["res://.godot/imported/dirt_hex_tile_frame_0_1774844719.png-3d3a9c11522303c3d604c1380f73a7ff.ctex"]
 
 [params]
 

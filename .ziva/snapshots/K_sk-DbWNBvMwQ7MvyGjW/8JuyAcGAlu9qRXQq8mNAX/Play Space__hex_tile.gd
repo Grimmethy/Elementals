@@ -31,33 +31,18 @@ static var debug_enabled: bool = false
 
 # Colors for base types (with some variations for subtypes)
 const COLORS = {
-	State.GRASS: Color.WHITE, # Modulate with texture
-	State.DIRT: Color.WHITE,
-	State.MUD: Color.WHITE,
+	State.GRASS: Color(0.2, 0.6, 0.2),
+	State.DIRT: Color(0.4, 0.3, 0.1),
+	State.MUD: Color(0.25, 0.2, 0.15),
 	State.FIRE: Color(1.0, 0.4, 0.0),
-	State.PUDDLE: Color.WHITE,
-	State.STONE: Color.WHITE,
-	State.TREE: Color.WHITE,
+	State.PUDDLE: Color(0.2, 0.4, 0.8),
+	State.STONE: Color(0.5, 0.5, 0.5),
+	State.TREE: Color(0.1, 0.5, 0.1),
 	State.BURNING_TREE: Color(1.0, 0.2, 0.0),
-	State.STUMP: Color.WHITE,
+	State.STUMP: Color(0.3, 0.2, 0.1),
 	State.BURNING_STUMP: Color(0.9, 0.3, 0.0),
-	State.BURNT_STUMP: Color(0.4, 0.4, 0.4), # Darker modulation for burnt look
+	State.BURNT_STUMP: Color(0.1, 0.05, 0.0),
 	State.BURNING_BURNT_STUMP: Color(0.8, 0.1, 0.0)
-}
-
-const TEXTURES = {
-	State.GRASS: preload("res://assets/generated/grass_hex_tile_frame_0_1774844697.png"),
-	State.DIRT: preload("res://assets/generated/dirt_hex_tile_frame_0_1774844719.png"),
-	State.MUD: preload("res://assets/generated/mud_hex_tile_frame_0_1774844756.png"),
-	State.PUDDLE: preload("res://assets/generated/water_hex_tile_frame_0_1774844916.png"),
-	State.STONE: preload("res://assets/generated/stone_hex_tile_frame_0_1774844738.png"),
-	State.TREE: preload("res://assets/generated/grass_hex_tile_frame_0_1774844697.png"),
-	State.STUMP: preload("res://assets/generated/grass_hex_tile_frame_0_1774844697.png"),
-	State.BURNT_STUMP: preload("res://assets/generated/dirt_hex_tile_frame_0_1774844719.png"),
-	State.BURNING_TREE: preload("res://assets/generated/grass_hex_tile_frame_0_1774844697.png"),
-	State.BURNING_STUMP: preload("res://assets/generated/grass_hex_tile_frame_0_1774844697.png"),
-	State.BURNING_BURNT_STUMP: preload("res://assets/generated/dirt_hex_tile_frame_0_1774844719.png"),
-	State.FIRE: preload("res://assets/generated/dirt_hex_tile_frame_0_1774844719.png"),
 }
 
 func _sync_types_from_state() -> void:
@@ -231,17 +216,12 @@ func _update_appearance() -> void:
 	
 	if not mesh_instance: return
 	
-	var mat = mesh_instance.get_active_material(0) as StandardMaterial3D
+	var mat = mesh_instance.get_active_material(0)
 	if not mat:
 		mat = StandardMaterial3D.new()
-		mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 		mesh_instance.set_surface_override_material(0, mat)
 	
 	mat.albedo_color = COLORS[current_state]
-	if TEXTURES.has(current_state):
-		mat.albedo_texture = TEXTURES[current_state]
-	else:
-		mat.albedo_texture = null
 	
 	if tile_type == Type.STONE:
 		mesh_instance.scale.y = 10.0

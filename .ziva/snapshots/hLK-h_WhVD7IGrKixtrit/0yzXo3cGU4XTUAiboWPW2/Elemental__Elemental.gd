@@ -43,13 +43,9 @@ var _hp_viewport: SubViewport
 var _hp_sprite: Sprite3D
 
 var _base_visual_y: float = 0.0
-var _mana_particles: Array[Sprite3D] = []
-var _mana_particles_container: Node3D
-var _mana_phase: float = 0.0
 
 func _ready() -> void:
 	_rng.randomize()
-	_mana_phase = _rng.randf_range(0, 100) # Random start
 	_arena_grid = get_parent() as ArenaGrid
 	if not _arena_grid:
 		_arena_grid = get_tree().get_current_scene().get_node_or_null("Arena") as ArenaGrid
@@ -67,23 +63,9 @@ func _ready() -> void:
 	
 	_setup_elemental()
 	_setup_hp_bar()
-	_setup_mana_visuals()
 	
 	# Delay initial target choice to ensure arena is ready
 	call_deferred("_choose_new_target")
-
-func _setup_mana_visuals() -> void:
-	_mana_particles_container = Node3D.new()
-	_mana_particles_container.name = "ManaParticlesContainer"
-	add_child(_mana_particles_container)
-	# Set initial position to match where Body would be
-	var body = get_node_or_null("Body")
-	if body:
-		_mana_particles_container.position.y = body.position.y
-
-
-func _get_mana_particle_texture() -> Texture2D:
-	return null
 
 func _setup_hp_bar() -> void:
 	# Create a SubViewport for the UI
@@ -148,76 +130,9 @@ func _setup_elemental() -> void:
 	# Virtual method for subclasses to configure their specific visuals/particles
 	pass
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if _hp_sprite and _hp_viewport:
 		_hp_sprite.texture = _hp_viewport.get_texture()
-	_update_mana_visuals(delta)
-
-func _update_mana_visuals(delta: float) -> void:
-	var texture = _get_mana_particle_texture()
-	if not texture:
-		# Cleanup if no texture
-		for p in _mana_particles:
-			if is_instance_valid(p): p.queue_free()
-		_mana_particles.clear()
-		return
-		
-	var charges = 0
-	if shot_mana_cost > 0:
-		charges = int(current_mana / 5)
-	
-	# Sync number of sprites
-	while _mana_particles.size() < charges:
-		var sprite = Sprite3D.new()
-		sprite.texture = texture
-		sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		sprite.pixel_size = 0.03
-		sprite.render_priority = 5
-		sprite.transparent = true
-		if "shading_mode" in sprite:
-			sprite.set("shading_mode", BaseMaterial3D.SHADING_MODE_UNSHADED)
-		
-		# Give it unique movement data
-		# We'll use a random rotation to orient the figure-8 orbit in 3D space
-		var rand_axis = Vector3(_rng.randf_range(-1,1), _rng.randf_range(-1,1), _rng.randf_range(-1,1)).normalized()
-		if rand_axis == Vector3.ZERO: rand_axis = Vector3.UP
-		var orbit_basis = Basis(rand_axis, _rng.randf_range(0, TAU))
-		
-		sprite.set_meta("orbit_rotation", orbit_basis)
-		sprite.set_meta("phase_offset", _rng.randf_range(0, TAU))
-		sprite.set_meta("speed_mult", _rng.randf_range(0.3, 0.6)) # Slow and loitering
-		
-		if _mana_particles_container:
-			_mana_particles_container.add_child(sprite)
-		else:
-			add_child(sprite)
-		_mana_particles.append(sprite)
-		
-	while _mana_particles.size() > charges:
-		var sprite = _mana_particles.pop_back()
-		if is_instance_valid(sprite):
-			sprite.queue_free()
-		
-	# Update positions using figure-8 pattern
-	_mana_phase += delta
-	var orbit_radius = 1.1
-	for i in range(_mana_particles.size()):
-		var sprite = _mana_particles[i]
-		if not is_instance_valid(sprite): continue
-		
-		var phase = _mana_phase * sprite.get_meta("speed_mult") + sprite.get_meta("phase_offset")
-		
-		# Figure 8 in local space: Lissajous curve
-		var lx = sin(phase) * orbit_radius
-		var ly = sin(2.0 * phase) * (orbit_radius * 0.5)
-		var lz = cos(phase) * (orbit_radius * 0.2) # Adds some 3D depth to the path
-		
-		var orbit_rot = sprite.get_meta("orbit_rotation") as Basis
-		sprite.position = orbit_rot * Vector3(lx, ly, lz)
-		
-		# Scale pulse slightly to feel more alive
-		var s = 0.8 + sin(phase * 1.5) * 0.15
-		sprite.scale = Vector3.ONE * s
 
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
@@ -354,13 +269,10 @@ func _apply_bob(delta: float) -> void:
 	var body = get_node_or_null("Body")
 	if body:
 		body.position.y = _base_visual_y + bob_offset
-	
-	if _mana_particles_container:
-		_mana_particles_container.position.y = _base_visual_y + bob_offset
-	
-	if not body and not is_controlled:
+	else:
 		# Fallback if no Body node found
-		global_position.y = _base_height + bob_offset
+		if not is_controlled:
+			global_position.y = _base_height + bob_offset
 
 func _apply_ground_effects() -> void:
 	if _ground_tile:
