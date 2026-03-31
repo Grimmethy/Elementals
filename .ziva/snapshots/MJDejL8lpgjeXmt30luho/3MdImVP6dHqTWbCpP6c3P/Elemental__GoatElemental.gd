@@ -40,37 +40,13 @@ const FIRE_TEXTURE = preload("res://assets/generated/fire_particle_1774823455.pn
 const THWAK_TEXTURE = preload("res://assets/generated/thwak_popup_frame_0_1774916398.png")
 const SCREAM_TEXTURE = preload("res://assets/generated/scream_bubble_frame_0_1774821924.png")
 
-func _setup_components() -> void:
-	# Movement Component
-	movement_component = MovementComponent.new()
-	movement_component.name = "MovementComponent"
-	movement_component.target = self
-	movement_component.move_speed = move_speed
-	movement_component.acceleration = acceleration
-	movement_component.friction = friction
-	movement_component.gravity = gravity
-	movement_component.jump_force = jump_force
-	add_child(movement_component)
-	
-	# Decision Component - specialized for goats
-	decision_component = GoatDecisionComponent.new()
-	decision_component.name = "DecisionComponent"
-	decision_component.movement_component = movement_component
-	decision_component.elemental = self
-	decision_component.is_controlled = is_controlled
-	add_child(decision_component)
-
-signal screamed(pos: Vector3)
+func _init() -> void:
+	# Set the elemental identity
+	element_type = "goat"
+	# Goats do not use projectiles, so projectile_scene is left null
 
 func _setup_elemental() -> void:
 	## Initializes the goat-specific visual elements, such as fire particles for the burning state.
-	get_tree().node_added.connect(_on_node_added)
-	# Connect to existing goats
-	for node in get_tree().get_nodes_in_group("goats"):
-		if node != self:
-			node.screamed.connect(_on_other_goat_screamed)
-	add_to_group("goats")
-
 	if health_component:
 		health_component.damage_received.connect(_on_damage_received)
 	
@@ -125,10 +101,6 @@ func _process(delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	## Extends physics processing to check for headbutt collisions during a charge.
-	
-	if is_stunned():
-		_is_charging = false
-		velocity = Vector3.ZERO
 	
 	if _is_charging:
 		_handle_charge_logic(delta)
@@ -201,15 +173,8 @@ func _handle_charge_logic(delta: float) -> void:
 func _handle_headbutt_hit(target: Elemental, hit_pos: Vector3) -> void:
 	## Deals damage to the target and displays the "Thwak" visual effect.
 	target.take_damage(1)
-	target.stun(0.5)
 	_show_thwak_visual(hit_pos)
 	_play_whack()
-	
-	# Apply knockback to the target
-	if target.movement_component:
-		var knockback_dir = (target.global_position - global_position).normalized()
-		knockback_dir.y = 0.5 # Add a little upward pop
-		target.movement_component.apply_external_force(knockback_dir * 12.0)
 
 func _play_whack() -> void:
 	if _whack_player:
@@ -378,44 +343,38 @@ func _do_tile_effect(_tile: HexTile) -> void:
 	## Goats do not currently trigger any special effects when entering a tile.
 	pass
 
-func _get_speed_multiplier() -> float:
-	## Returns a movement speed multiplier based on the current terrain tile.
-	if not _ground_tile:
-		return 1.0
-		
-	match _ground_tile.tile_type:
-		HexTile.Type.MUD:
-			return 0.5
-		HexTile.Type.PUDDLE:
-			return 0.7
-		HexTile.Type.GRASS:
-			return 1.2
-		HexTile.Type.STONE:
-			return 1.0
-		HexTile.Type.FIRE:
-			return 1.3 # Goats run faster when their feet are on fire!
-		_:
-			return 1.0
-
 func _launch_projectile() -> void:
 	## Overrides base projectile logic as goats do not use projectiles.
 	pass
 
 func _unhandled_input(event: InputEvent) -> void:
 	## Handles player input for scream (right click) and charge (left click) when controlled.
-	if is_controlled and not is_stunned() and event is InputEventMouseButton:
+	if is_controlled and event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			_scream()
 		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			var target_pos = _get_mouse_3d_position()
-			_start_charge(target_pos)
+			_start_charge()
 			get_viewport().set_input_as_handled()
 
-func _start_charge(target_pos: Vector3) -> void:
-	## Initiates a fast-moving charge attack towards the specified target position.
-	if _is_charging or _charge_cooldown_timer > 0 or is_stunned():
+func _get_speed_multiplier() -> float:
+	## Returns a speed multiplier based on the current terrain the goat is standing on.
+	if not _ground_tile:
+		return 1.0
+	if _ground_tile.tile_type == HexTile.Type.MUD:
+		return 0.5
+	if _ground_tile.tile_type == HexTile.Type.PUDDLE:
+		return 0.25
+	return 1.0
+
+func _get_move_speed() -> float:
+	return move_speed * _get_speed_multiplier()
+
+func _start_charge() -> void:
+	## Initiates a fast-moving charge attack towards the mouse cursor position.
+	if _is_charging or _charge_cooldown_timer > 0:
 		return
 		
+	var target_pos = _get_mouse_3d_position()
 	var diff = (target_pos - global_position)
 	diff.y = 0 # Ensure charge is purely horizontal
 	
@@ -435,10 +394,6 @@ func _start_charge(target_pos: Vector3) -> void:
 		# Send pinecones on the present tile rolling in the direction of the headbutt
 		if _ground_tile:
 			_ground_tile.apply_element("headbutt", dir)
-
-func ai_start_charge(target_pos: Vector3) -> void:
-	## AI-triggered charge attack.
-	_start_charge(target_pos)
 
 func _get_mouse_3d_position() -> Vector3:
 	## Project the mouse position into the 3D world on the ground plane (y=0).
@@ -463,23 +418,6 @@ func _scream() -> void:
 		_scream_player.play()
 	
 	_show_scream_visual()
-	screamed.emit(global_position)
-
-func _on_other_goat_screamed(pos: Vector3) -> void:
-	## If another goat screams nearby, this goat might scream back.
-	if pos.distance_to(global_position) < 15.0 and randf() < 0.4:
-		# Wait a random short time before screaming back
-		var timer = get_tree().create_timer(randf_range(0.2, 0.8))
-		timer.timeout.connect(func():
-			if not is_instance_valid(self): return
-			if not _is_charging and not is_stunned(): # Don't scream if charging or stunned
-				_scream()
-		)
-
-func _on_node_added(node: Node) -> void:
-	if node is GoatElemental and node != self:
-		if not node.screamed.is_connected(_on_other_goat_screamed):
-			node.screamed.connect(_on_other_goat_screamed)
 
 func _show_scream_visual() -> void:
 	## Displays a "BAAAAAA!" comic book style speech bubble above the goat.

@@ -126,10 +126,6 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	## Extends physics processing to check for headbutt collisions during a charge.
 	
-	if is_stunned():
-		_is_charging = false
-		velocity = Vector3.ZERO
-	
 	if _is_charging:
 		_handle_charge_logic(delta)
 	
@@ -201,7 +197,6 @@ func _handle_charge_logic(delta: float) -> void:
 func _handle_headbutt_hit(target: Elemental, hit_pos: Vector3) -> void:
 	## Deals damage to the target and displays the "Thwak" visual effect.
 	target.take_damage(1)
-	target.stun(0.5)
 	_show_thwak_visual(hit_pos)
 	_play_whack()
 	
@@ -403,7 +398,7 @@ func _launch_projectile() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	## Handles player input for scream (right click) and charge (left click) when controlled.
-	if is_controlled and not is_stunned() and event is InputEventMouseButton:
+	if is_controlled and event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			_scream()
 		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
@@ -413,7 +408,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _start_charge(target_pos: Vector3) -> void:
 	## Initiates a fast-moving charge attack towards the specified target position.
-	if _is_charging or _charge_cooldown_timer > 0 or is_stunned():
+	if _is_charging or _charge_cooldown_timer > 0:
 		return
 		
 	var diff = (target_pos - global_position)
@@ -472,7 +467,7 @@ func _on_other_goat_screamed(pos: Vector3) -> void:
 		var timer = get_tree().create_timer(randf_range(0.2, 0.8))
 		timer.timeout.connect(func():
 			if not is_instance_valid(self): return
-			if not _is_charging and not is_stunned(): # Don't scream if charging or stunned
+			if not _is_charging: # Don't scream if charging
 				_scream()
 		)
 

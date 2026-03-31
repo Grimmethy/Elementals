@@ -126,10 +126,6 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	## Extends physics processing to check for headbutt collisions during a charge.
 	
-	if is_stunned():
-		_is_charging = false
-		velocity = Vector3.ZERO
-	
 	if _is_charging:
 		_handle_charge_logic(delta)
 	
@@ -201,7 +197,6 @@ func _handle_charge_logic(delta: float) -> void:
 func _handle_headbutt_hit(target: Elemental, hit_pos: Vector3) -> void:
 	## Deals damage to the target and displays the "Thwak" visual effect.
 	target.take_damage(1)
-	target.stun(0.5)
 	_show_thwak_visual(hit_pos)
 	_play_whack()
 	
@@ -378,32 +373,13 @@ func _do_tile_effect(_tile: HexTile) -> void:
 	## Goats do not currently trigger any special effects when entering a tile.
 	pass
 
-func _get_speed_multiplier() -> float:
-	## Returns a movement speed multiplier based on the current terrain tile.
-	if not _ground_tile:
-		return 1.0
-		
-	match _ground_tile.tile_type:
-		HexTile.Type.MUD:
-			return 0.5
-		HexTile.Type.PUDDLE:
-			return 0.7
-		HexTile.Type.GRASS:
-			return 1.2
-		HexTile.Type.STONE:
-			return 1.0
-		HexTile.Type.FIRE:
-			return 1.3 # Goats run faster when their feet are on fire!
-		_:
-			return 1.0
-
 func _launch_projectile() -> void:
 	## Overrides base projectile logic as goats do not use projectiles.
 	pass
 
 func _unhandled_input(event: InputEvent) -> void:
 	## Handles player input for scream (right click) and charge (left click) when controlled.
-	if is_controlled and not is_stunned() and event is InputEventMouseButton:
+	if is_controlled and event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			_scream()
 		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
@@ -413,7 +389,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _start_charge(target_pos: Vector3) -> void:
 	## Initiates a fast-moving charge attack towards the specified target position.
-	if _is_charging or _charge_cooldown_timer > 0 or is_stunned():
+	if _is_charging or _charge_cooldown_timer > 0:
 		return
 		
 	var diff = (target_pos - global_position)
@@ -472,7 +448,7 @@ func _on_other_goat_screamed(pos: Vector3) -> void:
 		var timer = get_tree().create_timer(randf_range(0.2, 0.8))
 		timer.timeout.connect(func():
 			if not is_instance_valid(self): return
-			if not _is_charging and not is_stunned(): # Don't scream if charging or stunned
+			if not _is_charging: # Don't scream if charging
 				_scream()
 		)
 

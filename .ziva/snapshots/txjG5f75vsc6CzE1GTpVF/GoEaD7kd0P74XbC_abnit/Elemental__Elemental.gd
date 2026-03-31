@@ -60,9 +60,6 @@ var _origin: Vector3
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _ground_tile: HexTile
 
-var _stun_timer: float = 0.0
-var _stun_visual: Node3D
-
 var _base_visual_y: float = 0.0
 var _mana_particles: Array[Sprite3D] = []
 var _mana_particles_container: Node3D
@@ -90,15 +87,6 @@ func _ready() -> void:
 	
 	_setup_elemental()
 	_setup_mana_visuals()
-	_setup_stun_visuals()
-
-func _setup_stun_visuals() -> void:
-	# StunVisual3D is the Looney Tunes style spinning birds and stars
-	_stun_visual = StunVisual3D.new()
-	_stun_visual.position = Vector3(0, 2.0, 0) # Higher up for effect
-	_stun_visual.visible = false
-	_stun_visual.set_process(false)
-	add_child(_stun_visual)
 
 func _setup_health_component() -> void:
 	health_component = DamageComponent.find_health_component(self)
@@ -153,12 +141,6 @@ func hit_by_projectile(projectile: BaseProjectile) -> void:
 	## Default implementation for being hit by a projectile.
 	take_damage(projectile.remaining_charges)
 
-func stun(duration: float) -> void:
-	_stun_timer = max(_stun_timer, duration)
-
-func is_stunned() -> bool:
-	return _stun_timer > 0.0
-
 func die() -> void:
 	# Respawns at the original position provided by ArenaGrid
 	if health_component:
@@ -178,18 +160,6 @@ func _setup_elemental() -> void:
 
 func _process(delta: float) -> void:
 	_update_mana_visuals(delta)
-	_update_stun(delta)
-
-func _update_stun(delta: float) -> void:
-	if _stun_timer > 0:
-		_stun_timer -= delta
-		if _stun_visual and not _stun_visual.visible:
-			_stun_visual.visible = true
-			_stun_visual.set_process(true)
-	else:
-		if _stun_visual and _stun_visual.visible:
-			_stun_visual.visible = false
-			_stun_visual.set_process(false)
 
 func _update_mana_visuals(delta: float) -> void:
 	var texture = _mana_texture
@@ -288,7 +258,7 @@ func _physics_process(delta: float) -> void:
 		_apply_ground_effects()
 	
 	if not is_controlled:
-		if current_mana >= max_mana and not is_stunned():
+		if current_mana >= max_mana:
 			_launch_projectile()
 
 func _get_move_speed() -> float:

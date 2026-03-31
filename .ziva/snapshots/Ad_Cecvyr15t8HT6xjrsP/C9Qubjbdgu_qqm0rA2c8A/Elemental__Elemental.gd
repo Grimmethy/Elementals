@@ -61,7 +61,7 @@ var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _ground_tile: HexTile
 
 var _stun_timer: float = 0.0
-var _stun_visual: Node3D
+var _stun_visual: Label3D
 
 var _base_visual_y: float = 0.0
 var _mana_particles: Array[Sprite3D] = []
@@ -93,11 +93,14 @@ func _ready() -> void:
 	_setup_stun_visuals()
 
 func _setup_stun_visuals() -> void:
-	# StunVisual3D is the Looney Tunes style spinning birds and stars
-	_stun_visual = StunVisual3D.new()
-	_stun_visual.position = Vector3(0, 2.0, 0) # Higher up for effect
+	_stun_visual = Label3D.new()
+	_stun_visual.text = "@_@"
+	_stun_visual.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_stun_visual.font_size = 48
+	_stun_visual.outline_size = 12
+	_stun_visual.modulate = Color.YELLOW
+	_stun_visual.position = Vector3(0, 1.8, 0)
 	_stun_visual.visible = false
-	_stun_visual.set_process(false)
 	add_child(_stun_visual)
 
 func _setup_health_component() -> void:
@@ -183,13 +186,13 @@ func _process(delta: float) -> void:
 func _update_stun(delta: float) -> void:
 	if _stun_timer > 0:
 		_stun_timer -= delta
-		if _stun_visual and not _stun_visual.visible:
+		if _stun_visual:
 			_stun_visual.visible = true
-			_stun_visual.set_process(true)
+			# Spin the stun visual
+			_stun_visual.rotation.y += delta * 10.0
 	else:
-		if _stun_visual and _stun_visual.visible:
+		if _stun_visual:
 			_stun_visual.visible = false
-			_stun_visual.set_process(false)
 
 func _update_mana_visuals(delta: float) -> void:
 	var texture = _mana_texture

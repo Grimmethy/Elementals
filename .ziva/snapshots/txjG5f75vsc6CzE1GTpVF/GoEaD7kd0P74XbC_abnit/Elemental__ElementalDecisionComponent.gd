@@ -17,15 +17,6 @@ func _ready() -> void:
 		# Use call_deferred to ensure arena grid is ready
 		call_deferred("_choose_new_target")
 
-func _physics_process(delta: float) -> void:
-	if elemental and elemental.is_stunned():
-		if movement_component:
-			movement_component.apply_gravity(delta)
-			movement_component.stop(delta)
-		return
-		
-	super._physics_process(delta)
-
 func _handle_ai_logic(delta: float) -> void:
 	if not elemental or not elemental._arena_grid or not movement_component:
 		return

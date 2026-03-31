@@ -69,56 +69,6 @@ layout_mode = 2
 toggle_mode = true
 text = "Goat"
 
-[node name="NPCSelection" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection"]
-layout_mode = 2
-text = "NPC Counts:"
-horizontal_alignment = 1
-
-[node name="FireNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/NPCSelection"]
-layout_mode = 2
-alignment = 1
-
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection/FireNPCs"]
-layout_mode = 2
-text = "Fire:"
-
-[node name="FireCount" type="SpinBox" parent="CenterContainer/VBoxContainer/NPCSelection/FireNPCs"]
-layout_mode = 2
-min_value = 0.0
-max_value = 20.0
-value = 1.0
-
-[node name="WaterNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/NPCSelection"]
-layout_mode = 2
-alignment = 1
-
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection/WaterNPCs"]
-layout_mode = 2
-text = "Water:"
-
-[node name="WaterCount" type="SpinBox" parent="CenterContainer/VBoxContainer/NPCSelection/WaterNPCs"]
-layout_mode = 2
-min_value = 0.0
-max_value = 20.0
-value = 1.0
-
-[node name="GoatNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/NPCSelection"]
-layout_mode = 2
-alignment = 1
-
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection/GoatNPCs"]
-layout_mode = 2
-text = "Goat:"
-
-[node name="GoatCount" type="SpinBox" parent="CenterContainer/VBoxContainer/NPCSelection/GoatNPCs"]
-layout_mode = 2
-min_value = 0.0
-max_value = 20.0
-value = 1.0
-
 [node name="ArenaSize" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 

@@ -245,44 +245,23 @@ func spawn_elemental(type: String) -> void:
 func _spawn_elementals() -> void:
 	elementals.clear()
 	var gs = get_node_or_null("/root/GameSettings")
-	
-	if not gs:
+	var selected_type = "fire"
+	if gs:
+		selected_type = gs.selected_elemental_type
+		
+	if selected_type == "fire":
 		_spawn_fire_elemental()
 		_spawn_water_elemental()
 		_spawn_goat_elemental()
-		current_target_index = 0
+	elif selected_type == "water":
+		_spawn_water_elemental()
+		_spawn_fire_elemental()
+		_spawn_goat_elemental()
 	else:
-		# Spawn requested counts
-		for i in gs.fire_count:
-			spawn_elemental("fire")
-		for i in gs.water_count:
-			spawn_elemental("water")
-		for i in gs.goat_count:
-			spawn_elemental("goat")
-			
-		# Ensure player has their selected elemental to control
-		var found_index = -1
-		for i in range(elementals.size()):
-			var e = elementals[i]
-			var is_match = false
-			if gs.selected_elemental_type == "fire" and e.name.begins_with("FireElemental"):
-				is_match = true
-			elif gs.selected_elemental_type == "water" and e.name.begins_with("WaterElemental"):
-				is_match = true
-			elif gs.selected_elemental_type == "goat" and e.name.begins_with("GoatElemental"):
-				is_match = true
-			
-			if is_match:
-				found_index = i
-				break
-		
-		if found_index == -1:
-			# If none were spawned for the selected type, spawn one now
-			spawn_elemental(gs.selected_elemental_type)
-			found_index = elementals.size() - 1
-			
-		current_target_index = found_index
-		
+		_spawn_goat_elemental()
+		_spawn_fire_elemental()
+		_spawn_water_elemental()
+	current_target_index = 0
 	_update_camera_target()
 
 func _spawn_goat_elemental() -> void:
