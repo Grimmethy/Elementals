@@ -1,11 +1,14 @@
 extends Node
 
 func test_tree_recovery():
+	var scene_tree = Engine.get_main_loop() as SceneTree
+	if not scene_tree:
+		print("Skipping test: No SceneTree")
+		return
 	var arena = ArenaGrid.new()
 	arena.grid_width = 5
 	arena.grid_height = 5
-	# Add to tree to avoid issues with parent/child in test
-	Engine.get_main_loop().root.add_child(arena)
+	scene_tree.root.add_child(arena)
 	
 	arena._create_tiles()
 	arena._setup_neighbors()
@@ -22,29 +25,25 @@ func test_tree_recovery():
 		print("No grass tile found for test")
 		return
 		
-	# 1. Start as Tree
-	grass_tile.current_state = HexTile.State.TREE
-	assert(grass_tile.tile_subtype == HexTile.SubType.TREE)
+	# 1. Start with a TreeFeature
+	var tree = load("res://Play Space/tree_feature.tscn").instantiate()
+	grass_tile.add_child(tree)
+	tree.current_state = TreeFeature.State.TREE
 	print("Tree setup ok")
 	
 	# 2. Apply fire
-	grass_tile.apply_fire()
-	assert(grass_tile.current_state == HexTile.State.BURNING_TREE)
-	print("Burning Tree ok")
-	
-	# 3. Wait for burn (5s) - we simulate it
-	grass_tile._process(5.1)
-	assert(grass_tile.current_state == HexTile.State.BURNT_STUMP)
+	tree.apply_fire()
+	assert(tree.current_state == TreeFeature.State.BURNT_STUMP)
 	print("Burnt Stump ok")
 	
-	# 4. Apply water
-	grass_tile.apply_water()
-	assert(grass_tile.current_state == HexTile.State.STUMP)
+	# 3. Apply water
+	tree.apply_water(Vector3.ZERO)
+	assert(tree.current_state == TreeFeature.State.STUMP)
 	print("Water to Stump ok")
 	
-	# 5. Wait for regrowth (10s)
-	grass_tile._process(10.1)
-	assert(grass_tile.current_state == HexTile.State.TREE)
+	# 4. Wait for regrowth (10s)
+	tree._process(10.1)
+	assert(tree.current_state == TreeFeature.State.TREE)
 	print("Regrowth to Tree ok")
 	
 	arena.queue_free()

@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://b1m764835820"]
+
+[ext_resource type="Script" path="res://Play Space/TreeFeature.gd" id="1_x0r5v"]
+
+[node name="TreeFeature" type="Node3D"]
+script = ExtResource("1_x0r5v")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+billboard = 1
+pixel_size = 0.01
+texture_filter = 0

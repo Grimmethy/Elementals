@@ -14,9 +14,11 @@ var _start_position: Vector3
 var _caster_position: Vector3
 var _effect_range: float = 0.0
 var _direction: Vector3 = Vector3.FORWARD
-var _remaining_charges: int = 0
+var remaining_charges: int = 0
 var _elapsed: float = 0.0
 var _affected_tiles: Dictionary = {}
+
+var damage_component: DamageComponent
 
 func initialize(arena: ArenaGrid, caster_position: Vector3, effect_range: float, direction: Vector3, velocity: float, max_charges: int, projectile_lifetime: float, projectile_max_range: float = 45.0) -> void:
 	_arena = arena
@@ -26,11 +28,17 @@ func initialize(arena: ArenaGrid, caster_position: Vector3, effect_range: float,
 	_direction = direction.normalized()
 	speed = velocity
 	charge_capacity = max_charges
-	_remaining_charges = max_charges
+	remaining_charges = max_charges
 	lifetime = projectile_lifetime
 	max_range = projectile_max_range
 	_elapsed = 0.0
 	_affected_tiles.clear()
+	
+	damage_component = DamageComponent.new()
+	damage_component.damage_amount = float(remaining_charges)
+	damage_component.element_type = element_type
+	add_child(damage_component)
+	
 	if tile_ray:
 		tile_ray.target_position = Vector3(0, -3.0, 0)
 	
@@ -40,12 +48,25 @@ func initialize(arena: ArenaGrid, caster_position: Vector3, effect_range: float,
 func _on_body_entered(body: Node3D) -> void:
 	if body is Elemental:
 		if body.element_type != element_type:
-			body.take_damage(_remaining_charges)
+			if damage_component:
+				damage_component.damage_amount = float(remaining_charges)
+				damage_component.deal_damage(body)
+			else:
+				# Fallback
+				if body.has_method("hit_by_projectile"):
+					body.hit_by_projectile(self)
+				else:
+					body.take_damage(remaining_charges)
 			queue_free()
+	elif body.has_method("take_damage") or DamageComponent.find_health_component(body):
+		if damage_component:
+			damage_component.damage_amount = float(remaining_charges)
+			damage_component.deal_damage(body)
+		queue_free()
 
 func _physics_process(delta: float) -> void:
 	_elapsed += delta
-	if _elapsed >= lifetime or _remaining_charges <= 0:
+	if _elapsed >= lifetime or remaining_charges <= 0:
 		queue_free()
 		return
 	
@@ -57,7 +78,7 @@ func _physics_process(delta: float) -> void:
 	_apply_effect_to_tiles()
 
 func _apply_effect_to_tiles() -> void:
-	if not _arena or _remaining_charges <= 0:
+	if not _arena or remaining_charges <= 0:
 		return
 		
 	var tile_below := _get_tile_below()
@@ -76,11 +97,11 @@ func _apply_effect_to_tiles() -> void:
 		return
 			
 	if _do_projectile_effect(tile_below):
-		_remaining_charges -= 1
+		remaining_charges -= 1
 		_affected_tiles[tid] = true
 
 func _do_projectile_effect(tile: HexTile) -> bool:
-	return tile.apply_element(element_type)
+	return tile.apply_element(element_type, _direction)
 
 func _get_tile_below() -> HexTile:
 	if not tile_ray:

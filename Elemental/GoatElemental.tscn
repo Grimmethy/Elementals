@@ -1,10 +1,12 @@
-[gd_scene load_steps=7 format=3 uid="uid://c6f3m2s1n2v3a"]
+[gd_scene load_steps=8 format=3 uid="uid://c6f3m2s1n2v3a"]
 
 [ext_resource type="Script" uid="uid://gf13nx80fvc5" path="res://Elemental/GoatElemental.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://x8iayihprmap" path="res://assets/Characters/CuteGoat.png" id="2_48c1q"]
 [ext_resource type="Texture2D" uid="uid://putuanp46xin" path="res://assets/generated/shadow_circle_frame_0_1774760543.png" id="3_shadow"]
 [ext_resource type="AudioStream" uid="uid://dgfo0pp6y1iq8" path="res://assets/SoundFiles/ElevenLabs_Alarmed_goat_scream,_sensing_a_predator_nearby.mp3" id="4_k8c4n"]
 [ext_resource type="AudioStream" uid="uid://cssq5sgv227at" path="res://assets/SoundFiles/ElevenLabs_Person_jumping_into_a_pond,_big_water_splash.mp3" id="5_splash"]
+[ext_resource type="AudioStream" uid="uid://p1w0ucmu7w5n" path="res://assets/SoundFiles/Swoosh noise.mp3" id="6_swoosh"]
+[ext_resource type="AudioStream" uid="uid://df6v41j34mqqh" path="res://assets/SoundFiles/Whack.mp3" id="7_whack"]
 
 [sub_resource type="SphereShape3D" id="1"]
 radius = 0.4
@@ -37,3 +39,11 @@ stream = ExtResource("4_k8c4n")
 [node name="SplashPlayer" type="AudioStreamPlayer3D" parent="."]
 stream = ExtResource("5_splash")
 volume_db = -5.0
+
+[node name="SwooshPlayer" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("6_swoosh")
+volume_db = -2.0
+
+[node name="WhackPlayer" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("7_whack")
+volume_db = 0.0

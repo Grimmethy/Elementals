@@ -17,22 +17,6 @@ radius = 0.8
 [node name="WaterElemental" type="CharacterBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 script = ExtResource("1")
-move_speed = null
-roam_radius = null
-bob_amplitude = null
-bob_speed = null
-trigger_range_in_tiles = null
-projectile_interval = null
-projectile_speed = null
-projectile_lifetime = null
-projectile_max_range_in_tiles = null
-projectile_charge_capacity = null
-jump_force = null
-gravity = null
-max_hp = null
-max_mana = null
-mana_regen_rate = null
-shot_mana_cost = null
 
 [node name="Body" type="MeshInstance3D" parent="."]
 material_override = SubResource("3")

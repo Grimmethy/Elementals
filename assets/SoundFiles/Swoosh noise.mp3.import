@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://p1w0ucmu7w5n"
+path="res://.godot/imported/Swoosh noise.mp3-48439c9492fcaaab732f17ff3657e47c.mp3str"
+
+[deps]
+
+source_file="res://assets/SoundFiles/Swoosh noise.mp3"
+dest_files=["res://.godot/imported/Swoosh noise.mp3-48439c9492fcaaab732f17ff3657e47c.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

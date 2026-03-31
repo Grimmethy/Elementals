@@ -3,6 +3,7 @@ class_name ArenaGrid
 extends Node3D
 
 @export var tile_scene: PackedScene = preload("res://Play Space/hex_tile.tscn")
+@export var tree_feature_scene: PackedScene = preload("res://Play Space/tree_feature.tscn")
 @export var grid_width: int = 20
 @export var grid_height: int = 20
 @export var hex_size: float = 1.5
@@ -13,8 +14,24 @@ extends Node3D
 
 const SQRT3: float = sqrt(3.0)
 
-var tile_grid: Array = []
+var tile_grid: Array[Array] = []
+var active_tiles: Dictionary = {}
 var elementals: Array[Node3D] = []
+
+signal tile_counts_changed(counts: Dictionary)
+var tile_counts: Dictionary = {}
+
+@onready var _target_label: Label = get_node_or_null("UI/HBoxContainer/TargetLabel")
+@onready var _prev_button: Button = get_node_or_null("UI/HBoxContainer/PrevButton")
+@onready var _next_button: Button = get_node_or_null("UI/HBoxContainer/NextButton")
+@onready var _camera_follower: CameraFollower = get_node_or_null("Camera3D")
+@onready var _minimap_viewport: SubViewport = get_node_or_null("UI/MinimapFrame/MinimapContainer/SubViewport")
+
+func register_active_tile(tile: HexTile) -> void:
+	active_tiles[tile] = true
+
+func unregister_active_tile(tile: HexTile) -> void:
+	active_tiles.erase(tile)
 var current_target_index: int = 0
 var _editor_tiles: Array[HexTile] = []
 var _editor_last_grid_width: int = -1
@@ -28,11 +45,50 @@ var current_controlled_elemental: Elemental:
 	set(value):
 		if current_controlled_elemental:
 			current_controlled_elemental.is_controlled = false
+			if current_controlled_elemental.health_component:
+				if current_controlled_elemental.health_component.health_changed.is_connected(_on_elemental_hp_changed):
+					current_controlled_elemental.health_component.health_changed.disconnect(_on_elemental_hp_changed)
+			if current_controlled_elemental.mana_changed.is_connected(_on_elemental_mana_changed):
+				current_controlled_elemental.mana_changed.disconnect(_on_elemental_mana_changed)
+		
 		current_controlled_elemental = value
+		
 		if current_controlled_elemental:
 			current_controlled_elemental.is_controlled = true
+			if current_controlled_elemental.health_component:
+				current_controlled_elemental.health_component.health_changed.connect(_on_elemental_hp_changed)
+			current_controlled_elemental.mana_changed.connect(_on_elemental_mana_changed)
 			if reticle:
 				reticle.color = current_controlled_elemental.get_elemental_color()
+			_update_ui()
+
+func _on_elemental_hp_changed(_hp: float, _max_hp: float) -> void:
+	_update_ui()
+
+func _on_elemental_mana_changed(mana: float, max_mana: float) -> void:
+	if reticle and current_controlled_elemental:
+		reticle.mana_value = mana / max_mana
+		reticle.attack_pattern = current_controlled_elemental.current_attack_pattern
+	_update_ui()
+
+func _update_ui() -> void:
+	if not current_controlled_elemental:
+		return
+		
+	if _target_label:
+		var hp = 0.0
+		var m_hp = 0.0
+		if current_controlled_elemental.health_component:
+			hp = current_controlled_elemental.health_component.current_health
+			m_hp = current_controlled_elemental.health_component.max_health
+			
+		_target_label.text = "Following: " + current_controlled_elemental.name + \
+			" HP: %d / %d | Mana: %d / %d" % [
+				int(hp),
+				int(m_hp),
+				int(current_controlled_elemental.current_mana),
+				int(current_controlled_elemental.max_mana)
+			]
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
@@ -64,11 +120,10 @@ func _do_setup_minimap() -> void:
 	if not is_inside_tree():
 		return
 		
-	var minimap_viewport = get_node_or_null("UI/MinimapFrame/MinimapContainer/SubViewport")
-	if minimap_viewport:
-		minimap_viewport.own_world_3d = false
+	if _minimap_viewport:
+		_minimap_viewport.own_world_3d = false
 		
-		var camera = minimap_viewport.get_node_or_null("MinimapCamera")
+		var camera = _minimap_viewport.get_node_or_null("MinimapCamera")
 		if camera:
 			var w_total = _grid_width_clamped() + 2
 			var h_total = _grid_height_clamped() + 2
@@ -101,10 +156,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 		
 	if event is InputEventMouseButton:
-		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			if event.button_index == MOUSE_BUTTON_LEFT:
+				if current_controlled_elemental:
+					var target_pos = _get_mouse_3d_position()
+					current_controlled_elemental.launch_projectile_at(target_pos)
+	
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_E:
 			if current_controlled_elemental:
-				var target_pos = _get_mouse_3d_position()
-				current_controlled_elemental.launch_projectile_at(target_pos)
+				current_controlled_elemental.cycle_attack_pattern()
+				if reticle:
+					reticle.attack_pattern = current_controlled_elemental.current_attack_pattern
+		elif event.keycode == KEY_Q:
+			if current_controlled_elemental:
+				# Cycle backwards
+				var p = current_controlled_elemental.current_attack_pattern
+				p = (p - 1 + Elemental.AttackPattern.size()) % Elemental.AttackPattern.size()
+				current_controlled_elemental.current_attack_pattern = p as Elemental.AttackPattern
+				if reticle:
+					reticle.attack_pattern = current_controlled_elemental.current_attack_pattern
 
 func _get_mouse_3d_position() -> Vector3:
 	var camera = get_viewport().get_camera_3d()
@@ -122,14 +193,12 @@ func _get_mouse_3d_position() -> Vector3:
 	return ray_origin + ray_direction * t
 
 func _setup_ui_connections() -> void:
-	var prev_button = get_node_or_null("UI/HBoxContainer/PrevButton") as Button
-	if prev_button:
-		prev_button.pressed.connect(previous_elemental)
-		prev_button.focus_mode = Control.FOCUS_NONE
-	var next_button = get_node_or_null("UI/HBoxContainer/NextButton") as Button
-	if next_button:
-		next_button.pressed.connect(next_elemental)
-		next_button.focus_mode = Control.FOCUS_NONE
+	if _prev_button:
+		_prev_button.pressed.connect(previous_elemental)
+		_prev_button.focus_mode = Control.FOCUS_NONE
+	if _next_button:
+		_next_button.pressed.connect(next_elemental)
+		_next_button.focus_mode = Control.FOCUS_NONE
 
 func spawn_elemental(type: String) -> void:
 	var scene: PackedScene
@@ -215,14 +284,12 @@ func _spawn_goat_elemental() -> void:
 func _update_camera_target() -> void:
 	if elementals.is_empty():
 		return
-	var camera_controller = get_node_or_null("Camera3D") as CameraFollower
-	if camera_controller:
+	if _camera_follower:
 		var target = elementals[current_target_index % elementals.size()]
-		camera_controller.set_target(target)
+		_camera_follower.set_target(target)
 		current_controlled_elemental = target as Elemental
-		var label = get_node_or_null("UI/HBoxContainer/TargetLabel") as Label
-		if label:
-			label.text = "Following: " + target.name
+		if _target_label:
+			_target_label.text = "Following: " + target.name
 
 func next_elemental() -> void:
 	if elementals.is_empty():
@@ -247,19 +314,12 @@ func _process(delta: float) -> void:
 			_do_setup_minimap()
 		return
 	
-	if current_controlled_elemental:
-		if reticle:
-			reticle.mana_value = current_controlled_elemental.current_mana / current_controlled_elemental.max_mana
-			
-		var label = get_node_or_null("UI/HBoxContainer/TargetLabel") as Label
-		if label:
-			label.text = "Following: " + current_controlled_elemental.name + \
-				" HP: %d / %d | Mana: %d / %d" % [
-					current_controlled_elemental.current_hp,
-					current_controlled_elemental.max_hp,
-					int(current_controlled_elemental.current_mana),
-					int(current_controlled_elemental.max_mana)
-				]
+	# Update active tiles logic
+	for tile in active_tiles.keys():
+		if is_instance_valid(tile):
+			tile.process_tile(delta)
+		else:
+			active_tiles.erase(tile)
 
 func _create_tiles() -> void:
 	var h = _grid_height_clamped()
@@ -268,34 +328,67 @@ func _create_tiles() -> void:
 	var total_w = w + 2
 	tile_grid.clear()
 	tile_grid.resize(total_h)
+	tile_counts.clear()
+	for state in HexTile.State.values():
+		tile_counts[state] = 0
+		
 	for y in total_h:
 		var row: Array[HexTile] = []
 		for x in total_w:
 			var tile: HexTile = tile_scene.instantiate() as HexTile
 			if not tile:
 				continue
+			tile.arena = self
 			add_child(tile)
 			tile.scale = Vector3.ONE * tile_scale
 			var hex_position = _calculate_hex_position(x, y)
 			tile.transform.origin = Vector3(hex_position.x, 0.0, hex_position.y)
+			
+			var initial_state: HexTile.State
 			if x == 0 or x == total_w - 1 or y == 0 or y == total_h - 1:
-				tile.current_state = HexTile.State.STONE
+				initial_state = HexTile.State.STONE
 			elif x > total_w / 2 and y > total_h / 2:
-				tile.current_state = HexTile.State.DIRT
+				initial_state = HexTile.State.DIRT
 			else:
-				if randf() < 0.2:
-					tile.current_state = HexTile.State.TREE
-				else:
-					tile.current_state = HexTile.State.GRASS
+				initial_state = HexTile.State.GRASS
+				if randf() < 0.05:
+					var tree = tree_feature_scene.instantiate()
+					tile.add_child(tree)
+			
+			tile.current_state = initial_state
+			tile_counts[initial_state] += 1
+			tile.state_changed.connect(_on_tile_state_changed)
+			
 			row.append(tile)
 		tile_grid[y] = row
+	tile_counts_changed.emit(tile_counts)
+
+func _on_tile_state_changed(old_state: HexTile.State, new_state: HexTile.State) -> void:
+	tile_counts[old_state] -= 1
+	tile_counts[new_state] = tile_counts.get(new_state, 0) + 1
+	tile_counts_changed.emit(tile_counts)
 
 func _setup_neighbors() -> void:
 	for y in tile_grid.size():
 		var row = tile_grid[y]
 		for x in row.size():
 			var tile = row[x]
-			tile.neighbors = _collect_neighbors(x, y)
+			tile.neighbors.clear()
+			tile.neighbor_slots.clear()
+			tile.neighbor_slots.resize(6)
+			
+			var offsets = _neighbor_offsets_for_row(y)
+			for i in range(offsets.size()):
+				var offset = offsets[i]
+				var nx = x + offset.x
+				var ny = y + offset.y
+				if ny >= 0 and ny < tile_grid.size():
+					var r_data = tile_grid[ny]
+					if nx >= 0 and nx < r_data.size():
+						var neighbor = r_data[nx]
+						tile.neighbor_slots[i] = neighbor
+						tile.neighbors.append(neighbor)
+			tile.check_activeness()
 
 func _spawn_fire_elemental() -> void:
 	if not fire_elemental_scene:
@@ -335,20 +428,6 @@ func _calculate_hex_position(column: int, row: int) -> Vector2:
 	var z_position = (1.5 * float(row)) * hex_size
 	return Vector2(x_position, z_position)
 
-func _collect_neighbors(column: int, row: int) -> Array[HexTile]:
-	var offsets = _neighbor_offsets_for_row(row)
-	var result: Array[HexTile] = []
-	var grid_h = tile_grid.size()
-	var grid_w = tile_grid[0].size() if grid_h > 0 else 0
-	for offset in offsets:
-		var nx = column + offset.x
-		var ny = row + offset.y
-		if ny >= 0 and ny < grid_h:
-			var row_data = tile_grid[ny]
-			if nx >= 0 and nx < row_data.size():
-				result.append(row_data[nx])
-	return result
-
 func _neighbor_offsets_for_row(row: int) -> Array[Vector2i]:
 	if row % 2 == 0:
 		return [
@@ -374,6 +453,10 @@ func _update_editor_tiles() -> void:
 	if not Engine.is_editor_hint():
 		return
 
+	tile_counts.clear()
+	for state in HexTile.State.values():
+		tile_counts[state] = 0
+		
 	var w = _grid_width_clamped()
 	var h = _grid_height_clamped()
 	var total_w = w + 2
@@ -395,15 +478,20 @@ func _update_editor_tiles() -> void:
 			tile.scale = Vector3.ONE * tile_scale
 			var hex_position = _calculate_hex_position(x, y)
 			tile.transform.origin = Vector3(hex_position.x, 0.0, hex_position.y)
+			var initial_state: HexTile.State
 			if x == 0 or x == total_w - 1 or y == 0 or y == total_h - 1:
-				tile.current_state = HexTile.State.STONE
+				initial_state = HexTile.State.STONE
 			elif x > total_w / 2 and y > total_h / 2:
-				tile.current_state = HexTile.State.DIRT
+				initial_state = HexTile.State.DIRT
 			else:
-				if randf() < 0.2:
-					tile.current_state = HexTile.State.TREE
-				else:
-					tile.current_state = HexTile.State.GRASS
+				initial_state = HexTile.State.GRASS
+				if randf() < 0.05:
+					var tree = tree_feature_scene.instantiate()
+					tile.add_child(tree)
+			
+			tile.current_state = initial_state
+			tile_counts[initial_state] += 1
+			tile.state_changed.connect(_on_tile_state_changed)
 			_editor_tiles.append(tile)
 
 	_update_editor_tracking(w, h)
@@ -432,26 +520,75 @@ func _grid_height_clamped() -> int:
 	return max(1, grid_height)
 
 func get_tile_at_world_position(world_position: Vector3) -> HexTile:
-	var closest: HexTile
-	var closest_distance_sq = 1e18
-	for row in tile_grid:
-		for tile in row:
-			if not is_instance_valid(tile):
-				continue
-			var tile_position = tile.global_transform.origin
-			var delta = tile_position - world_position
-			delta.y = 0
-			var dist_sq = delta.x * delta.x + delta.z * delta.z
-			if dist_sq < closest_distance_sq:
-				closest_distance_sq = dist_sq
-				closest = tile
-	return closest
+	if tile_grid.is_empty():
+		return null
+		
+	var local_pos = to_local(world_position)
+	var x = local_pos.x
+	var z = local_pos.z
+	
+	# Pointy-topped hex inverse math
+	var r_float = z / (1.5 * hex_size)
+	var q_float = (x / (SQRT3 * hex_size)) - (r_float * 0.5)
+	
+	# Cube rounding for robustness
+	var q = q_float
+	var r = r_float
+	var s = -q - r
+	
+	var rq = round(q)
+	var rr = round(r)
+	var rs = round(s)
+	
+	var dq = abs(rq - q)
+	var dr = abs(rr - r)
+	var ds = abs(rs - s)
+	
+	if dq > dr and dq > ds:
+		rq = -rr - rs
+	elif dr > ds:
+		rr = -rq - rs
+	
+	var row = int(rr)
+	var col = int(rq) + (row - (row & 1)) / 2
+	
+	if row >= 0 and row < tile_grid.size():
+		var row_data = tile_grid[row]
+		if col >= 0 and col < row_data.size():
+			return row_data[col]
+			
+	return null
 
 func get_tiles_within_distance(world_position: Vector3, radius: float) -> Array:
+	if tile_grid.is_empty():
+		return []
+		
 	var results: Array = []
 	var radius_sq = radius * radius
-	for row in tile_grid:
-		for tile in row:
+	var local_center = to_local(world_position)
+	
+	# Grid spacing
+	var col_step = SQRT3 * hex_size
+	var row_step = 1.5 * hex_size
+	
+	# Bounding box in row/col space
+	var r_min = int(floor((local_center.z - radius) / row_step))
+	var r_max = int(ceil((local_center.z + radius) / row_step))
+	
+	# Column bounding box needs to be generous due to row offsets
+	var c_min = int(floor((local_center.x - radius) / col_step)) - 1
+	var c_max = int(ceil((local_center.x + radius) / col_step)) + 1
+	
+	r_min = clamp(r_min, 0, tile_grid.size() - 1)
+	r_max = clamp(r_max, 0, tile_grid.size() - 1)
+	
+	for r in range(r_min, r_max + 1):
+		var row_data = tile_grid[r]
+		var c_start = clamp(c_min, 0, row_data.size() - 1)
+		var c_end = clamp(c_max, 0, row_data.size() - 1)
+		
+		for c in range(c_start, c_end + 1):
+			var tile = row_data[c]
 			if not is_instance_valid(tile):
 				continue
 			var tile_position = tile.global_transform.origin
