@@ -45,7 +45,7 @@ func _handle_controlled_input(delta: float) -> void:
 	movement_component.move(direction, delta)
 	movement_component.apply_gravity(delta)
 	
-	if Input.is_action_just_pressed("ui_accept") or Input.is_key_pressed(KEY_SPACE):
+	if Input.is_key_pressed(KEY_SPACE):
 		movement_component.jump()
 
 func _handle_ai_logic(_delta: float) -> void:

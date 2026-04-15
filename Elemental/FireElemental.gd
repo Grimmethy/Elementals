@@ -19,7 +19,7 @@ func _get_mana_particle_texture() -> Texture2D:
 func get_elemental_color() -> Color:
 	return Color(1.0, 0.4, 0.1)
 
-func _do_tile_effect(tile: HexTile) -> void:
-	if tile.apply_fire():
-		if tile.current_state == HexTile.State.FIRE:
+func _do_tile_effect(tile: HexTileData) -> void:
+	if _arena_grid.apply_element_to_tile(tile, "fire"):
+		if tile.current_state == TileConstants.State.FIRE:
 			current_mana = min(current_mana + 1.0, max_mana)

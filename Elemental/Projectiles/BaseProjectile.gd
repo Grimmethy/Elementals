@@ -82,13 +82,11 @@ func _apply_effect_to_tiles() -> void:
 		return
 		
 	var tile_below := _get_tile_below()
-	if not tile_below:
-		tile_below = _arena.get_tile_at_world_position(global_transform.origin)
 	
 	if not tile_below:
 		return
 
-	if tile_below.current_state == HexTile.State.STONE:
+	if tile_below.current_state == TileConstants.State.STONE:
 		queue_free()
 		return
 		
@@ -100,16 +98,9 @@ func _apply_effect_to_tiles() -> void:
 		remaining_charges -= 1
 		_affected_tiles[tid] = true
 
-func _do_projectile_effect(tile: HexTile) -> bool:
-	return tile.apply_element(element_type, _direction)
+func _do_projectile_effect(tile: HexTileData) -> bool:
+	return _arena.apply_element_to_tile(tile, element_type)
 
-func _get_tile_below() -> HexTile:
-	if not tile_ray:
-		return null
-	tile_ray.force_raycast_update()
-	if not tile_ray.is_colliding():
-		return null
-	var collider := tile_ray.get_collider()
-	if collider and collider is HexTile:
-		return collider
-	return null
+func _get_tile_below() -> HexTileData:
+	if not _arena: return null
+	return _arena.get_tile_data_at_world_position(global_transform.origin)

@@ -3,7 +3,7 @@ extends DecisionComponent
 
 @export var elemental: Elemental
 
-var _previous_tile: Node # HexTile
+var _previous_tile: HexTileData
 var _movement_target: Vector3
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -49,21 +49,21 @@ func _choose_new_target() -> void:
 	elemental._update_tile_below()
 	var ground_tile = elemental._ground_tile
 	
-	if ground_tile:
-		var neighbors = ground_tile.neighbors.filter(func(t): 
-			return t != null and is_instance_valid(t) and t.current_state != HexTile.State.STONE
+	if ground_tile and elemental._arena_grid:
+		var neighbors = elemental._arena_grid._get_neighbors(ground_tile).filter(func(t): 
+			return t != null and t.current_state != TileConstants.State.STONE
 		)
 		
 		if neighbors.size() > 0:
 			var candidates = neighbors.filter(func(t): return t != _previous_tile)
-			var next_tile: Node
+			var next_tile: HexTileData
 			if candidates.size() > 0:
 				next_tile = candidates[_rng.randi_range(0, candidates.size() - 1)]
 			else:
 				next_tile = neighbors[_rng.randi_range(0, neighbors.size() - 1)]
 			
 			_previous_tile = ground_tile
-			_movement_target = next_tile.global_transform.origin
+			_movement_target = next_tile.position
 			_movement_target.y = elemental.global_position.y
 			return
 

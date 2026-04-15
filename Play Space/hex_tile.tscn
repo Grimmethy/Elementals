@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://dmc4w5wv6dghm"]
+[gd_scene load_steps=8 format=3 uid="uid://deh5dyicsv2s"]
 
 [ext_resource type="Script" uid="uid://cf4ihq0qsfxkh" path="res://Play Space/hex_tile.gd" id="1_x0y0z"]
 [ext_resource type="Texture2D" uid="uid://bw0k7ch7tw2qr" path="res://assets/generated/fire_particle_1774823455.png" id="2_fire_texture"]

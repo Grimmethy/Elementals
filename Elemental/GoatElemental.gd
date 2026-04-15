@@ -1,6 +1,9 @@
 class_name GoatElemental
 extends Elemental
 
+func _init() -> void:
+	element_type = "goat"
+
 ## Specialized Elemental that represents a goat.
 ## Features a charge attack, terrain-based speed modifiers, and specialized visual effects.
 
@@ -11,12 +14,15 @@ extends Elemental
 @export var charge_distance: float = 5.0
 ## The time in seconds between consecutive charges.
 @export var charge_cooldown: float = 1.0
+## The minimum time in seconds between consecutive screams for this goat.
+@export var scream_cooldown: float = 2.0
 
 # Charging state variables
 var _is_charging: bool = false
 var _charge_direction: Vector3 = Vector3.ZERO
 var _charge_remaining_dist: float = 0.0
 var _charge_cooldown_timer: float = 0.0
+var _scream_timer: float = 0.0
 
 # Burning state variables
 var _burning_time_left: float = 0.0
@@ -33,8 +39,12 @@ var _is_in_water: bool = false
 @onready var _scream_player: AudioStreamPlayer3D = get_node_or_null("ScreamPlayer")
 
 # Constants for visual behavior
-const SINK_OFFSET_PIXELS = 150.0
+const SINK_OFFSET_PIXELS = 50.0
 const SPLASH_INTERVAL = 1.0
+
+# Static scream management to prevent feedback loops and performance spikes
+static var _pending_responses_count: int = 0
+const MAX_CONCURRENT_RESPONSES = 2
 
 const FIRE_TEXTURE = preload("res://assets/generated/fire_particle_1774823455.png")
 const THWAK_TEXTURE = preload("res://assets/generated/thwak_popup_frame_0_1774916398.png")
@@ -64,6 +74,10 @@ signal screamed(pos: Vector3)
 
 func _setup_elemental() -> void:
 	## Initializes the goat-specific visual elements, such as fire particles for the burning state.
+	if _body is Sprite3D:
+		if _body.hframes * _body.vframes > 1:
+			_body.frame = _rng.randi_range(0, _body.hframes * _body.vframes - 1)
+	
 	get_tree().node_added.connect(_on_node_added)
 	# Connect to existing goats
 	for node in get_tree().get_nodes_in_group("goats"):
@@ -79,38 +93,28 @@ func _setup_elemental() -> void:
 	_fire_particles.position = Vector3(0, 0, 0)
 	_fire_particles.emitting = false
 	
-	# Configure particle material for fire effect
-	var material = ParticleProcessMaterial.new()
-	material.direction = Vector3.UP
-	material.spread = 45.0
-	material.initial_velocity_min = 1.0
-	material.initial_velocity_max = 2.0
-	material.gravity = Vector3(0.0, 2.0, 0.0)
-	material.scale_min = 0.1
-	material.scale_max = 0.2
-	material.color = Color.WHITE
-	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	material.emission_box_extents = Vector3(0.3, 0.1, 0.3)
-	
-	_fire_particles.process_material = material
-	
-	# Create the mesh for fire particles using a texture
-	var pass_mesh = QuadMesh.new()
-	var p_mat = StandardMaterial3D.new()
-	p_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	p_mat.vertex_color_use_as_albedo = true
-	p_mat.albedo_color = Color.WHITE
-	p_mat.albedo_texture = FIRE_TEXTURE
-	p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	pass_mesh.material = p_mat
-	_fire_particles.draw_pass_1 = pass_mesh
-	_fire_particles.amount = 15
-	_fire_particles.lifetime = 0.5
+	Elemental.setup_gpu_particles(_fire_particles, {
+		"amount": 15,
+		"lifetime": 0.5,
+		"velocity_min": 1.0,
+		"velocity_max": 2.0,
+		"gravity": Vector3(0.0, 2.0, 0.0),
+		"scale_min": 0.1,
+		"scale_max": 0.2,
+		"texture": FIRE_TEXTURE,
+		"emission_shape": ParticleProcessMaterial.EMISSION_SHAPE_BOX,
+		"emission_box_extents": Vector3(0.3, 0.1, 0.3)
+	})
 
 func get_elemental_color() -> Color:
 	## Returns the thematic color for the goat elemental.
 	return Color(0.7, 0.6, 0.4) # A light brown/grey
+
+func get_main_action_progress() -> float:
+	## Overridden to show the headbutt (charge) cooldown progress instead of mana.
+	if _charge_cooldown_timer > 0:
+		return 1.0 - (_charge_cooldown_timer / charge_cooldown)
+	return 1.0
 
 func _process(delta: float) -> void:
 	## Main update loop handling visual updates and cooldowns.
@@ -122,6 +126,10 @@ func _process(delta: float) -> void:
 	# Handle charge cooldown
 	if _charge_cooldown_timer > 0:
 		_charge_cooldown_timer -= delta
+		
+	# Handle scream cooldown
+	if _scream_timer > 0:
+		_scream_timer -= delta
 
 func _physics_process(delta: float) -> void:
 	## Extends physics processing to check for headbutt collisions during a charge.
@@ -146,17 +154,17 @@ func _physics_process(delta: float) -> void:
 				_is_charging = false
 				velocity = Vector3.ZERO
 				break
-			elif collider is HexTile:
-				# If we hit a hex tile (likely a wall or from side), apply headbutt to it
-				if collider.apply_element("headbutt", velocity.normalized()):
-					_play_whack()
-					_show_thwak_visual(collision.get_position())
-				
-				# Stop charging if we hit a stone wall or similar
-				if collider.tile_type == HexTile.Type.STONE:
-					_is_charging = false
-					velocity = Vector3.ZERO
-					break
+			elif _arena_grid and (collider == _arena_grid.floor_static_body or collider.name == "FloorStaticBody"):
+				var tile_data = _arena_grid.get_tile_data_at_world_position(collision.get_position())
+				if tile_data:
+					if _arena_grid.apply_element_to_tile(tile_data, "headbutt"):
+						_play_whack()
+						_show_thwak_visual(collision.get_position())
+					
+					if tile_data.tile_type == TileConstants.Type.STONE:
+						_is_charging = false
+						velocity = Vector3.ZERO
+						break
 			else:
 				# Check if we hit a feature on the tile (like a tree)
 				var potential_feature = collider
@@ -233,7 +241,7 @@ func _show_thwak_visual(pos: Vector3) -> void:
 	else:
 		add_child(sprite)
 		
-	sprite.global_position = pos + Vector3(0, 1.2, 0) # Position slightly above the hit point
+	sprite.global_position = pos + Vector3(0, 0.6, 0) # Position slightly above the hit point
 	
 	# Animate: Pop in, slight shake, and fade out
 	sprite.scale = Vector3.ZERO
@@ -248,13 +256,13 @@ func _show_thwak_visual(pos: Vector3) -> void:
 	
 	# Fade and rise
 	tween.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(sprite, "position:y", sprite.position.y + 0.8, 0.3).set_delay(0.2)
+	tween.parallel().tween_property(sprite, "position:y", sprite.position.y + 0.4, 0.3).set_delay(0.2)
 	tween.parallel().tween_property(sprite, "modulate:a", 0.0, 0.3).set_delay(0.2)
 	tween.tween_callback(sprite.queue_free)
 
 func _update_water_effect(delta: float) -> void:
 	## Monitors if the goat is standing in water (puddle) and triggers splash effects.
-	if _ground_tile and _ground_tile.tile_type == HexTile.Type.PUDDLE:
+	if _ground_tile and _ground_tile.tile_type == TileConstants.Type.PUDDLE:
 		if not _is_in_water:
 			_is_in_water = true
 			_splash_timer = 0.0 # Trigger immediate splash upon entry
@@ -314,9 +322,9 @@ func _update_burning(delta: float) -> void:
 			_fire_particles.emitting = false
 		_damage_tick_timer = 0.0
 
-func _check_tile_damage(tile: HexTile) -> bool:
+func _check_tile_damage(tile: HexTileData) -> bool:
 	## Overrides base damage check to add specific logic for fire tiles.
-	if tile.tile_type == HexTile.Type.FIRE:
+	if tile.tile_type == TileConstants.Type.FIRE:
 		_start_burning()
 		return true
 	return super._check_tile_damage(tile)
@@ -351,9 +359,14 @@ func _flash_red() -> void:
 	if _body:
 		var sprite = _body as Sprite3D
 		if sprite:
+			var base_color = Color.WHITE
+			var genetic = get_node_or_null("GeneticComponent")
+			if genetic and genetic.goat_data:
+				base_color = genetic.goat_data.base_color
+				
 			var tween = create_tween()
 			tween.tween_property(sprite, "modulate", Color.RED, 0.1)
-			tween.tween_property(sprite, "modulate", Color.WHITE, 0.1)
+			tween.tween_property(sprite, "modulate", base_color, 0.1)
 
 func _update_sprite_flip() -> void:
 	## Flips the sprite horizontally based on its movement relative to the camera view.
@@ -374,7 +387,7 @@ func _update_sprite_flip() -> void:
 			elif move_dot_right < -0.1:
 				sprite.flip_h = true # Moving left
 
-func _do_tile_effect(_tile: HexTile) -> void:
+func _do_tile_effect(_tile: HexTileData) -> void:
 	## Goats do not currently trigger any special effects when entering a tile.
 	pass
 
@@ -384,15 +397,15 @@ func _get_speed_multiplier() -> float:
 		return 1.0
 		
 	match _ground_tile.tile_type:
-		HexTile.Type.MUD:
+		TileConstants.Type.MUD:
 			return 0.5
-		HexTile.Type.PUDDLE:
+		TileConstants.Type.PUDDLE:
 			return 0.7
-		HexTile.Type.GRASS:
+		TileConstants.Type.GRASS:
 			return 1.2
-		HexTile.Type.STONE:
+		TileConstants.Type.STONE:
 			return 1.0
-		HexTile.Type.FIRE:
+		TileConstants.Type.FIRE:
 			return 1.3 # Goats run faster when their feet are on fire!
 		_:
 			return 1.0
@@ -433,8 +446,8 @@ func _start_charge(target_pos: Vector3) -> void:
 		_play_swoosh()
 		
 		# Send pinecones on the present tile rolling in the direction of the headbutt
-		if _ground_tile:
-			_ground_tile.apply_element("headbutt", dir)
+		if _ground_tile and _arena_grid:
+			_arena_grid.apply_element_to_tile(_ground_tile, "headbutt")
 
 func ai_start_charge(target_pos: Vector3) -> void:
 	## AI-triggered charge attack.
@@ -458,7 +471,12 @@ func _get_mouse_3d_position() -> Vector3:
 
 func _scream() -> void:
 	## Triggers the goat's iconic scream sound and visual effect.
-	print("Goat is screaming!")
+	if _scream_timer > 0:
+		return
+		
+	# Set cooldown immediately to prevent rapid-fire screaming
+	_scream_timer = scream_cooldown
+	
 	if _scream_player and _scream_player.stream:
 		_scream_player.play()
 	
@@ -467,10 +485,20 @@ func _scream() -> void:
 
 func _on_other_goat_screamed(pos: Vector3) -> void:
 	## If another goat screams nearby, this goat might scream back.
-	if pos.distance_to(global_position) < 15.0 and randf() < 0.4:
+	# Don't respond if we are already cooling down, charging, or if too many are already responding
+	if _scream_timer > 0 or _pending_responses_count >= MAX_CONCURRENT_RESPONSES:
+		return
+		
+	if pos.distance_to(global_position) < 15.0 and randf() < 0.25: # Reduced probability
+		# Increment pending response count globally
+		GoatElemental._pending_responses_count += 1
+		
 		# Wait a random short time before screaming back
-		var timer = get_tree().create_timer(randf_range(0.2, 0.8))
+		var timer = get_tree().create_timer(randf_range(0.3, 1.2)) # Slightly longer/more varied delay
 		timer.timeout.connect(func():
+			# Always decrement the pending count when the timer finishes
+			GoatElemental._pending_responses_count -= 1
+			
 			if not is_instance_valid(self): return
 			if not _is_charging and not is_stunned(): # Don't scream if charging or stunned
 				_scream()
@@ -496,7 +524,7 @@ func _show_scream_visual() -> void:
 		return
 		
 	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sprite.position = Vector3(0, 1.6, 0.1)
+	sprite.position = Vector3(0, 0.8, 0.1)
 	sprite.modulate = Color.WHITE
 	add_child(sprite)
 	
@@ -509,12 +537,12 @@ func _show_scream_visual() -> void:
 	# Rapid shake for emphasis
 	for i in range(4):
 		var shake_offset = Vector3(randf_range(-0.1, 0.1), randf_range(-0.1, 0.1), 0)
-		tween.tween_property(sprite, "position", Vector3(0, 1.6, 0.1) + shake_offset, 0.05)
+		tween.tween_property(sprite, "position", Vector3(0, 0.8, 0.1) + shake_offset, 0.05)
 	
 	# Final fade and removal
-	tween.tween_property(sprite, "position", Vector3(0, 1.6, 0.1), 0.05)
+	tween.tween_property(sprite, "position", Vector3(0, 0.8, 0.1), 0.05)
 	tween.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN)
-	tween.tween_property(sprite, "position:y", 2.2, 0.4).set_delay(0.2)
+	tween.tween_property(sprite, "position:y", 1.1, 0.4).set_delay(0.2)
 	tween.parallel().tween_property(sprite, "modulate:a", 0.0, 0.4).set_delay(0.2)
 	tween.tween_callback(sprite.queue_free)
 
@@ -523,13 +551,13 @@ func _show_scream_text() -> void:
 	var label = Label3D.new()
 	label.text = "BAAAAAA!"
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.position = Vector3(0, 1.5, 0)
+	label.position = Vector3(0, 0.75, 0)
 	label.modulate = Color.WHITE
 	label.outline_modulate = Color.BLACK
 	add_child(label)
 	
 	var tween = create_tween()
-	tween.tween_property(label, "position:y", 2.5, 0.5)
+	tween.tween_property(label, "position:y", 1.25, 0.5)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(label.queue_free)
 

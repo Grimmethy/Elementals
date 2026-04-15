@@ -57,14 +57,11 @@ func _update_debug_info(counts: Dictionary = {}) -> void:
 	if not debug_checkbox or not debug_label or not arena:
 		return
 		
-	if HexTile.debug_enabled != debug_checkbox.button_pressed:
-		HexTile.debug_enabled = debug_checkbox.button_pressed
-		# Re-evaluate all tiles activeness when debug is toggled
-		# (important for showing DIRT conversion timers)
-		for row in arena.tile_grid:
-			for tile in row:
-				if is_instance_valid(tile):
-					tile.check_activeness()
+	# We don't have a global static debug_enabled anymore, or we can add it to ArenaGrid
+	# For now, let's just update the activeness of all tiles
+	if arena:
+		for tile in arena.tile_data_grid:
+			arena._check_tile_activeness(tile)
 	
 	if spawn_buttons_container:
 		spawn_buttons_container.visible = debug_checkbox.button_pressed
@@ -79,12 +76,12 @@ func _update_debug_info(counts: Dictionary = {}) -> void:
 		counts = arena.tile_counts
 		
 	var state_names = {
-		HexTile.State.GRASS: "Grass",
-		HexTile.State.DIRT: "Dirt",
-		HexTile.State.MUD: "Mud",
-		HexTile.State.PUDDLE: "Puddle",
-		HexTile.State.FIRE: "Fire",
-		HexTile.State.STONE: "Stone"
+		TileConstants.State.GRASS: "Grass",
+		TileConstants.State.DIRT: "Dirt",
+		TileConstants.State.MUD: "Mud",
+		TileConstants.State.PUDDLE: "Puddle",
+		TileConstants.State.FIRE: "Fire",
+		TileConstants.State.STONE: "Stone"
 	}
 	
 	var sorted_counts = []

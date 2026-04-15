@@ -55,7 +55,7 @@ func _land() -> void:
 	var tiles = _arena.get_tiles_within_distance(global_transform.origin, _landing_radius)
 	for tile in tiles:
 		if is_instance_valid(tile):
-			tile.apply_element(element_type, _horizontal_dir)
+			_arena.apply_element_to_tile(tile, element_type, _horizontal_dir)
 	
 	# Check for elementals in radius (manual check since we are not using Area3D overlap here for landing)
 	var space_state = get_world_3d().direct_space_state

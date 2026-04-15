@@ -58,7 +58,7 @@ var _base_height: float
 var _bob_phase: float = 0.0
 var _origin: Vector3
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
-var _ground_tile: HexTile
+var _ground_tile: HexTileData
 
 var _stun_timer: float = 0.0
 var _stun_visual: Node3D
@@ -74,7 +74,9 @@ func _ready() -> void:
 	_mana_phase = _rng.randf_range(0, 100) # Random start
 	_arena_grid = get_parent() as ArenaGrid
 	if not _arena_grid:
-		_arena_grid = get_tree().get_current_scene().get_node_or_null("Arena") as ArenaGrid
+		var scene = get_tree().get_current_scene()
+		if scene:
+			_arena_grid = scene.get_node_or_null("Arena") as ArenaGrid
 	
 	_origin = global_transform.origin
 	_base_height = global_position.y
@@ -266,9 +268,9 @@ func _physics_process(delta: float) -> void:
 	if is_on_floor():
 		_update_tile_below()
 		if _ground_tile:
-			if element_type == "fire" and _ground_tile.current_state == HexTile.State.FIRE:
+			if element_type == "fire" and _ground_tile.current_state == TileConstants.State.FIRE:
 				current_regen *= 2.0
-			elif element_type == "water" and _ground_tile.current_state == HexTile.State.PUDDLE:
+			elif element_type == "water" and _ground_tile.current_state == TileConstants.State.PUDDLE:
 				current_regen *= 2.0
 				
 	current_mana = min(current_mana + current_regen * delta, max_mana)
@@ -303,6 +305,12 @@ func _handle_controlled_movement(_delta: float) -> void:
 func get_elemental_color() -> Color:
 	# Virtual method for subclasses
 	return Color.WHITE
+
+func get_main_action_progress() -> float:
+	## Returns the progress (0.0 to 1.0) of the primary action (mana for projectiles, etc.).
+	if max_mana > 0:
+		return current_mana / max_mana
+	return 1.0
 
 func cycle_attack_pattern() -> void:
 	current_attack_pattern = (current_attack_pattern + 1) % AttackPattern.size() as AttackPattern
@@ -410,38 +418,33 @@ func _apply_ground_effects() -> void:
 			return
 		_do_tile_effect(_ground_tile)
 
-func _check_tile_damage(tile: HexTile) -> bool:
+func _check_tile_damage(tile: HexTileData) -> bool:
 	if element_type == "fire":
-		if tile.current_state == HexTile.State.MUD:
+		if tile.current_state == TileConstants.State.MUD:
 			take_damage(1)
-			tile.current_state = HexTile.State.DIRT
+			if _arena_grid:
+				_arena_grid.set_tile_state(tile, TileConstants.State.DIRT)
 			return true
-		elif tile.current_state == HexTile.State.PUDDLE:
+		elif tile.current_state == TileConstants.State.PUDDLE:
 			take_damage(2)
-			tile.current_state = HexTile.State.DIRT
+			if _arena_grid:
+				_arena_grid.set_tile_state(tile, TileConstants.State.DIRT)
 			return true
 	elif element_type == "water":
-		if tile.current_state == HexTile.State.FIRE:
+		if tile.current_state == TileConstants.State.FIRE:
 			take_damage(1)
-			tile.current_state = HexTile.State.MUD
+			if _arena_grid:
+				_arena_grid.set_tile_state(tile, TileConstants.State.MUD)
 			return true
 	return false
 
-func _do_tile_effect(_tile: HexTile) -> void:
+func _do_tile_effect(_tile: HexTileData) -> void:
 	# Virtual method for subclasses
 	pass
 
 func _update_tile_below() -> void:
-	if tile_detector:
-		tile_detector.force_raycast_update()
-		if tile_detector.is_colliding():
-			var collider := tile_detector.get_collider()
-			if collider and collider is HexTile:
-				_ground_tile = collider
-				return
-
 	if _arena_grid:
-		_ground_tile = _arena_grid.get_tile_at_world_position(global_transform.origin)
+		_ground_tile = _arena_grid.get_tile_data_at_world_position(global_transform.origin)
 	else:
 		_ground_tile = null
 

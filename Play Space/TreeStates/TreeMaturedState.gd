@@ -20,12 +20,12 @@ func update(delta: float) -> void:
 		var data = get_state_data()
 		tree.timer = data.state_duration if data else 10.0
 	
-	var parent = tree.get_parent()
-	if parent is HexTile:
-		if parent.current_state != HexTile.State.GRASS:
+	if tree.tile:
+		if tree.tile.current_state != TileConstants.State.GRASS:
 			tree.grass_spread_timer -= delta
 			if tree.grass_spread_timer <= 0:
-				parent.current_state = HexTile.State.GRASS
+				var arena = tree.get_parent() as ArenaGrid
+				if arena: arena.set_tile_state(tree.tile, TileConstants.State.GRASS)
 				tree.grass_spread_timer = tree.species.grass_spread_time if tree.species else 5.0
 		else:
 			tree.grass_spread_timer = tree.species.grass_spread_time if tree.species else 5.0

@@ -64,6 +64,9 @@ func apply_gravity(delta: float) -> void:
 	var cb = target as CharacterBody3D
 	if not cb.is_on_floor():
 		cb.velocity.y -= gravity * delta
+	else:
+		# Reset vertical velocity when on floor to prevent accumulation
+		cb.velocity.y = 0.0
 
 func jump() -> void:
 	if not target or not (target is CharacterBody3D):

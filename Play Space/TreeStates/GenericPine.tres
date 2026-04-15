@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="TreeSpecies" load_steps=12 format=3 uid="uid://genericpine123"]
+[gd_resource type="Resource" script_class="TreeSpecies" load_steps=13 format=3 uid="uid://dsrm8cy5ponwk"]
 
 [ext_resource type="Texture2D" uid="uid://q0wt5nblhtye" path="res://assets/generated/burnt_stump_simple_1774734102.png" id="1_burnt"]
 [ext_resource type="Script" uid="uid://dcflkh02k7vhl" path="res://Play Space/TreeStates/TreeStateData.gd" id="2_statedata"]
@@ -8,21 +8,11 @@
 [ext_resource type="Texture2D" uid="uid://bwjvth06urcra" path="res://assets/generated/stump_simple_1774734105.png" id="6_stump"]
 [ext_resource type="Script" uid="uid://c0jh7yc5e2xg7" path="res://Play Space/TreeStates/TreeSpecies.gd" id="7_species"]
 
-[sub_resource type="Resource" id="Resource_pinecone"]
+[sub_resource type="Resource" id="Resource_burnt"]
 script = ExtResource("2_statedata")
-texture = ExtResource("4_pinecone")
-scale = Vector3(1, 1, 1)
-sprite_y_offset = 0.2
-health_bar_y_offset = 1.0
-state_duration = 10.0
-
-[sub_resource type="Resource" id="Resource_sapling"]
-script = ExtResource("2_statedata")
-texture = ExtResource("5_sapling")
+texture = ExtResource("1_burnt")
 scale = Vector3(1.5, 1.5, 1.5)
-sprite_y_offset = 1.0
-health_bar_y_offset = 2.5
-state_duration = 10.0
+sprite_y_offset = 0.5
 
 [sub_resource type="Resource" id="Resource_matured"]
 script = ExtResource("2_statedata")
@@ -30,23 +20,24 @@ texture = ExtResource("3_tree")
 scale = Vector3(4.5, 4.5, 4.5)
 sprite_y_offset = 2.0
 health_bar_y_offset = 7.0
-state_duration = 10.0
+
+[sub_resource type="Resource" id="Resource_pinecone"]
+script = ExtResource("2_statedata")
+texture = ExtResource("4_pinecone")
+sprite_y_offset = 0.2
+health_bar_y_offset = 1.0
+
+[sub_resource type="Resource" id="Resource_sapling"]
+script = ExtResource("2_statedata")
+texture = ExtResource("5_sapling")
+scale = Vector3(1.5, 1.5, 1.5)
+sprite_y_offset = 1.0
 
 [sub_resource type="Resource" id="Resource_stump"]
 script = ExtResource("2_statedata")
 texture = ExtResource("6_stump")
 scale = Vector3(1.5, 1.5, 1.5)
 sprite_y_offset = 0.5
-health_bar_y_offset = 2.5
-state_duration = 10.0
-
-[sub_resource type="Resource" id="Resource_burnt"]
-script = ExtResource("2_statedata")
-texture = ExtResource("1_burnt")
-scale = Vector3(1.5, 1.5, 1.5)
-sprite_y_offset = 0.5
-health_bar_y_offset = 2.5
-state_duration = 10.0
 
 [resource]
 script = ExtResource("7_species")
@@ -56,5 +47,3 @@ sapling_data = SubResource("Resource_sapling")
 matured_data = SubResource("Resource_matured")
 stump_data = SubResource("Resource_stump")
 burnt_stump_data = SubResource("Resource_burnt")
-max_health = 5.0
-grass_spread_time = 5.0

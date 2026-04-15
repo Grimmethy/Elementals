@@ -18,7 +18,11 @@ var current_state_node: TreeState = null
 var timer: float = 10.0
 var grass_spread_timer: float = 5.0 # Timer for spreading grass
 var is_moving: bool = false
-var target_tile: HexTile = null
+var target_tile: HexTileData = null
+var tile: HexTileData = null
+
+func set_tile(p_tile: HexTileData) -> void:
+	tile = p_tile
 var move_speed: float = 8.0 # Slightly faster movement for pinecones
 var movement_component: MovementComponent
 
@@ -67,24 +71,24 @@ func _on_movement_finished() -> void:
 		
 	# Arrived at tile
 	# Check if the tile we arrived at is burning
-	if target_tile.tile_type == HexTile.Type.FIRE:
+	if target_tile.tile_type == TileConstants.Type.FIRE:
 		take_damage(5.0, true) # Pinecone dies instantly to fire on landing
 		return
 
-	var old_parent = get_parent()
-	if old_parent:
-		old_parent.remove_child(self)
-	target_tile.add_child(self)
-	position = Vector3.ZERO # Reset local position
+	if tile:
+		tile.feature = null
+	
+	tile = target_tile
+	tile.feature = self
+	position = tile.position
+	
 	is_moving = false
 	target_tile = null
-	# Reset timer when arriving at new tile as per requirement:
-	# "if it remains stationary for 10 seconds"
 	timer = 10.0
 
 func _on_health_depleted() -> void:
 	if current_state_node:
-		var is_fire = (get_parent() is HexTile and get_parent().tile_type == HexTile.Type.FIRE)
+		var is_fire = (tile and tile.tile_type == TileConstants.Type.FIRE)
 		current_state_node.die(is_fire)
 
 func _update_state_node(new_state: State) -> void:
@@ -110,8 +114,7 @@ func _update_state_node(new_state: State) -> void:
 
 func _process(delta: float) -> void:
 	# If on a burning tile, burn the feature
-	var parent = get_parent()
-	var on_fire = parent is HexTile and parent.tile_type == HexTile.Type.FIRE
+	var on_fire = tile and tile.tile_type == TileConstants.Type.FIRE
 	if on_fire:
 		fire_damage_accumulator += delta
 		if fire_damage_accumulator >= 1.0:
@@ -134,26 +137,33 @@ func _update_collision() -> void:
 	collision_body.process_mode = PROCESS_MODE_INHERIT if should_block else PROCESS_MODE_DISABLED
 
 func _is_on_tree_tile() -> bool:
-	var parent = get_parent()
-	if parent is HexTile:
-		for child in parent.get_children():
-			if child is TreeFeature and child != self:
-				if child.current_state in [State.TREE, State.STUMP, State.BURNT_STUMP, State.SAPLING]:
-					return true
+	if not tile: return false
+	var arena = get_parent() as ArenaGrid
+	if not arena: return false
+	
+	# Check neighbors for other trees
+	for n in arena._get_neighbors(tile):
+		if n.feature and n.feature is TreeFeature:
+			if n.feature.current_state in [State.TREE, State.STUMP, State.BURNT_STUMP, State.SAPLING]:
+				return true
 	return false
 
 func _spawn_pinecone() -> void:
-	# Check if we already have a pinecone on the field
+	if not tile: return
+	var arena = get_parent() as ArenaGrid
+	if not arena: return
+	
 	if spawned_pinecone_ref and spawned_pinecone_ref.get_ref():
 		var pine = spawned_pinecone_ref.get_ref() as TreeFeature
-		# If the pinecone is still a pinecone and exists, don't spawn another
 		if pine.current_state == State.PINECONE:
 			return
 			
 	var pinecone = load("res://Play Space/tree_feature.tscn").instantiate()
 	pinecone.species = species
 	pinecone.current_state = State.PINECONE
-	get_parent().add_child(pinecone)
+	arena.add_child(pinecone)
+	pinecone.set_tile(tile)
+	pinecone.position = tile.position
 	spawned_pinecone_ref = weakref(pinecone)
 
 func apply_element(element: String, direction: Vector3 = Vector3.ZERO) -> bool:
@@ -170,33 +180,30 @@ func apply_water(direction: Vector3 = Vector3.ZERO) -> bool:
 	return apply_element("water", direction)
 
 func _push_pinecone(direction: Vector3) -> void:
-	if is_moving or not movement_component: return
-	
-	var parent = get_parent()
-	if not (parent is HexTile): return
+	if is_moving or not movement_component or not tile: return
+	var arena = get_parent() as ArenaGrid
+	if not arena: return
 	
 	var push_dir = direction.normalized()
 	if push_dir.length_squared() < 0.1:
 		push_dir = Vector3(randf_range(-1,1), 0, randf_range(-1,1)).normalized()
 
-	# Snap input direction to the nearest cardinal hex direction index
-	var snapped_idx = -1
+	# Find the neighbor whose position is closest to the push direction
 	var max_dot = -2.0
-	for i in range(HexTile.DIRECTIONS.size()):
-		var dot = push_dir.dot(HexTile.DIRECTIONS[i])
+	var best_neighbor = null
+	for n in arena._get_neighbors(tile):
+		var dir_to_n = (n.position - tile.position).normalized()
+		var dot = push_dir.dot(dir_to_n)
 		if dot > max_dot:
 			max_dot = dot
-			snapped_idx = i
-
-	# Retrieve the neighbor in that fixed direction
-	if snapped_idx != -1 and parent.neighbor_slots.size() > snapped_idx:
-		var best_neighbor = parent.neighbor_slots[snapped_idx]
-		if best_neighbor:
-			target_tile = best_neighbor
-			is_moving = true
-			var target_pos = target_tile.global_position
-			target_pos.y = global_position.y
-			movement_component.move_to(target_pos)
+			best_neighbor = n
+			
+	if best_neighbor:
+		target_tile = best_neighbor
+		is_moving = true
+		var target_pos = target_tile.position
+		target_pos.y = global_position.y
+		movement_component.move_to(target_pos)
 
 func _handle_movement(delta: float) -> void:
 	pass # Handled by MovementComponent

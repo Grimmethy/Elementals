@@ -21,9 +21,9 @@ func _get_mana_particle_texture() -> Texture2D:
 func get_elemental_color() -> Color:
 	return Color(0.1, 0.5, 1.0)
 
-func _do_tile_effect(tile: HexTile) -> void:
-	if tile.apply_water():
-		if tile.current_state == HexTile.State.PUDDLE:
+func _do_tile_effect(tile: HexTileData) -> void:
+	if _arena_grid.apply_element_to_tile(tile, "water"):
+		if tile.current_state == TileConstants.State.PUDDLE:
 			current_mana = min(current_mana + 1.0, max_mana)
 
 func _configure_particles(particles: GPUParticles3D) -> void:

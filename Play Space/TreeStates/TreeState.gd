@@ -35,8 +35,7 @@ func _die_to_stump(is_fire: bool) -> void:
 		tree.audio_player.play()
 	
 	# If the tile is on fire, we become a burnt stump regardless of how we died
-	var parent = tree.get_parent()
-	var tile_on_fire = parent is HexTile and parent.tile_type == HexTile.Type.FIRE
+	var tile_on_fire = tree.tile and tree.tile.tile_type == TileConstants.Type.FIRE
 	var should_burn = is_fire or tile_on_fire
 
 	if should_burn:

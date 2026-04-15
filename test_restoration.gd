@@ -10,16 +10,13 @@ func test_tree_recovery():
 	arena.grid_height = 5
 	scene_tree.root.add_child(arena)
 	
-	arena._create_tiles()
-	arena._setup_neighbors()
+	arena._initialize_grid()
 	
 	var grass_tile = null
-	for row in arena.tile_grid:
-		for tile in row:
-			if tile.current_state == HexTile.State.GRASS:
-				grass_tile = tile
-				break
-		if grass_tile: break
+	for tile in arena.tile_data_grid:
+		if tile.current_state == TileConstants.State.GRASS:
+			grass_tile = tile
+			break
 	
 	if not grass_tile:
 		print("No grass tile found for test")
@@ -27,8 +24,9 @@ func test_tree_recovery():
 		
 	# 1. Start with a TreeFeature
 	var tree = load("res://Play Space/tree_feature.tscn").instantiate()
-	grass_tile.add_child(tree)
-	tree.current_state = TreeFeature.State.TREE
+	arena.add_child(tree)
+	tree.set_tile(grass_tile)
+	grass_tile.feature = tree
 	print("Tree setup ok")
 	
 	# 2. Apply fire

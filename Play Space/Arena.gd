@@ -1,8 +1,6 @@
-@tool
 class_name ArenaGrid
 extends Node3D
 
-@export var tile_scene: PackedScene = preload("res://Play Space/hex_tile.tscn")
 @export var tree_feature_scene: PackedScene = preload("res://Play Space/tree_feature.tscn")
 @export var grid_width: int = 20
 @export var grid_height: int = 20
@@ -11,12 +9,26 @@ extends Node3D
 @export var fire_elemental_scene: PackedScene = preload("res://Elemental/FireElemental.tscn")
 @export var water_elemental_scene: PackedScene = preload("res://Elemental/WaterElemental.tscn")
 @export var goat_elemental_scene: PackedScene = preload("res://Elemental/GoatElemental.tscn")
+@export var noise: FastNoiseLite
+@export var height_step: float = 1.0
+@export var noise_scale: float = 1.0
 
 const SQRT3: float = sqrt(3.0)
 
-var tile_grid: Array[Array] = []
-var active_tiles: Dictionary = {}
+# Data storage
+var tile_data_grid: Array[HexTileData] = []
+var active_registry: Dictionary = {} # axial_coords -> HexTileData
 var elementals: Array[Node3D] = []
+
+# MultiMesh Rendering
+var multimesh_instances: Dictionary = {} # State -> MultiMeshInstance3D
+var multimesh_tile_lists: Dictionary = {} # State -> Array[HexTileData]
+var _fire_particles_container: Node3D
+var _fire_particles_pool: Array[GPUParticles3D] = []
+var _active_fire_particles: Dictionary = {} # HexTileData -> GPUParticles3D
+
+# Physics
+var floor_static_body: StaticBody3D
 
 signal tile_counts_changed(counts: Dictionary)
 var tile_counts: Dictionary = {}
@@ -26,21 +38,10 @@ var tile_counts: Dictionary = {}
 @onready var _next_button: Button = get_node_or_null("UI/HBoxContainer/NextButton")
 @onready var _camera_follower: CameraFollower = get_node_or_null("Camera3D")
 @onready var _minimap_viewport: SubViewport = get_node_or_null("UI/MinimapFrame/MinimapContainer/SubViewport")
+@onready var _options_menu: OptionsMenu = get_node_or_null("UI/OptionsMenu")
+@onready var _options_button: Button = get_node_or_null("UI/OptionsButton")
 
-func register_active_tile(tile: HexTile) -> void:
-	active_tiles[tile] = true
-
-func unregister_active_tile(tile: HexTile) -> void:
-	active_tiles.erase(tile)
 var current_target_index: int = 0
-var _editor_tiles: Array[HexTile] = []
-var _editor_last_grid_width: int = -1
-var _editor_last_grid_height: int = -1
-var _editor_last_hex_size: float = -1.0
-var _editor_last_tile_scale: float = -1.0
-var _editor_last_tile_scene: PackedScene = tile_scene
-
-var reticle: Control
 var current_controlled_elemental: Elemental:
 	set(value):
 		if current_controlled_elemental:
@@ -62,39 +63,11 @@ var current_controlled_elemental: Elemental:
 				reticle.color = current_controlled_elemental.get_elemental_color()
 			_update_ui()
 
-func _on_elemental_hp_changed(_hp: float, _max_hp: float) -> void:
-	_update_ui()
-
-func _on_elemental_mana_changed(mana: float, max_mana: float) -> void:
-	if reticle and current_controlled_elemental:
-		reticle.mana_value = mana / max_mana
-		reticle.attack_pattern = current_controlled_elemental.current_attack_pattern
-	_update_ui()
-
-func _update_ui() -> void:
-	if not current_controlled_elemental:
-		return
-		
-	if _target_label:
-		var hp = 0.0
-		var m_hp = 0.0
-		if current_controlled_elemental.health_component:
-			hp = current_controlled_elemental.health_component.current_health
-			m_hp = current_controlled_elemental.health_component.max_health
-			
-		_target_label.text = "Following: " + current_controlled_elemental.name + \
-			" HP: %d / %d | Mana: %d / %d" % [
-				int(hp),
-				int(m_hp),
-				int(current_controlled_elemental.current_mana),
-				int(current_controlled_elemental.max_mana)
-			]
+var reticle: Control
 
 func _ready() -> void:
+	# Ignore editor hint for simplicity in this refactor, focus on runtime performance
 	if Engine.is_editor_hint():
-		set_process(true)
-		_update_editor_tiles()
-		_setup_minimap()
 		return
 	
 	var gs = get_node_or_null("/root/GameSettings")
@@ -103,8 +76,8 @@ func _ready() -> void:
 		grid_height = gs.grid_height
 	
 	_setup_reticle()
-	_create_tiles()
-	_setup_neighbors()
+	_initialize_grid()
+	_setup_physics()
 	_spawn_elementals()
 	_setup_ui_connections()
 	_setup_minimap()
@@ -112,447 +85,404 @@ func _ready() -> void:
 	
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 
-func _setup_minimap() -> void:
-	# Use call_deferred to ensure we are in the tree and ready
-	_do_setup_minimap.call_deferred()
-
-func _do_setup_minimap() -> void:
-	if not is_inside_tree():
-		return
-		
-	if _minimap_viewport:
-		_minimap_viewport.own_world_3d = false
-		
-		var camera = _minimap_viewport.get_node_or_null("MinimapCamera")
-		if camera:
-			var w_total = _grid_width_clamped() + 2
-			var h_total = _grid_height_clamped() + 2
-			
-			var center_x = (SQRT3 * (float(w_total - 1) * 0.5 + 0.25)) * hex_size
-			var center_z = (1.5 * float(h_total - 1) * 0.5) * hex_size
-			
-			camera.position = Vector3(center_x, 100.0, center_z)
-			camera.rotation_degrees = Vector3(-90, 0, 0)
-			camera.current = true
-			
-			camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-			var grid_width_world = (SQRT3 * (float(w_total) + 0.5)) * hex_size
-			var grid_height_world = (1.5 * float(h_total)) * hex_size
-			camera.size = max(grid_width_world, grid_height_world) * 1.1
-
-func _setup_reticle() -> void:
-	var canvas_layer = CanvasLayer.new()
-	canvas_layer.name = "ReticleLayer"
-	add_child(canvas_layer)
-	
-	reticle = Control.new()
-	reticle.set_script(preload("res://Player/Reticle.gd"))
-	reticle.size = Vector2(64, 64)
-	reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas_layer.add_child(reticle)
-
-func _unhandled_input(event: InputEvent) -> void:
-	if Engine.is_editor_hint():
-		return
-		
-	if event is InputEventMouseButton:
-		if event.pressed:
-			if event.button_index == MOUSE_BUTTON_LEFT:
-				if current_controlled_elemental:
-					var target_pos = _get_mouse_3d_position()
-					current_controlled_elemental.launch_projectile_at(target_pos)
-	
-	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_E:
-			if current_controlled_elemental:
-				current_controlled_elemental.cycle_attack_pattern()
-				if reticle:
-					reticle.attack_pattern = current_controlled_elemental.current_attack_pattern
-		elif event.keycode == KEY_Q:
-			if current_controlled_elemental:
-				# Cycle backwards
-				var p = current_controlled_elemental.current_attack_pattern
-				p = (p - 1 + Elemental.AttackPattern.size()) % Elemental.AttackPattern.size()
-				current_controlled_elemental.current_attack_pattern = p as Elemental.AttackPattern
-				if reticle:
-					reticle.attack_pattern = current_controlled_elemental.current_attack_pattern
-
-func _get_mouse_3d_position() -> Vector3:
-	var camera = get_viewport().get_camera_3d()
-	if not camera:
-		return Vector3.ZERO
-		
-	var mouse_pos = get_viewport().get_mouse_position()
-	var ray_origin = camera.project_ray_origin(mouse_pos)
-	var ray_direction = camera.project_ray_normal(mouse_pos)
-	
-	if abs(ray_direction.y) < 1e-6:
-		return Vector3.ZERO
-		
-	var t = -ray_origin.y / ray_direction.y
-	return ray_origin + ray_direction * t
-
-func _setup_ui_connections() -> void:
-	if _prev_button:
-		_prev_button.pressed.connect(previous_elemental)
-		_prev_button.focus_mode = Control.FOCUS_NONE
-	if _next_button:
-		_next_button.pressed.connect(next_elemental)
-		_next_button.focus_mode = Control.FOCUS_NONE
-
-func spawn_elemental(type: String) -> void:
-	var scene: PackedScene
-	var name_prefix: String
-	
-	match type.to_lower():
-		"fire":
-			scene = fire_elemental_scene
-			name_prefix = "FireElemental"
-		"water":
-			scene = water_elemental_scene
-			name_prefix = "WaterElemental"
-		"goat":
-			scene = goat_elemental_scene
-			name_prefix = "GoatElemental"
-		_:
-			return
-			
-	if not scene:
-		return
-		
-	var elemental = scene.instantiate()
-	if not elemental:
-		return
-		
-	elemental.name = name_prefix + "_" + str(elementals.size())
-	
-	# Spawn at a random position or center
-	var w = _grid_width_clamped()
+func _initialize_grid() -> void:
 	var h = _grid_height_clamped()
-	var rx = randi_range(1, w)
-	var ry = randi_range(1, h)
-	var spawn_pos = _calculate_hex_position(rx, ry)
-	elemental.position = Vector3(spawn_pos.x, 2.0, spawn_pos.y)
+	var w = _grid_width_clamped()
+	var total_h = h + 2
+	var total_w = w + 2
+	var total_tiles = total_h * total_w
 	
-	add_child(elemental)
-	elementals.append(elemental)
+	_setup_multimeshes(total_tiles)
+	_setup_fire_particles()
 	
-	# If this is the first elemental, update camera
-	if elementals.size() == 1:
-		current_target_index = 0
-		_update_camera_target()
+	tile_data_grid.clear()
+	tile_counts.clear()
+	for state in TileConstants.State.values():
+		tile_counts[state] = 0
+	
+	if not noise:
+		noise = FastNoiseLite.new()
+		var gs = get_node_or_null("/root/GameSettings")
+		if gs:
+			noise.seed = gs.noise_seed
+			noise.frequency = gs.noise_frequency
+			height_step = gs.height_step
+		else:
+			noise.seed = randi()
+			noise.frequency = 0.05
+		noise.noise_type = FastNoiseLite.TYPE_PERLIN
+	
+	for y in total_h:
+		for x in total_w:
+			var pos_2d = _calculate_hex_position(x, y)
+			var pos = Vector3(pos_2d.x, 0.0, pos_2d.y)
+			var axial = _offset_to_axial(x, y)
+			
+			var state: int
+			if x == 0 or x == total_w - 1 or y == 0 or y == total_h - 1:
+				state = TileConstants.State.STONE
+			elif x > total_w / 2 and y > total_h / 2:
+				state = TileConstants.State.DIRT
+			else:
+				state = TileConstants.State.GRASS
+			
+			var h_val = 0
+			if noise:
+				var nv = noise.get_noise_2d(float(x), float(y))
+				# Map -1..1 to 0..3 (4 levels)
+				h_val = int(clamp(floor((nv + 1.0) * 2.0), 0, 3))
+			
+			var tile = HexTileData.new(state, pos, axial, Vector2i(x, y), h_val)
+			tile_data_grid.append(tile)
+			tile_counts[state] += 1
+			
+	# Features
+			if state == TileConstants.State.GRASS and randf() < 0.05:
+				var tree = tree_feature_scene.instantiate()
+				add_child(tree)
+				tree.transform.origin = pos + Vector3(0, _get_tile_surface_y(tile), 0)
+				tile.feature = tree
+				if tree.has_method("set_tile"):
+					tree.set_tile(tile)
+			
+			_add_tile_to_multimesh(tile)
+			if state == TileConstants.State.FIRE:
+				_update_fire_effect(tile, true)
+	
+	# Adjust stone wall heights
+	for tile in tile_data_grid:
+		if tile.current_state == TileConstants.State.STONE:
+			var max_neighbor_h: float = -10.0
+			for n in _get_neighbors(tile):
+				if n.current_state != TileConstants.State.STONE:
+					max_neighbor_h = max(max_neighbor_h, float(n.height_level) * height_step)
+			
+			if max_neighbor_h > -10.0:
+				tile.set_meta("stone_height", max_neighbor_h + 3.0)
+			else:
+				# Fallback if no interior neighbors found (should not happen)
+				tile.set_meta("stone_height", (float(tile.height_level) * height_step) + 3.0)
+			
+			# Re-sync multimesh for stone tiles since height changed
+			_remove_tile_from_multimesh(tile)
+			_add_tile_to_multimesh(tile)
+	
+	# Initial activeness check
+	for tile in tile_data_grid:
+		_check_tile_activeness(tile)
+		
+	tile_counts_changed.emit(tile_counts)
 
-func _spawn_elementals() -> void:
-	elementals.clear()
-	var gs = get_node_or_null("/root/GameSettings")
-	
-	if not gs:
-		_spawn_fire_elemental()
-		_spawn_water_elemental()
-		_spawn_goat_elemental()
-		current_target_index = 0
+func _get_tile_surface_y(tile: HexTileData) -> float:
+	if tile.current_state == TileConstants.State.STONE:
+		if tile.has_meta("stone_height"):
+			return tile.get_meta("stone_height")
+		return (float(tile.height_level) * height_step) + 3.0
+	return float(tile.height_level) * height_step
+
+func _setup_fire_particles() -> void:
+	if not _fire_particles_container:
+		_fire_particles_container = Node3D.new()
+		_fire_particles_container.name = "FireParticlesContainer"
+		add_child(_fire_particles_container)
+
+func _update_fire_effect(tile: HexTileData, active: bool) -> void:
+	if active:
+		if _active_fire_particles.has(tile): return
+		var p = _get_fire_particle_from_pool()
+		var h_offset = _get_tile_surface_y(tile)
+		p.position = tile.position + Vector3(0, 0.5 + h_offset, 0)
+		p.emitting = true
+		_active_fire_particles[tile] = p
 	else:
-		# Spawn requested counts
-		for i in gs.fire_count:
-			spawn_elemental("fire")
-		for i in gs.water_count:
-			spawn_elemental("water")
-		for i in gs.goat_count:
-			spawn_elemental("goat")
-			
-		# Ensure player has their selected elemental to control
-		var found_index = -1
-		for i in range(elementals.size()):
-			var e = elementals[i]
-			var is_match = false
-			if gs.selected_elemental_type == "fire" and e.name.begins_with("FireElemental"):
-				is_match = true
-			elif gs.selected_elemental_type == "water" and e.name.begins_with("WaterElemental"):
-				is_match = true
-			elif gs.selected_elemental_type == "goat" and e.name.begins_with("GoatElemental"):
-				is_match = true
-			
-			if is_match:
-				found_index = i
-				break
-		
-		if found_index == -1:
-			# If none were spawned for the selected type, spawn one now
-			spawn_elemental(gs.selected_elemental_type)
-			found_index = elementals.size() - 1
-			
-		current_target_index = found_index
-		
-	_update_camera_target()
+		if _active_fire_particles.has(tile):
+			var p = _active_fire_particles.get(tile)
+			if p:
+				p.emitting = false
+			_active_fire_particles.erase(tile)
+			if p:
+				_fire_particles_pool.append(p)
 
-func _spawn_goat_elemental() -> void:
-	if not goat_elemental_scene:
-		return
-	var elemental = goat_elemental_scene.instantiate()
-	if not elemental:
-		return
-	elemental.name = "GoatElemental"
+func _get_fire_particle_from_pool() -> GPUParticles3D:
+	if not _fire_particles_pool.is_empty():
+		return _fire_particles_pool.pop_back()
 	
-	# Spawn somewhere else
-	var w = _grid_width_clamped()
-	var h = _grid_height_clamped()
-	var spawn_pos = _calculate_hex_position(w/2, h/2)
-	elemental.position = Vector3(spawn_pos.x, 2.0, spawn_pos.y) # Spawn slightly higher
+	var p = GPUParticles3D.new()
+	if _fire_particles_container:
+		_fire_particles_container.add_child(p)
 	
-	add_child(elemental)
-	elementals.append(elemental)
+	Elemental.setup_gpu_particles(p, {
+		"amount": 10,
+		"lifetime": 0.8,
+		"velocity_min": 0.3,
+		"velocity_max": 0.5,
+		"gravity": Vector3(0, 1.4, 0),
+		"scale_min": 0.4 * tile_scale,
+		"scale_max": 0.7 * tile_scale,
+		"texture": preload("res://assets/generated/fire_particle_1774823455.png"),
+		"local_coords": false,
+		"emission_shape": ParticleProcessMaterial.EMISSION_SHAPE_BOX,
+		"emission_box_extents": Vector3(hex_size * 0.7, 0.1, hex_size * 0.7)
+	})
+	
+	return p
 
-func _update_camera_target() -> void:
-	if elementals.is_empty():
+func _setup_multimeshes(max_instances: int) -> void:
+	var hex_mesh = CylinderMesh.new()
+	hex_mesh.top_radius = 1.0
+	hex_mesh.bottom_radius = 1.0
+	hex_mesh.height = 2.0
+	hex_mesh.radial_segments = 6
+	
+	for state in TileConstants.State.values():
+		var mmi = MultiMeshInstance3D.new()
+		var mm = MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = hex_mesh
+		mm.instance_count = max_instances
+		mm.visible_instance_count = 0
+		mmi.multimesh = mm
+		
+		var mat = ShaderMaterial.new()
+		mat.shader = preload("res://Play Space/hex_tile.gdshader")
+		mat.set_shader_parameter("top_texture", TileConstants.TEXTURES[state])
+		mat.set_shader_parameter("side_texture", TileConstants.CLIFF_TEXTURES[state])
+		mat.set_shader_parameter("albedo_color", TileConstants.COLORS[state])
+		
+		# Vertical flow animation and overlays for water and fire
+		if state == TileConstants.State.PUDDLE:
+			mat.set_shader_parameter("side_animation_speed", 0.8) # Waterfall speed
+			if TileConstants.CLIFF_OVERLAYS.has(state):
+				mat.set_shader_parameter("overlay_texture", TileConstants.CLIFF_OVERLAYS[state])
+				mat.set_shader_parameter("overlay_animation_speed", 0.1) # Slowly boil mist
+		elif state == TileConstants.State.FIRE:
+			mat.set_shader_parameter("side_animation_speed", 0.4) # Lava flow speed
+			if TileConstants.CLIFF_OVERLAYS.has(state):
+				mat.set_shader_parameter("overlay_texture", TileConstants.CLIFF_OVERLAYS[state])
+				mat.set_shader_parameter("overlay_animation_speed", -0.1) # Slowly drift smoke up
+		
+		mat.set_shader_parameter("side_scale", 1.0)
+		mat.set_shader_parameter("height_darkening", 0.4)
+		mat.set_shader_parameter("rim_highlight", 0.2)
+		mmi.material_override = mat
+		
+		add_child(mmi)
+		multimesh_instances[state] = mmi
+		multimesh_tile_lists[state] = []
+
+func _add_tile_to_multimesh(tile: HexTileData) -> void:
+	var state = tile.current_state
+	var mmi = multimesh_instances[state]
+	var list = multimesh_tile_lists[state]
+	
+	tile.set_meta("mm_index", list.size())
+	list.append(tile)
+	mmi.multimesh.visible_instance_count = list.size()
+	mmi.multimesh.set_instance_transform(list.size() - 1, _get_tile_transform(tile))
+
+func _remove_tile_from_multimesh(tile: HexTileData) -> void:
+	var state = tile.current_state
+	var mmi = multimesh_instances[state]
+	var list = multimesh_tile_lists[state]
+	var idx = tile.get_meta("mm_index")
+	
+	var last_tile = list.back()
+	if last_tile != tile:
+		list[idx] = last_tile
+		last_tile.set_meta("mm_index", idx)
+		mmi.multimesh.set_instance_transform(idx, _get_tile_transform(last_tile))
+	
+	list.pop_back()
+	mmi.multimesh.visible_instance_count = list.size()
+
+func _get_tile_transform(tile: HexTileData) -> Transform3D:
+	var surface_y = _get_tile_surface_y(tile)
+	
+	var bottom_y = -10.0 # Deep base to cover gaps
+	var height = surface_y - bottom_y
+	var center_y = (surface_y + bottom_y) / 2.0
+	var scale_y = height / 2.0 # Cylinder mesh height is 2.0
+	
+	var t = Transform3D()
+	t.origin = tile.position + Vector3(0, center_y, 0)
+	# Rotate 30 degrees to convert pointed-top mesh to flat-topped
+	t = t.rotated_local(Vector3.UP, deg_to_rad(30))
+	t = t.scaled_local(Vector3(tile_scale, scale_y, tile_scale))
+	
+	return t
+
+func set_tile_state(tile: HexTileData, new_state: int) -> void:
+	if tile.current_state == new_state:
 		return
-	if _camera_follower:
-		var target = elementals[current_target_index % elementals.size()]
-		_camera_follower.set_target(target)
-		current_controlled_elemental = target as Elemental
-		if _target_label:
-			_target_label.text = "Following: " + target.name
+		
+	var old_state = tile.current_state
+	_remove_tile_from_multimesh(tile)
+	
+	if old_state == TileConstants.State.FIRE:
+		_update_fire_effect(tile, false)
+	
+	tile.current_state = new_state
+	tile._sync_type()
+	
+	_add_tile_to_multimesh(tile)
+	
+	if new_state == TileConstants.State.FIRE:
+		_update_fire_effect(tile, true)
+	
+	tile_counts[old_state] -= 1
+	tile_counts[new_state] += 1
+	tile_counts_changed.emit(tile_counts)
+	
+	_check_tile_activeness(tile)
+	for n in _get_neighbors(tile):
+		_check_tile_activeness(n)
 
-func next_elemental() -> void:
-	if elementals.is_empty():
-		return
-	current_target_index = (current_target_index + 1) % elementals.size()
-	_update_camera_target()
-
-func previous_elemental() -> void:
-	if elementals.is_empty():
-		return
-	current_target_index = (current_target_index - 1 + elementals.size()) % elementals.size()
-	_update_camera_target()
-
-func _exit_tree() -> void:
-	if Engine.is_editor_hint():
-		_clear_editor_tiles()
+func _check_tile_activeness(tile: HexTileData) -> void:
+	var should_be_active = false
+	match tile.tile_type:
+		TileConstants.Type.FIRE:
+			should_be_active = true
+		TileConstants.Type.MUD:
+			if _has_adjacent_grass(tile):
+				should_be_active = true
+		TileConstants.Type.PUDDLE:
+			if _get_adjacent_dirt(tile):
+				should_be_active = true
+	
+	if should_be_active:
+		active_registry[tile.axial_coords] = tile
+	else:
+		active_registry.erase(tile.axial_coords)
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
-		if _has_editor_property_changes():
-			_update_editor_tiles()
-			_do_setup_minimap()
 		return
-	
-	# Update active tiles logic
-	for tile in active_tiles.keys():
-		if is_instance_valid(tile):
-			tile.process_tile(delta)
-		else:
-			active_tiles.erase(tile)
-
-func _create_tiles() -> void:
-	var h = _grid_height_clamped()
-	var w = _grid_width_clamped()
-	var total_h = h + 2
-	var total_w = w + 2
-	tile_grid.clear()
-	tile_grid.resize(total_h)
-	tile_counts.clear()
-	for state in HexTile.State.values():
-		tile_counts[state] = 0
 		
-	for y in total_h:
-		var row: Array[HexTile] = []
-		for x in total_w:
-			var tile: HexTile = tile_scene.instantiate() as HexTile
-			if not tile:
-				continue
-			tile.arena = self
-			add_child(tile)
-			tile.scale = Vector3.ONE * tile_scale
-			var hex_position = _calculate_hex_position(x, y)
-			tile.transform.origin = Vector3(hex_position.x, 0.0, hex_position.y)
-			
-			var initial_state: HexTile.State
-			if x == 0 or x == total_w - 1 or y == 0 or y == total_h - 1:
-				initial_state = HexTile.State.STONE
-			elif x > total_w / 2 and y > total_h / 2:
-				initial_state = HexTile.State.DIRT
-			else:
-				initial_state = HexTile.State.GRASS
-				if randf() < 0.05:
-					var tree = tree_feature_scene.instantiate()
-					tile.add_child(tree)
-			
-			tile.current_state = initial_state
-			tile_counts[initial_state] += 1
-			tile.state_changed.connect(_on_tile_state_changed)
-			
-			row.append(tile)
-		tile_grid[y] = row
-	tile_counts_changed.emit(tile_counts)
-
-func _on_tile_state_changed(old_state: HexTile.State, new_state: HexTile.State) -> void:
-	tile_counts[old_state] -= 1
-	tile_counts[new_state] = tile_counts.get(new_state, 0) + 1
-	tile_counts_changed.emit(tile_counts)
-
-func _setup_neighbors() -> void:
-	for y in tile_grid.size():
-		var row = tile_grid[y]
-		for x in row.size():
-			var tile = row[x]
-			tile.neighbors.clear()
-			tile.neighbor_slots.clear()
-			tile.neighbor_slots.resize(6)
-			
-			var offsets = _neighbor_offsets_for_row(y)
-			for i in range(offsets.size()):
-				var offset = offsets[i]
-				var nx = x + offset.x
-				var ny = y + offset.y
-				if ny >= 0 and ny < tile_grid.size():
-					var r_data = tile_grid[ny]
-					if nx >= 0 and nx < r_data.size():
-						var neighbor = r_data[nx]
-						tile.neighbor_slots[i] = neighbor
-						tile.neighbors.append(neighbor)
-			tile.check_activeness()
-
-func _spawn_fire_elemental() -> void:
-	if not fire_elemental_scene:
-		return
-	var elemental: FireElemental = fire_elemental_scene.instantiate() as FireElemental
-	if not elemental:
-		return
-	elemental.name = "FireElemental"
+	if current_controlled_elemental and reticle:
+		reticle.mana_value = current_controlled_elemental.get_main_action_progress()
 	
-	# Top-left playable corner: (1, 1)
-	var spawn_pos = _calculate_hex_position(1, 1)
-	elemental.position = Vector3(spawn_pos.x, 2.0, spawn_pos.y) # Spawn slightly higher
+	_process_active_tiles(delta)
+
+func _process_active_tiles(delta: float) -> void:
+	# Use a list to avoid modification issues during iteration
+	var active_tiles = active_registry.values()
+	for tile in active_tiles:
+		match tile.tile_type:
+			TileConstants.Type.FIRE:
+				tile.fire_duration += delta
+				if tile.fire_duration >= 4.0 and not tile.fire_spread_triggered:
+					tile.fire_spread_triggered = true
+					_spread_fire(tile)
+				if tile.fire_duration >= 5.0:
+					tile.fire_duration = 0.0
+					tile.fire_spread_triggered = false
+					set_tile_state(tile, TileConstants.State.DIRT)
+					
+			TileConstants.Type.MUD:
+				if _has_adjacent_grass(tile):
+					tile.mud_duration += delta
+					if tile.mud_duration >= 5.0:
+						set_tile_state(tile, TileConstants.State.GRASS)
+						tile.mud_duration = 0.0
+				else:
+					tile.mud_duration = 0.0
+					_check_tile_activeness(tile)
+					
+			TileConstants.Type.PUDDLE:
+				var dirt_neighbor = _get_adjacent_dirt(tile)
+				if dirt_neighbor:
+					tile.puddle_duration += delta
+					if tile.puddle_duration >= 5.0:
+						set_tile_state(dirt_neighbor, TileConstants.State.MUD)
+						tile.puddle_duration = 0.0
+				else:
+					tile.puddle_duration = 0.0
+					_check_tile_activeness(tile)
+
+func _spread_fire(tile: HexTileData) -> void:
+	var neighbors = _get_neighbors(tile)
+	neighbors.shuffle()
+	for n in neighbors:
+		if apply_element_to_tile(n, "fire"):
+			break
+
+func apply_element_to_tile(tile: HexTileData, element: String, direction: Vector3 = Vector3.ZERO) -> bool:
+	if not tile: return false
 	
-	add_child(elemental)
-	elementals.append(elemental)
-
-func _spawn_water_elemental() -> void:
-	if not water_elemental_scene:
-		return
-	var elemental = water_elemental_scene.instantiate()
-	if not elemental:
-		return
-	elemental.name = "WaterElemental"
+	var feature_handled = false
+	if tile.feature and tile.feature.has_method("apply_element"):
+		feature_handled = tile.feature.apply_element(element, direction)
 	
-	# Bottom-right playable corner: (grid_width, grid_height)
-	var w = _grid_width_clamped()
-	var h = _grid_height_clamped()
-	var spawn_pos = _calculate_hex_position(w, h)
-	elemental.position = Vector3(spawn_pos.x, 2.0, spawn_pos.y) # Spawn slightly higher
-	
-	add_child(elemental)
-	elementals.append(elemental)
+	match element:
+		"fire":
+			if tile.tile_type == TileConstants.Type.FIRE or tile.tile_type == TileConstants.Type.STONE:
+				return feature_handled
+			match tile.tile_type:
+				TileConstants.Type.GRASS:
+					set_tile_state(tile, TileConstants.State.FIRE)
+					tile.fire_duration = 0.0
+					tile.fire_spread_triggered = false
+					return true
+				TileConstants.Type.MUD:
+					set_tile_state(tile, TileConstants.State.DIRT)
+					return true
+				TileConstants.Type.PUDDLE:
+					set_tile_state(tile, TileConstants.State.MUD)
+					return true
+		"water":
+			if tile.tile_type == TileConstants.Type.FIRE:
+				set_tile_state(tile, TileConstants.State.DIRT)
+				tile.fire_spread_triggered = false
+				tile.fire_duration = 0.0
+				return true
+			match tile.tile_type:
+				TileConstants.Type.DIRT:
+					set_tile_state(tile, TileConstants.State.MUD)
+					tile.mud_duration = 0.0
+					return true
+				TileConstants.Type.MUD:
+					set_tile_state(tile, TileConstants.State.PUDDLE)
+					tile.puddle_duration = 0.0
+					return true
+					
+	return feature_handled
 
-func _calculate_hex_position(column: int, row: int) -> Vector2:
-	var offset = float(row % 2) * 0.5
-	var x_position = (SQRT3 * (float(column) + offset)) * hex_size
-	var z_position = (1.5 * float(row)) * hex_size
-	return Vector2(x_position, z_position)
+func _get_neighbors(tile: HexTileData) -> Array[HexTileData]:
+	var result: Array[HexTileData] = []
+	var offsets = TileConstants.get_neighbor_offsets(tile.grid_coords.x)
+	for offset in offsets:
+		var nx = tile.grid_coords.x + offset.x
+		var ny = tile.grid_coords.y + offset.y
+		var n = get_tile_at_grid_coords(nx, ny)
+		if n: result.append(n)
+	return result
 
-func _neighbor_offsets_for_row(row: int) -> Array[Vector2i]:
-	if row % 2 == 0:
-		return [
-			Vector2i(1, 0),
-			Vector2i(0, -1),
-			Vector2i(-1, -1),
-			Vector2i(-1, 0),
-			Vector2i(-1, 1),
-			Vector2i(0, 1)
-		]
-	else:
-		return [
-			Vector2i(1, 0),
-			Vector2i(1, -1),
-			Vector2i(0, -1),
-			Vector2i(-1, 0),
-			Vector2i(0, 1),
-			Vector2i(1, 1)
-		]
+func _has_adjacent_grass(tile: HexTileData) -> bool:
+	for n in _get_neighbors(tile):
+		if n.tile_type == TileConstants.Type.GRASS: return true
+	return false
 
-func _update_editor_tiles() -> void:
-	_clear_editor_tiles()
-	if not Engine.is_editor_hint():
-		return
+func _get_adjacent_dirt(tile: HexTileData) -> HexTileData:
+	for n in _get_neighbors(tile):
+		if n.tile_type == TileConstants.Type.DIRT: return n
+	return null
 
-	tile_counts.clear()
-	for state in HexTile.State.values():
-		tile_counts[state] = 0
-		
-	var w = _grid_width_clamped()
-	var h = _grid_height_clamped()
-	var total_w = w + 2
-	var total_h = h + 2
-	if w <= 0 or h <= 0:
-		_update_editor_tracking(w, h)
-		return
-	if not tile_scene:
-		_update_editor_tracking(w, h)
-		return
-
-	for y in total_h:
-		for x in total_w:
-			var tile: HexTile = tile_scene.instantiate() as HexTile
-			if not tile:
-				continue
-			tile.owner = null
-			add_child(tile)
-			tile.scale = Vector3.ONE * tile_scale
-			var hex_position = _calculate_hex_position(x, y)
-			tile.transform.origin = Vector3(hex_position.x, 0.0, hex_position.y)
-			var initial_state: HexTile.State
-			if x == 0 or x == total_w - 1 or y == 0 or y == total_h - 1:
-				initial_state = HexTile.State.STONE
-			elif x > total_w / 2 and y > total_h / 2:
-				initial_state = HexTile.State.DIRT
-			else:
-				initial_state = HexTile.State.GRASS
-				if randf() < 0.05:
-					var tree = tree_feature_scene.instantiate()
-					tile.add_child(tree)
-			
-			tile.current_state = initial_state
-			tile_counts[initial_state] += 1
-			tile.state_changed.connect(_on_tile_state_changed)
-			_editor_tiles.append(tile)
-
-	_update_editor_tracking(w, h)
-
-func _clear_editor_tiles() -> void:
-	for tile in _editor_tiles:
-		if is_instance_valid(tile):
-			tile.owner = null
-			tile.queue_free()
-	_editor_tiles.clear()
-
-func _has_editor_property_changes() -> bool:
-	return _editor_last_grid_width != _grid_width_clamped() or _editor_last_grid_height != _grid_height_clamped() or _editor_last_hex_size != hex_size or _editor_last_tile_scene != tile_scene or _editor_last_tile_scale != tile_scale
-
-func _update_editor_tracking(width: int, height: int) -> void:
-	_editor_last_grid_width = width
-	_editor_last_grid_height = height
-	_editor_last_hex_size = hex_size
-	_editor_last_tile_scene = tile_scene
-	_editor_last_tile_scale = tile_scale
-
-func _grid_width_clamped() -> int:
-	return max(1, grid_width)
-
-func _grid_height_clamped() -> int:
-	return max(1, grid_height)
-
-func get_tile_at_world_position(world_position: Vector3) -> HexTile:
-	if tile_grid.is_empty():
+func get_tile_at_grid_coords(x: int, y: int) -> HexTileData:
+	var h = _grid_height_clamped() + 2
+	var w = _grid_width_clamped() + 2
+	if x < 0 or x >= w or y < 0 or y >= h:
 		return null
-		
+	return tile_data_grid[y * w + x]
+
+func get_tile_data_at_world_position(world_position: Vector3) -> HexTileData:
 	var local_pos = to_local(world_position)
 	var x = local_pos.x
 	var z = local_pos.z
 	
-	# Pointy-topped hex inverse math
-	var r_float = z / (1.5 * hex_size)
-	var q_float = (x / (SQRT3 * hex_size)) - (r_float * 0.5)
+	# Flat-topped (Odd-Q) math
+	var q_float = x / (1.5 * hex_size)
+	var r_float = (z / (SQRT3 * hex_size)) - (q_float * 0.5)
 	
-	# Cube rounding for robustness
 	var q = q_float
 	var r = r_float
 	var s = -q - r
@@ -570,54 +500,215 @@ func get_tile_at_world_position(world_position: Vector3) -> HexTile:
 	elif dr > ds:
 		rr = -rq - rs
 	
-	var row = int(rr)
-	var col = int(rq) + (row - (row & 1)) / 2
+	var col = int(rq)
+	var row = int(rr) + (col - (col & 1)) / 2
 	
-	if row >= 0 and row < tile_grid.size():
-		var row_data = tile_grid[row]
-		if col >= 0 and col < row_data.size():
-			return row_data[col]
-			
-	return null
+	return get_tile_at_grid_coords(col, row)
 
-func get_tiles_within_distance(world_position: Vector3, radius: float) -> Array:
-	if tile_grid.is_empty():
-		return []
+# Legacy support for Elemental script
+func get_tile_at_world_position(world_position: Vector3) -> HexTileData:
+	return get_tile_data_at_world_position(world_position)
+
+func _offset_to_axial(col: int, row: int) -> Vector2i:
+	var q = col
+	var r = row - (col - (col & 1)) / 2
+	return Vector2i(q, r)
+
+func _setup_physics() -> void:
+	# Create a single StaticBody3D for the arena
+	floor_static_body = StaticBody3D.new()
+	floor_static_body.name = "ArenaPhysics"
+	add_child(floor_static_body)
+	
+	# 1. Main Floor (One large primitive for stability)
+	var w_total = _grid_width_clamped() + 2
+	var h_total = _grid_height_clamped() + 2
+	
+	# Calculate approximate arena dimensions
+	var center_x = (1.5 * (float(w_total - 1) * 0.5)) * hex_size
+	var center_z = (SQRT3 * (float(h_total - 1) * 0.5 + 0.25)) * hex_size
+	# Radius that covers the hexagonal area
+	var radius = max(w_total * 1.5 * hex_size, h_total * SQRT3 * hex_size) * 0.55 * tile_scale
+	
+	var floor_shape = CylinderShape3D.new()
+	floor_shape.radius = radius
+	floor_shape.height = 1.0 # Thick floor to prevent tunneling
+	
+	var floor_col = CollisionShape3D.new()
+	floor_col.shape = floor_shape
+	floor_col.position = Vector3(center_x, -2.0, center_z) # Deep fallback
+	floor_static_body.add_child(floor_col)
+	
+	# 2. Individual Tile Colliders
+	var wall_radius = 1.0 * tile_scale * 0.95
+	var bottom_y = -10.0
+	for tile in tile_data_grid:
+		var surface_y = _get_tile_surface_y(tile)
 		
-	var results: Array = []
+		var height = surface_y - bottom_y
+		var center_y = (surface_y + bottom_y) / 2.0
+		
+		var tile_shape = CylinderShape3D.new()
+		tile_shape.radius = wall_radius
+		tile_shape.height = height
+		
+		var tile_col = CollisionShape3D.new()
+		tile_col.shape = tile_shape
+		tile_col.position = tile.position + Vector3(0, center_y, 0)
+		floor_static_body.add_child(tile_col)
+
+# Rest of the functions (UI, spawning, etc.) kept or adapted
+func _setup_reticle() -> void:
+	var canvas_layer = CanvasLayer.new()
+	canvas_layer.name = "ReticleLayer"
+	add_child(canvas_layer)
+	
+	reticle = Control.new()
+	reticle.set_script(preload("res://Player/Reticle.gd"))
+	reticle.size = Vector2(64, 64)
+	reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas_layer.add_child(reticle)
+
+func _setup_ui_connections() -> void:
+	if _prev_button:
+		_prev_button.focus_mode = Control.FOCUS_NONE
+		_prev_button.pressed.connect(previous_elemental)
+	if _next_button:
+		_next_button.focus_mode = Control.FOCUS_NONE
+		_next_button.pressed.connect(next_elemental)
+	if _options_button and _options_menu:
+		_options_button.focus_mode = Control.FOCUS_NONE
+		_options_button.pressed.connect(_options_menu.toggle)
+
+func _spawn_elementals() -> void:
+	elementals.clear()
+	var gs = get_node_or_null("/root/GameSettings")
+	if not gs:
+		_spawn_type("fire", 1, 1)
+		_spawn_type("water", grid_width, grid_height)
+		_spawn_type("goat", grid_width/2, grid_height/2)
+	else:
+		for i in gs.fire_count: _spawn_type("fire")
+		for i in gs.water_count: _spawn_type("water")
+		for i in gs.goat_count: _spawn_type("goat")
+		
+	# Find the first elemental that matches the selected type
+	current_target_index = 0
+	if gs:
+		for i in range(elementals.size()):
+			var elemental = elementals[i] as Elemental
+			if elemental and elemental.element_type == gs.selected_elemental_type:
+				current_target_index = i
+				break
+				
+	_update_camera_target()
+
+func _spawn_type(type: String, x: int = -1, y: int = -1) -> void:
+	var scene = fire_elemental_scene
+	if type == "water": scene = water_elemental_scene
+	elif type == "goat": scene = goat_elemental_scene
+	
+	var elemental = scene.instantiate()
+	if x == -1:
+		x = randi_range(1, grid_width)
+		y = randi_range(1, grid_height)
+	
+	var pos_2d = _calculate_hex_position(x, y)
+	var tile = get_tile_at_grid_coords(x, y)
+	var h_offset = 0.0
+	if tile:
+		h_offset = _get_tile_surface_y(tile)
+	
+	elemental.position = Vector3(pos_2d.x, 2.0 + h_offset, pos_2d.y)
+	add_child(elemental)
+	elementals.append(elemental)
+
+func _update_camera_target() -> void:
+	if elementals.is_empty(): return
+	var target = elementals[current_target_index % elementals.size()]
+	if _camera_follower: _camera_follower.set_target(target)
+	current_controlled_elemental = target as Elemental
+	if _target_label: _target_label.text = "Following: " + target.name
+
+func next_elemental() -> void:
+	current_target_index += 1
+	_update_camera_target()
+
+func previous_elemental() -> void:
+	current_target_index -= 1
+	_update_camera_target()
+
+func _calculate_hex_position(column: int, row: int) -> Vector2:
+	var offset = float(column % 2) * 0.5
+	var x_position = (1.5 * float(column)) * hex_size
+	var z_position = (SQRT3 * (float(row) + offset)) * hex_size
+	return Vector2(x_position, z_position)
+
+func _grid_width_clamped() -> int: return max(1, grid_width)
+func _grid_height_clamped() -> int: return max(1, grid_height)
+
+func _on_elemental_hp_changed(_hp: float, _m_hp: float) -> void: _update_ui()
+func _on_elemental_mana_changed(_m: float, _mm: float) -> void: _update_ui()
+
+func _update_ui() -> void:
+	if not current_controlled_elemental or not _target_label: return
+	var hp = 0.0
+	var m_hp = 0.0
+	if current_controlled_elemental.health_component:
+		hp = current_controlled_elemental.health_component.current_health
+		m_hp = current_controlled_elemental.health_component.max_health
+	_target_label.text = "Following: " + current_controlled_elemental.name + \
+		" HP: %d / %d | Mana: %d / %d" % [int(hp), int(m_hp), int(current_controlled_elemental.current_mana), int(current_controlled_elemental.max_mana)]
+
+func _setup_minimap() -> void:
+	if not _minimap_viewport: return
+	var camera = _minimap_viewport.get_node_or_null("MinimapCamera")
+	if camera:
+		var w_total = _grid_width_clamped() + 2
+		var h_total = _grid_height_clamped() + 2
+		var center_x = (1.5 * (float(w_total - 1) * 0.5)) * hex_size
+		var center_z = (SQRT3 * (float(h_total - 1) * 0.5 + 0.25)) * hex_size
+		camera.position = Vector3(center_x, 100.0, center_z)
+		camera.rotation_degrees = Vector3(-90, 0, 0)
+		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+		camera.size = max(w_total * 1.5 * hex_size, h_total * SQRT3 * hex_size) * 1.1
+
+func get_tiles_within_distance(world_position: Vector3, radius: float) -> Array[HexTileData]:
+	var results: Array[HexTileData] = []
 	var radius_sq = radius * radius
-	var local_center = to_local(world_position)
-	
-	# Grid spacing
-	var col_step = SQRT3 * hex_size
-	var row_step = 1.5 * hex_size
-	
-	# Bounding box in row/col space
-	var r_min = int(floor((local_center.z - radius) / row_step))
-	var r_max = int(ceil((local_center.z + radius) / row_step))
-	
-	# Column bounding box needs to be generous due to row offsets
-	var c_min = int(floor((local_center.x - radius) / col_step)) - 1
-	var c_max = int(ceil((local_center.x + radius) / col_step)) + 1
-	
-	r_min = clamp(r_min, 0, tile_grid.size() - 1)
-	r_max = clamp(r_max, 0, tile_grid.size() - 1)
-	
-	for r in range(r_min, r_max + 1):
-		var row_data = tile_grid[r]
-		var c_start = clamp(c_min, 0, row_data.size() - 1)
-		var c_end = clamp(c_max, 0, row_data.size() - 1)
-		
-		for c in range(c_start, c_end + 1):
-			var tile = row_data[c]
-			if not is_instance_valid(tile):
-				continue
-			var tile_position = tile.global_transform.origin
-			var delta = tile_position - world_position
-			delta.y = 0
-			if delta.x * delta.x + delta.z * delta.z <= radius_sq:
-				results.append(tile)
+	for tile in tile_data_grid:
+		var d = tile.position - world_position
+		d.y = 0
+		if d.length_squared() <= radius_sq:
+			results.append(tile)
 	return results
 
-func is_position_within_range(center: Vector3, position: Vector3, range: float) -> bool:
-	return center.distance_squared_to(position) <= range * range
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if current_controlled_elemental:
+			current_controlled_elemental.launch_projectile_at(_get_mouse_3d_position())
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_E: current_controlled_elemental.cycle_attack_pattern()
+		elif event.keycode == KEY_Q:
+			var p = (current_controlled_elemental.current_attack_pattern - 1 + Elemental.AttackPattern.size()) % Elemental.AttackPattern.size()
+			current_controlled_elemental.current_attack_pattern = p as Elemental.AttackPattern
+
+func _get_mouse_3d_position() -> Vector3:
+	var camera = get_viewport().get_camera_3d()
+	if not camera: return Vector3.ZERO
+	var mouse_pos = get_viewport().get_mouse_position()
+	
+	var ray_origin = camera.project_ray_origin(mouse_pos)
+	var ray_direction = camera.project_ray_normal(mouse_pos)
+	
+	var space_state = get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_direction * 1000.0)
+	var result = space_state.intersect_ray(query)
+	
+	if not result.is_empty():
+		return result.position
+	
+	# Fallback to y=0 plane
+	if abs(ray_direction.y) < 1e-6: return Vector3.ZERO
+	var t = -ray_origin.y / ray_direction.y
+	return ray_origin + ray_direction * t
