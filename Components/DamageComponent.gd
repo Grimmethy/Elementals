@@ -15,14 +15,23 @@ func deal_damage(target: Node) -> bool:
 	
 	# Fallback for legacy take_damage calls if HealthComponent isn't found
 	if target.has_method("take_damage"):
-		# Check if it's the TreeFeature style (amount, is_fire) or Elemental style (amount)
-		if element_type == "fire" and target.get_script() and "TreeFeature" in target.get_script().get_global_name():
-			target.take_damage(damage_amount, true)
-		else:
-			target.take_damage(damage_amount, element_type)
+		target.take_damage(damage_amount, element_type)
 		return true
 		
 	return false
+
+## Helper to apply an element effect to a node, with optional direction.
+static func apply_element(target: Node, element: String, direction: Vector3 = Vector3.ZERO) -> bool:
+	if not target: return false
+	
+	var handled = false
+	if target.has_method("apply_element"):
+		handled = target.apply_element(element, direction)
+	
+	# Global event for side effects/logging
+	GameEvents.element_applied.emit(target, element, direction)
+	
+	return handled
 
 ## Helper to find a HealthComponent on a node or its children.
 static func find_health_component(node: Node) -> HealthComponent:

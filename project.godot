@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+GameEvents="*res://GameEvents.gd"
 GameSettings="*res://GameSettings.gd"
 GoatManager="*res://GoatManager.gd"
 

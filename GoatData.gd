@@ -57,19 +57,17 @@ enum Gender { DOE, BUCK }
 ## Helper to create a child from two parents (simplified genetics)
 static func create_offspring(doe: GoatData, buck: GoatData) -> GoatData:
 	var kid = GoatData.new()
-	var rng = RandomNumberGenerator.new()
-	rng.randomize()
 	
 	kid.goat_name = "Kid of " + doe.goat_name
-	kid.gender = Gender.DOE if rng.randf() > 0.5 else Gender.BUCK
+	kid.gender = Gender.DOE if randf() < 0.5 else Gender.BUCK
 	
 	# Genetic inheritance with slight mutation
-	kid.base_color = doe.base_color.lerp(buck.base_color, rng.randf())
-	kid.horn_type = doe.horn_type if rng.randf() > 0.5 else buck.horn_type
-	kid.body_type = doe.body_type if rng.randf() > 0.5 else buck.body_type
+	kid.base_color = doe.base_color.lerp(buck.base_color, randf())
+	kid.horn_type = doe.horn_type if randf() < 0.5 else buck.horn_type
+	kid.body_type = doe.body_type if randf() < 0.5 else buck.body_type
 	
-	kid.strength = (doe.strength + buck.strength) * 0.5 * rng.randf_range(0.9, 1.1)
-	kid.toughness = (doe.toughness + buck.toughness) * 0.5 * rng.randf_range(0.9, 1.1)
-	kid.speed = (doe.speed + buck.speed) * 0.5 * rng.randf_range(0.9, 1.1)
+	kid.strength = (doe.strength + buck.strength) * 0.5 * randf_range(0.9, 1.1)
+	kid.toughness = (doe.toughness + buck.toughness) * 0.5 * randf_range(0.9, 1.1)
+	kid.speed = (doe.speed + buck.speed) * 0.5 * randf_range(0.9, 1.1)
 	
 	return kid

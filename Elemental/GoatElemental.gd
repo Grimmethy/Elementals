@@ -93,9 +93,8 @@ func _on_goat_data_changed() -> void:
 			body_sprite.texture = preload("res://assets/Characters/GruffGoat.png")
 
 func die() -> void:
-	# Inform the arena for game-over checking
-	if _arena_grid:
-		_arena_grid.elemental_died(self)
+	# Inform the arena for game-over checking via the event bus
+	GameEvents.elemental_died.emit(self)
 	
 	# Permanent removal from the persistent herd
 	if has_node("/root/GoatManager"):
@@ -181,6 +180,7 @@ func _setup_components() -> void:
 	movement_component.friction = friction
 	movement_component.gravity = gravity
 	movement_component.jump_force = jump_force
+	movement_component.is_controlled = is_controlled
 	add_child(movement_component)
 	
 	# Decision Component - specialized for goats
@@ -277,7 +277,7 @@ func _physics_process(delta: float) -> void:
 				_is_charging = false
 				velocity = Vector3.ZERO
 				break
-			elif _arena_grid and (collider == _arena_grid.floor_static_body or collider.name == "FloorStaticBody"):
+			elif _arena_grid and (collider == _arena_grid.physics or collider.name == "FloorStaticBody"):
 				var tile_data = _arena_grid.get_tile_data_at_world_position(collision.get_position())
 				if tile_data:
 					if _arena_grid.apply_element_to_tile(tile_data, "headbutt"):

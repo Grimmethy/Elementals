@@ -12,9 +12,7 @@ extends BaseProjectile
 @export var wave_time_scale: float = 0.3
 @export var sprite_base_modulate: Color = Color.WHITE
 
-var _sprites: Array[Sprite3D] = []
-var _random_offsets: Array[float] = []
-var _rotation_angle: float = 0.0
+var visual_component: ChargeVisualComponent
 
 func initialize(arena: ArenaGrid, caster_position: Vector3, effect_range: float, direction: Vector3, velocity: float, max_charges: int, projectile_lifetime: float, projectile_max_range: float = 45.0) -> void:
 	# Call super.initialize first to set remaining_charges
@@ -25,65 +23,30 @@ func initialize(arena: ArenaGrid, caster_position: Vector3, effect_range: float,
 	if visual:
 		visual.visible = false
 	
-	_create_sprites(max_charges)
+	_setup_visual_component(max_charges)
 
-func _create_sprites(count: int) -> void:
-	# Clear existing sprites if any
-	for s in _sprites:
-		s.queue_free()
-	_sprites.clear()
-	_random_offsets.clear()
+func _setup_visual_component(count: int) -> void:
+	if not visual_component:
+		visual_component = ChargeVisualComponent.new()
+		add_child(visual_component)
 	
-	# Create a sprite for each charge
-	for i in range(count):
-		var sprite = Sprite3D.new()
-		sprite.texture = sprite_texture
-		sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		sprite.pixel_size = sprite_pixel_size
-		sprite.modulate = sprite_base_modulate
-		add_child(sprite)
-		_sprites.append(sprite)
-		_random_offsets.append(randf() * TAU)
+	# Sync properties
+	visual_component.sprite_texture = sprite_texture
+	visual_component.sprite_pixel_size = sprite_pixel_size
+	visual_component.sprite_base_modulate = sprite_base_modulate
+	visual_component.wave_speed = wave_speed
+	visual_component.wave_amplitude = wave_amplitude
+	visual_component.wave_vertical_oscillation = wave_vertical_oscillation
+	visual_component.wave_up_multiplier = wave_up_multiplier
+	visual_component.wave_fwd_spacing = wave_fwd_spacing
+	visual_component.wave_time_scale = wave_time_scale
+	
+	visual_component.setup(count)
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	
-	_rotation_angle += delta * 15.0
-	_update_visuals()
+	_update_visuals(delta)
 
-func _update_visuals() -> void:
-	var active_count = remaining_charges
-	if active_count <= 0:
-		for s in _sprites:
-			s.visible = false
-		return
-		
-	# Calculate a horizontal vector perpendicular to movement
-	var side_vec = Vector3(-_direction.z, 0, _direction.x).normalized()
-	if side_vec.length_squared() < 0.01:
-		side_vec = Vector3.RIGHT
-		
-	for i in range(_sprites.size()):
-		var sprite = _sprites[i]
-		if i < active_count:
-			sprite.visible = true
-			sprite.pixel_size = sprite_pixel_size # Update in case it changed in editor
-			
-			# Use rotation angle to calculate a wave phase for each sprite
-			var phase = (_rotation_angle * wave_time_scale) + (float(i) * 0.8) + _random_offsets[i]
-			
-			# Sine wave side-to-side offset
-			var side_offset = sin(phase * wave_speed) * wave_amplitude
-			# Vertical oscillation with configurable multiplier
-			var up_offset = cos(phase * (wave_speed * wave_up_multiplier)) * wave_vertical_oscillation
-			# Spread out along the path (behind the projectile head)
-			var fwd_offset = -float(i) * wave_fwd_spacing
-			
-			# Position relative to node origin
-			sprite.position = (side_vec * side_offset) + (Vector3.UP * up_offset) + (_direction * fwd_offset)
-			
-			# Fade out the ones further back
-			var alpha = 1.0 - (float(i) / active_count) * 0.4
-			sprite.modulate.a = alpha * sprite_base_modulate.a
-		else:
-			sprite.visible = false
+func _update_visuals(delta: float) -> void:
+	if visual_component:
+		visual_component.update_visuals(remaining_charges, _direction, delta)

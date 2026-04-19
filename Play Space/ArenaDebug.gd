@@ -59,9 +59,9 @@ func _update_debug_info(counts: Dictionary = {}) -> void:
 		
 	# We don't have a global static debug_enabled anymore, or we can add it to ArenaGrid
 	# For now, let's just update the activeness of all tiles
-	if arena:
+	if arena and arena.tile_system:
 		for tile in arena.tile_data_grid:
-			arena._check_tile_activeness(tile)
+			arena.tile_system.check_activeness(tile)
 	
 	if spawn_buttons_container:
 		spawn_buttons_container.visible = debug_checkbox.button_pressed

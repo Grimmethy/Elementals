@@ -34,11 +34,13 @@ theme_override_constants/margin_bottom = 20
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 20
 
 [node name="DoesPanel" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="Label" type="Label" parent="MarginContainer/HBoxContainer/DoesPanel"]
 layout_mode = 2
@@ -49,17 +51,21 @@ horizontal_alignment = 1
 [node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/HBoxContainer/DoesPanel"]
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
-[node name="DoesContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer/DoesPanel/ScrollContainer"]
+[node name="DoesContainer" type="GridContainer" parent="MarginContainer/HBoxContainer/DoesPanel/ScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 2
 
 [node name="ActionCenter" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(400, 0)
+custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
-theme_override_constants/separation = 20
-alignment = 1
+size_flags_vertical = 3
+theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="MarginContainer/HBoxContainer/ActionCenter"]
 layout_mode = 2
@@ -108,16 +114,16 @@ layout_mode = 2
 
 [node name="BreedButton" type="Button" parent="MarginContainer/HBoxContainer/ActionCenter"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "BREED GOATS"
 
 [node name="NextDayButton" type="Button" parent="MarginContainer/HBoxContainer/ActionCenter"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "NEXT DAY"
 
 [node name="Spacer" type="Control" parent="MarginContainer/HBoxContainer/ActionCenter"]
@@ -126,14 +132,15 @@ size_flags_vertical = 3
 
 [node name="BackButton" type="Button" parent="MarginContainer/HBoxContainer/ActionCenter"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "BACK TO MENU"
 
 [node name="BucksPanel" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="Label" type="Label" parent="MarginContainer/HBoxContainer/BucksPanel"]
 layout_mode = 2
@@ -144,8 +151,12 @@ horizontal_alignment = 1
 [node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/HBoxContainer/BucksPanel"]
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
-[node name="BucksContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer/BucksPanel/ScrollContainer"]
+[node name="BucksContainer" type="GridContainer" parent="MarginContainer/HBoxContainer/BucksPanel/ScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 2

@@ -43,8 +43,7 @@ func _physics_process(delta: float) -> void:
 	
 	global_transform.origin = Vector3(current_horizontal_pos.x, _start_position.y + arc_y, current_horizontal_pos.z)
 	
-	_rotation_angle += delta * 15.0
-	_update_visuals()
+	_update_visuals(delta)
 
 func _land() -> void:
 	if not _arena:

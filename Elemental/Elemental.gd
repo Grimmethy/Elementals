@@ -47,6 +47,8 @@ var is_controlled: bool = false:
 			print(name, ": Controlled!")
 		if decision_component:
 			decision_component.is_controlled = value
+		if movement_component:
+			movement_component.is_controlled = value
 
 var element_type: String = "none"
 
@@ -148,6 +150,7 @@ func _setup_components() -> void:
 	movement_component.friction = friction
 	movement_component.gravity = gravity
 	movement_component.jump_force = jump_force
+	movement_component.is_controlled = is_controlled
 	add_child(movement_component)
 	
 	# Decision Component
@@ -186,6 +189,8 @@ func is_stunned() -> bool:
 	return _stun_timer > 0.0
 
 func die() -> void:
+	GameEvents.elemental_died.emit(self)
+	
 	# Respawns at the original position provided by ArenaGrid
 	if health_component:
 		health_component.current_health = health_component.max_health

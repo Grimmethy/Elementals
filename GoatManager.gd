@@ -1,22 +1,19 @@
 extends Node
 
-signal herd_updated
-signal day_advanced(new_day: int)
-signal gold_changed(new_amount: int)
-
 const SAVE_PATH = "user://herd_save.tres"
 
 var herd: Array[GoatData] = []
 var gold: int = 100:
 	set(v):
 		gold = v
-		gold_changed.emit(gold)
+		GameEvents.gold_changed.emit(gold)
 
 var current_day: int = 1
 
 const MAX_TEAM_SIZE = 4
 
 func _ready() -> void:
+	randomize()
 	var loaded = load_game()
 	if not loaded:
 		_generate_starter_herd()
@@ -27,9 +24,9 @@ func _ready() -> void:
 		_connect_goat_signals(goat)
 	
 	# Connect signals to automatically save for all subsequent changes
-	herd_updated.connect(save_game)
-	day_advanced.connect(func(_d): save_game())
-	gold_changed.connect(func(_g): save_game())
+	GameEvents.herd_updated.connect(save_game)
+	GameEvents.day_advanced.connect(func(_d): save_game())
+	GameEvents.gold_changed.connect(func(_g): save_game())
 	
 	if not loaded:
 		save_game() # Save the initial starter herd
@@ -38,7 +35,8 @@ func toggle_selection(goat: GoatData) -> bool:
 	if goat.is_selected:
 		goat.is_selected = false
 		print("GoatManager: Deselected ", goat.goat_name)
-		herd_updated.emit()
+		GameEvents.goat_selection_toggled.emit(goat, false)
+		GameEvents.herd_updated.emit()
 		return true
 	
 	if goat.is_exhausted:
@@ -49,7 +47,8 @@ func toggle_selection(goat: GoatData) -> bool:
 	if selected.size() < MAX_TEAM_SIZE:
 		goat.is_selected = true
 		print("GoatManager: Selected ", goat.goat_name, " (Total: ", selected.size() + 1, ")")
-		herd_updated.emit()
+		GameEvents.goat_selection_toggled.emit(goat, true)
+		GameEvents.herd_updated.emit()
 		return true
 		
 	print("GoatManager: Team full!")
@@ -99,11 +98,11 @@ func _generate_starter_herd() -> void:
 func add_goat(goat: GoatData) -> void:
 	herd.append(goat)
 	_connect_goat_signals(goat)
-	herd_updated.emit()
+	GameEvents.herd_updated.emit()
 
 func remove_goat(goat: GoatData) -> void:
 	herd.erase(goat)
-	herd_updated.emit()
+	GameEvents.herd_updated.emit()
 
 func next_day() -> void:
 	current_day += 1
@@ -138,8 +137,8 @@ func next_day() -> void:
 	for kid in new_kids:
 		add_goat(kid)
 		
-	day_advanced.emit(current_day)
-	herd_updated.emit()
+	GameEvents.day_advanced.emit(current_day)
+	GameEvents.herd_updated.emit()
 
 func breed_goats(doe: GoatData, buck: GoatData) -> bool:
 	if doe.gender != GoatData.Gender.DOE or buck.gender != GoatData.Gender.BUCK:
@@ -155,7 +154,7 @@ func breed_goats(doe: GoatData, buck: GoatData) -> bool:
 	doe.is_exhausted = true
 	buck.is_exhausted = true
 	
-	herd_updated.emit()
+	GameEvents.herd_updated.emit()
 	return true
 
 func _find_random_buck() -> GoatData:

@@ -99,7 +99,16 @@ func _apply_effect_to_tiles() -> void:
 		_affected_tiles[tid] = true
 
 func _do_projectile_effect(tile: HexTileData) -> bool:
-	return _arena.apply_element_to_tile(tile, element_type)
+	if not tile: return false
+	
+	# Apply to the tile itself (via ArenaGrid)
+	var tile_handled = _arena.apply_element_to_tile(tile, element_type)
+	
+	# If there's a feature on the tile, apply element to it as a Node
+	if tile.feature:
+		DamageComponent.apply_element(tile.feature, element_type, _direction)
+		
+	return tile_handled
 
 func _get_tile_below() -> HexTileData:
 	if not _arena: return null

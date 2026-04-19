@@ -2,6 +2,7 @@ class_name MovementComponent
 extends Node
 
 @export var target: Node3D
+@export var is_controlled: bool = false
 @export var move_speed: float = 7.0
 @export var acceleration: float = 60.0
 @export var friction: float = 20.0
@@ -37,7 +38,7 @@ func _physics_process(delta: float) -> void:
 	_update_auto_jump(delta)
 
 func _update_auto_jump(delta: float) -> void:
-	if not auto_jump_on_wall or not (target is CharacterBody3D):
+	if is_controlled or not auto_jump_on_wall or not (target is CharacterBody3D):
 		_wall_stuck_timer = 0.0
 		return
 		

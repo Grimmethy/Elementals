@@ -1,8 +1,8 @@
 class_name Ranch
 extends Control
 
-@onready var does_container: VBoxContainer = %DoesContainer
-@onready var bucks_container: VBoxContainer = %BucksContainer
+@onready var does_container: GridContainer = %DoesContainer
+@onready var bucks_container: GridContainer = %BucksContainer
 @onready var selected_doe_card: Control = %SelectedDoeCard
 @onready var selected_buck_card: Control = %SelectedBuckCard
 @onready var breed_button: Button = %BreedButton
@@ -19,16 +19,16 @@ func _ready() -> void:
 		push_error("Ranch: GoatManager autoload not found!")
 		return
 		
-	var gm = get_node("/root/GoatManager")
-	gm.herd_updated.connect(refresh_ui)
-	gm.day_advanced.connect(_on_day_advanced)
-	gm.gold_changed.connect(_on_gold_changed)
+	GameEvents.herd_updated.connect(refresh_ui)
+	GameEvents.day_advanced.connect(_on_day_advanced)
+	GameEvents.gold_changed.connect(_on_gold_changed)
 	
 	breed_button.pressed.connect(_on_breed_pressed)
 	next_day_button.text = "Enter Arena"
 	next_day_button.pressed.connect(_on_enter_arena_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	
+	var gm = get_node("/root/GoatManager")
 	refresh_ui()
 	_on_gold_changed(gm.gold)
 	_on_day_advanced(gm.current_day)
@@ -42,11 +42,9 @@ func refresh_ui() -> void:
 	if not has_node("/root/GoatManager"): return
 	var gm = get_node("/root/GoatManager")
 	
-	# Sort herd by selection status then name for stability
+	# Sort herd by name for stability
 	var sorted_herd = gm.herd.duplicate()
 	sorted_herd.sort_custom(func(a, b): 
-		if a.is_selected != b.is_selected:
-			return a.is_selected
 		return a.goat_name < b.goat_name
 	)
 	
@@ -74,9 +72,15 @@ func _clear_containers() -> void:
 
 func _on_goat_selected(goat: GoatData) -> void:
 	if goat.gender == GoatData.Gender.DOE:
-		selected_doe = goat
+		if selected_doe == goat:
+			selected_doe = null
+		else:
+			selected_doe = goat
 	else:
-		selected_buck = goat
+		if selected_buck == goat:
+			selected_buck = null
+		else:
+			selected_buck = goat
 	refresh_ui()
 
 func _update_breeding_selection() -> void:
