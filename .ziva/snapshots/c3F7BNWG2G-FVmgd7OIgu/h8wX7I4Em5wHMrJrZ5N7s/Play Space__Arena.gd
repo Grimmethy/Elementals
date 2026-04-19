@@ -38,7 +38,7 @@ var tile_counts: Dictionary = {}
 var current_target_index: int = 0
 var current_controlled_elemental: Elemental:
 	set(value):
-		if is_instance_valid(current_controlled_elemental):
+		if current_controlled_elemental:
 			current_controlled_elemental.is_controlled = false
 			if current_controlled_elemental.health_component:
 				if current_controlled_elemental.health_component.health_changed.is_connected(_on_elemental_hp_changed):
@@ -103,9 +103,6 @@ func _on_elemental_died(e: Node3D) -> void:
 	if elementals.has(e):
 		if e is GoatElemental:
 			elementals.erase(e)
-	
-	if e == current_controlled_elemental:
-		next_elemental()
 	
 	var player_goats_left = false
 	for elemental in elementals:

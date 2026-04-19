@@ -177,7 +177,7 @@ func _handle_ai_logic(delta: float) -> void:
 	# Social rowdiness: speed up if others are nearby
 	var rowdy_bonus = 1.0
 	for other in elemental._arena_grid.elementals:
-		if is_instance_valid(other) and other is GoatElemental and other != elemental:
+		if other is GoatElemental and other != elemental:
 			if other.global_position.distance_to(elemental.global_position) < 8.0:
 				rowdy_bonus += 0.25
 	

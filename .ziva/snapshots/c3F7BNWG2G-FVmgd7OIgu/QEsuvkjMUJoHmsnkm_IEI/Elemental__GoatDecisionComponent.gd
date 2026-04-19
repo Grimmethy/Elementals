@@ -14,86 +14,18 @@ var current_state: State = State.WANDERING
 
 @export_group("Flocking")
 ## Minimum distance to keep from the player goat.
-@export var min_follow_distance: float = 1.0
+@export var min_follow_distance: float = 4.0
 ## Maximum distance to allow from the player goat before seeking them.
-@export var max_follow_distance: float = 5.0
+@export var max_follow_distance: float = 12.0
 
 var _state_timer: float = 0.0
 var _target_elemental: Elemental = null
-
-var _debug_line: MeshInstance3D
-var _debug_material: StandardMaterial3D
-
-func _ready() -> void:
-	_rng.randomize()
-	if not elemental and get_parent() is Elemental:
-		elemental = get_parent()
-	
-	if elemental:
-		_movement_target = elemental.global_transform.origin
-		if movement_component:
-			movement_component.stuck.connect(_choose_new_target)
-		# Use call_deferred to ensure arena grid is ready
-		call_deferred("_choose_new_target")
-	
-	_setup_debug_line()
-
-func _setup_debug_line() -> void:
-	_debug_line = MeshInstance3D.new()
-	_debug_line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	
-	_debug_material = StandardMaterial3D.new()
-	_debug_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_debug_material.vertex_color_use_as_albedo = true
-	_debug_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	
-	_debug_line.mesh = ImmediateMesh.new()
-	add_child(_debug_line)
-
-func _physics_process(delta: float) -> void:
-	if elemental and elemental.is_stunned():
-		if movement_component:
-			movement_component.apply_gravity(delta)
-			movement_component.stop(delta)
-		return
-	
-	_update_debug_visuals()
-	super._physics_process(delta)
-
-func _update_debug_visuals() -> void:
-	if not _debug_line: return
-	
-	var should_show = Elemental.debug_enabled and not is_controlled
-	_debug_line.visible = should_show
-	
-	if not should_show: return
-	
-	var player = _get_player_goat()
-	if not player: 
-		if _debug_line.mesh is ImmediateMesh:
-			(_debug_line.mesh as ImmediateMesh).clear_surfaces()
-		return
-	
-	var dist = elemental.global_position.distance_to(player.global_position)
-	var color = Color.GREEN
-	if dist < min_follow_distance:
-		color = Color.RED
-	elif dist < max_follow_distance:
-		color = Color.YELLOW
-		
-	var mesh = _debug_line.mesh as ImmediateMesh
-	mesh.clear_surfaces()
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, _debug_material)
-	mesh.surface_set_color(color)
-	mesh.surface_add_vertex(Vector3.ZERO)
-	mesh.surface_add_vertex(elemental.to_local(player.global_position))
-	mesh.surface_end()
 
 func _get_player_goat() -> GoatElemental:
 	if not elemental or not elemental._arena_grid:
 		return null
 	var target = elemental._arena_grid.current_controlled_elemental
-	if is_instance_valid(target) and target is GoatElemental and target != elemental:
+	if target is GoatElemental and target != elemental:
 		return target
 	return null
 
@@ -177,7 +109,7 @@ func _handle_ai_logic(delta: float) -> void:
 	# Social rowdiness: speed up if others are nearby
 	var rowdy_bonus = 1.0
 	for other in elemental._arena_grid.elementals:
-		if is_instance_valid(other) and other is GoatElemental and other != elemental:
+		if other is GoatElemental and other != elemental:
 			if other.global_position.distance_to(elemental.global_position) < 8.0:
 				rowdy_bonus += 0.25
 	
@@ -272,11 +204,12 @@ func _find_nearby_elemental() -> Elemental:
 	var possible_targets: Array[Elemental] = []
 	
 	for other in elemental._arena_grid.elementals:
-		if not is_instance_valid(other) or other == elemental or other is GoatElemental:
+		if not is_instance_valid(other) or other == elemental:
 			continue
 		
-		# Only target enemies (non-goats)
-		possible_targets.append(other)
+		# Prioritize non-goats
+		if other is Elemental:
+			possible_targets.append(other)
 			
 	if possible_targets.is_empty():
 		return null
@@ -292,8 +225,16 @@ func _find_nearby_elemental() -> Elemental:
 		if dist_to_self > detection_range and dist_from_player > detection_range:
 			continue
 			
-		# Seek target near player first
-		var score = dist_to_self + (dist_from_player * 0.5)
+		var score = dist_to_self
+		
+		# Bias score towards enemies (non-goats)
+		if target is GoatElemental:
+			score += 100.0 # Much lower priority than enemies
+		
+		# Bias score towards things near the player
+		if player_goat:
+			# If the player is very close to an enemy, it's highly prioritized
+			score += dist_from_player * 0.5
 			
 		if score < min_score:
 			min_score = score
