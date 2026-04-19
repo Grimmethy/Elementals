@@ -33,10 +33,131 @@ var _fire_particles: GPUParticles3D
 var _splash_timer: float = 0.0
 var _is_in_water: bool = false
 
+var _name_label: Label3D
+
 @onready var _whack_player: AudioStreamPlayer3D = get_node_or_null("WhackPlayer")
 @onready var _splash_player: AudioStreamPlayer3D = get_node_or_null("SplashPlayer")
 @onready var _swoosh_player: AudioStreamPlayer3D = get_node_or_null("SwooshPlayer")
 @onready var _scream_player: AudioStreamPlayer3D = get_node_or_null("ScreamPlayer")
+
+@onready var pattern_sprite: Sprite3D = get_node_or_null("Body/Pattern")
+@onready var horns_sprite: Sprite3D = get_node_or_null("Body/Horns")
+
+var goat_data: GoatData:
+	set(v):
+		if goat_data:
+			if goat_data.stats_changed.is_connected(_on_goat_data_changed):
+				goat_data.stats_changed.disconnect(_on_goat_data_changed)
+		goat_data = v
+		if goat_data:
+			goat_data.stats_changed.connect(_on_goat_data_changed)
+			_on_goat_data_changed()
+
+func _ready() -> void:
+	super._ready()
+	print(name, ": Ready! is_controlled=", is_controlled)
+	_on_goat_data_changed()
+
+func _on_goat_data_changed() -> void:
+	if not is_node_ready() or not goat_data:
+		return
+	
+	# Visuals
+	_update_goat_visuals()
+	
+	# Performance Stats Scaling
+	move_speed = 7.0 * goat_data.speed
+	if movement_component:
+		movement_component.move_speed = move_speed
+		
+	if health_component:
+		health_component.max_health = 10.0 * goat_data.toughness
+		# Don't reset current health unless it's a fresh spawn
+	
+	charge_speed = 25.0 * goat_data.strength
+	
+	# Scale Body
+	var s = 1.5
+	match goat_data.body_type:
+		GoatData.BodyType.SMALL: s = 1.2
+		GoatData.BodyType.MEDIUM: s = 1.5
+		GoatData.BodyType.LARGE: s = 1.8
+	
+	if _body:
+		_body.scale = Vector3.ONE * s
+		_body.visible = true
+		if health_component:
+			health_component.bar_offset = Vector3(0, 1.2 * s, 0)
+		var body_sprite = _body as Sprite3D
+		if body_sprite and body_sprite.texture == null:
+			body_sprite.texture = preload("res://assets/Characters/GruffGoat.png")
+
+func die() -> void:
+	# Inform the arena for game-over checking
+	if _arena_grid:
+		_arena_grid.elemental_died(self)
+	
+	# Permanent removal from the persistent herd
+	if has_node("/root/GoatManager"):
+		get_node("/root/GoatManager").remove_goat(goat_data)
+	
+	# Visual feedback: poof or just vanish
+	print("Goat PERMANENTLY died: ", goat_data.goat_name)
+	queue_free()
+
+func _update_goat_visuals() -> void:
+	if not goat_data: return
+	
+	# Re-use the ASSETS from GoatRenderer logic or similar
+	var body_tex = preload("res://assets/experimental/goat_body_quadruped_frame_0_1775009982.png")
+	if not body_tex:
+		body_tex = preload("res://assets/Characters/GruffGoat.png")
+		
+	var patterns = {
+		GoatData.PatternType.SOLID: null,
+		GoatData.PatternType.PIEBALD: preload("res://assets/generated/GoatCurledHornsGreyStriped_SideView_frame_1_1775090983.png"),
+		GoatData.PatternType.SPOTTED: preload("res://assets/generated/GoatCurledHornsGreyStriped_SideView_frame_2_1775090983.png"),
+	}
+	var horns = {
+		GoatData.HornType.NONE: null,
+		GoatData.HornType.SMALL: preload("res://assets/generated/GoatCurledHornsGreyStriped_SideView_frame_0_1775090983.png"),
+		GoatData.HornType.LARGE: preload("res://assets/generated/GoatCurledHornsGreyStriped_SideView_frame_0_1775090983.png"),
+		GoatData.HornType.SPIRAL: preload("res://assets/generated/GoatCurledHornsGreyStriped_SideView_frame_3_1775090983.png"),
+	}
+
+	var body_sprite = _body as Sprite3D
+	if body_sprite:
+		body_sprite.texture = body_tex
+		body_sprite.modulate = goat_data.base_color
+		
+	if pattern_sprite:
+		pattern_sprite.texture = patterns.get(goat_data.pattern_type)
+		pattern_sprite.visible = pattern_sprite.texture != null
+		pattern_sprite.modulate = goat_data.pattern_color
+		
+	if horns_sprite:
+		horns_sprite.texture = horns.get(goat_data.horn_type)
+		horns_sprite.visible = horns_sprite.texture != null
+		horns_sprite.modulate = Color(0.9, 0.9, 0.8)
+
+	if not _name_label:
+		_name_label = Label3D.new()
+		_name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_name_label.no_depth_test = true
+		_name_label.render_priority = 25
+		_name_label.modulate = Color.YELLOW
+		_name_label.outline_modulate = Color.BLACK
+		_name_label.pixel_size = 0.015 # "Big" letters
+		_name_label.font_size = 64
+		add_child(_name_label)
+	
+	_name_label.text = goat_data.goat_name
+	var s = 1.5
+	match goat_data.body_type:
+		GoatData.BodyType.SMALL: s = 1.2
+		GoatData.BodyType.MEDIUM: s = 1.5
+		GoatData.BodyType.LARGE: s = 1.8
+	_name_label.position = Vector3(0, 1.6 * s, 0) # Position above the HP bar
 
 # Constants for visual behavior
 const SINK_OFFSET_PIXELS = 50.0
@@ -74,6 +195,8 @@ signal screamed(pos: Vector3)
 
 func _setup_elemental() -> void:
 	## Initializes the goat-specific visual elements, such as fire particles for the burning state.
+	_on_goat_data_changed()
+	
 	if _body is Sprite3D:
 		if _body.hframes * _body.vframes > 1:
 			_body.frame = _rng.randi_range(0, _body.hframes * _body.vframes - 1)
@@ -208,7 +331,14 @@ func _handle_charge_logic(delta: float) -> void:
 
 func _handle_headbutt_hit(target: Elemental, hit_pos: Vector3) -> void:
 	## Deals damage to the target and displays the "Thwak" visual effect.
-	target.take_damage(1)
+	var damage = 1
+	var knockback_strength = 12.0
+	
+	if goat_data:
+		damage = int(max(1, goat_data.strength))
+		knockback_strength *= goat_data.strength
+
+	target.take_damage(damage)
 	target.stun(0.5)
 	_show_thwak_visual(hit_pos)
 	_play_whack()
@@ -217,7 +347,7 @@ func _handle_headbutt_hit(target: Elemental, hit_pos: Vector3) -> void:
 	if target.movement_component:
 		var knockback_dir = (target.global_position - global_position).normalized()
 		knockback_dir.y = 0.5 # Add a little upward pop
-		target.movement_component.apply_external_force(knockback_dir * 12.0)
+		target.movement_component.apply_external_force(knockback_dir * knockback_strength)
 
 func _play_whack() -> void:
 	if _whack_player:
@@ -230,7 +360,7 @@ func _show_thwak_visual(pos: Vector3) -> void:
 	
 	if texture:
 		sprite.texture = texture
-		sprite.pixel_size = 0.03 # Slightly larger than the scream bubble
+		sprite.pixel_size = 0.08 # Slightly larger than the scream bubble
 	else:
 		return
 		
@@ -241,7 +371,7 @@ func _show_thwak_visual(pos: Vector3) -> void:
 	else:
 		add_child(sprite)
 		
-	sprite.global_position = pos + Vector3(0, 0.6, 0) # Position slightly above the hit point
+	sprite.global_position = pos + Vector3(0, 1.2, 0) # Position slightly above the hit point
 	
 	# Animate: Pop in, slight shake, and fade out
 	sprite.scale = Vector3.ZERO
@@ -516,7 +646,7 @@ func _show_scream_visual() -> void:
 	
 	if texture:
 		sprite.texture = texture
-		sprite.pixel_size = 0.02
+		sprite.pixel_size = 0.06
 	else:
 		# Fallback to text label if texture is missing
 		print("Warning: Scream bubble texture missing.")
@@ -524,7 +654,7 @@ func _show_scream_visual() -> void:
 		return
 		
 	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sprite.position = Vector3(0, 0.8, 0.1)
+	sprite.position = Vector3(0, 1.8, 0.1)
 	sprite.modulate = Color.WHITE
 	add_child(sprite)
 	

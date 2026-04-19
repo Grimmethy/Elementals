@@ -1,19 +1,22 @@
 extends Control
 
-@onready var fire_button: Button = $CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/FireButton
-@onready var water_button: Button = $CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/WaterButton
-@onready var goat_button: Button = $CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/GoatButton
-@onready var size_input: SpinBox = $CenterContainer/VBoxContainer/ArenaSize/SizeInput
-@onready var fire_count_input: SpinBox = $CenterContainer/VBoxContainer/NPCSelection/FireNPCs/FireCount
-@onready var water_count_input: SpinBox = $CenterContainer/VBoxContainer/NPCSelection/WaterNPCs/WaterCount
-@onready var goat_count_input: SpinBox = $CenterContainer/VBoxContainer/NPCSelection/GoatNPCs/GoatCount
+@onready var fire_button: Button = $CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection/HBoxContainer/FireButton
+@onready var water_button: Button = $CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection/HBoxContainer/WaterButton
+@onready var goat_button: Button = $CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection/HBoxContainer/GoatButton
+@onready var fire_count_input: SpinBox = $CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection/FireNPCs/FireCount
+@onready var water_count_input: SpinBox = $CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection/WaterNPCs/WaterCount
+@onready var goat_count_input: SpinBox = $CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection/GoatNPCs/GoatCount
+@onready var ranch_button: Button = $CenterContainer/VBoxContainer/RanchButton
 
-@onready var seed_input: SpinBox = $CenterContainer/VBoxContainer/WorldGen/NoiseSeed/SeedInput
-@onready var random_seed_check: CheckBox = $CenterContainer/VBoxContainer/WorldGen/NoiseSeed/RandomSeedCheck
-@onready var scale_slider: HSlider = $CenterContainer/VBoxContainer/WorldGen/NoiseScale/ScaleSlider
-@onready var scale_value_label: Label = $CenterContainer/VBoxContainer/WorldGen/NoiseScale/ValueLabel
-@onready var height_slider: HSlider = $CenterContainer/VBoxContainer/WorldGen/HeightStep/HeightSlider
-@onready var height_value_label: Label = $CenterContainer/VBoxContainer/WorldGen/HeightStep/ValueLabel
+@onready var character_settings_container: VBoxContainer = $CenterContainer/VBoxContainer/CharacterSettingsContainer
+@onready var map_settings_container: VBoxContainer = $CenterContainer/VBoxContainer/MapSettingsContainer
+@onready var size_input: SpinBox = $CenterContainer/VBoxContainer/MapSettingsContainer/ArenaSize/SizeInput
+@onready var seed_input: SpinBox = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseSeed/SeedInput
+@onready var random_seed_check: CheckBox = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseSeed/RandomSeedCheck
+@onready var scale_slider: HSlider = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseScale/ScaleSlider
+@onready var scale_value_label: Label = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseScale/ValueLabel
+@onready var height_slider: HSlider = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/HeightStep/HeightSlider
+@onready var height_value_label: Label = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/HeightStep/ValueLabel
 
 func _ready() -> void:
 	# ... existing initialization ...
@@ -75,6 +78,15 @@ func _on_goat_button_pressed() -> void:
 	var gs = get_node_or_null("/root/GameSettings")
 	if gs: gs.selected_elemental_type = "goat"
 
+func _on_character_settings_button_pressed() -> void:
+	character_settings_container.visible = !character_settings_container.visible
+
+func _on_map_settings_button_pressed() -> void:
+	map_settings_container.visible = !map_settings_container.visible
+
+func _on_ranch_button_pressed() -> void:
+	get_tree().change_scene_to_file("res://Ranch/Ranch.tscn")
+
 func _on_random_seed_toggled(button_pressed: bool) -> void:
 	seed_input.editable = !button_pressed
 
@@ -94,5 +106,8 @@ func _on_play_button_pressed() -> void:
 		
 		gs.noise_frequency = scale_slider.value
 		gs.height_step = height_slider.value
+		
+		# Persist settings to disk
+		gs.save_settings()
 		
 	get_tree().change_scene_to_file("res://Play Space/Arena.tscn")

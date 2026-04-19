@@ -48,6 +48,11 @@ func _handle_controlled_input(delta: float) -> void:
 	if Input.is_key_pressed(KEY_SPACE):
 		movement_component.jump()
 
+func get_debug_state() -> String:
+	if is_controlled:
+		return "CONTROLLED"
+	return "AI"
+
 func _handle_ai_logic(_delta: float) -> void:
 	# Virtual method for AI behavior
 	pass

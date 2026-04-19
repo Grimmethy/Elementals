@@ -96,7 +96,8 @@ func _update_debug_info(counts: Dictionary = {}) -> void:
 	
 	debug_label.text = text
 
-func _on_debug_checkbox_toggled(_pressed: bool) -> void:
+func _on_debug_checkbox_toggled(pressed: bool) -> void:
+	Elemental.debug_enabled = pressed
 	_update_debug_info()
 
 # Replace _process with nothing or a simpler version if needed

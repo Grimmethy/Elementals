@@ -45,19 +45,27 @@ horizontal_alignment = 1
 [node name="HSeparator" type="HSeparator" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="ElementalSelection" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+[node name="CharacterSettingsButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Character Selection"
+
+[node name="CharacterSettingsContainer" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/ElementalSelection"]
+[node name="ElementalSelection" type="VBoxContainer" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection"]
 layout_mode = 2
 text = "Select Starting Elemental:"
 horizontal_alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer/ElementalSelection"]
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection"]
 layout_mode = 2
 alignment = 1
 
-[node name="FireButton" type="Button" parent="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer"]
+[node name="FireButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection/HBoxContainer"]
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
 theme_override_constants/h_separation = 10
@@ -67,7 +75,7 @@ text = "Fire Elemental"
 icon = ExtResource("3_fire")
 expand_icon = true
 
-[node name="WaterButton" type="Button" parent="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer"]
+[node name="WaterButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection/HBoxContainer"]
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
 theme_override_constants/h_separation = 10
@@ -76,7 +84,7 @@ text = "Water Elemental"
 icon = ExtResource("4_water")
 expand_icon = true
 
-[node name="GoatButton" type="Button" parent="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer"]
+[node name="GoatButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection/HBoxContainer"]
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
 theme_override_constants/h_separation = 10
@@ -85,65 +93,73 @@ text = "Goat"
 icon = ExtResource("5_goat")
 expand_icon = true
 
-[node name="NPCSelection" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+[node name="NPCSelection" type="VBoxContainer" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection"]
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection"]
 layout_mode = 2
 text = "NPC Counts:"
 horizontal_alignment = 1
 
-[node name="FireNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/NPCSelection"]
+[node name="FireNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection"]
 layout_mode = 2
 alignment = 1
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection/FireNPCs"]
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection/FireNPCs"]
 layout_mode = 2
 text = "Fire:"
 
-[node name="FireCount" type="SpinBox" parent="CenterContainer/VBoxContainer/NPCSelection/FireNPCs"]
+[node name="FireCount" type="SpinBox" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection/FireNPCs"]
 layout_mode = 2
 min_value = 0.0
 max_value = 20.0
 value = 1.0
 
-[node name="WaterNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/NPCSelection"]
+[node name="WaterNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection"]
 layout_mode = 2
 alignment = 1
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection/WaterNPCs"]
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection/WaterNPCs"]
 layout_mode = 2
 text = "Water:"
 
-[node name="WaterCount" type="SpinBox" parent="CenterContainer/VBoxContainer/NPCSelection/WaterNPCs"]
+[node name="WaterCount" type="SpinBox" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection/WaterNPCs"]
 layout_mode = 2
 min_value = 0.0
 max_value = 20.0
 value = 1.0
 
-[node name="GoatNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/NPCSelection"]
+[node name="GoatNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection"]
 layout_mode = 2
 alignment = 1
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection/GoatNPCs"]
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection/GoatNPCs"]
 layout_mode = 2
 text = "Goat:"
 
-[node name="GoatCount" type="SpinBox" parent="CenterContainer/VBoxContainer/NPCSelection/GoatNPCs"]
+[node name="GoatCount" type="SpinBox" parent="CenterContainer/VBoxContainer/CharacterSettingsContainer/NPCSelection/GoatNPCs"]
 layout_mode = 2
 min_value = 0.0
 max_value = 20.0
 value = 1.0
 
-[node name="ArenaSize" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+[node name="MapSettingsButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Map Settings"
+
+[node name="MapSettingsContainer" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/ArenaSize"]
+[node name="ArenaSize" type="VBoxContainer" parent="CenterContainer/VBoxContainer/MapSettingsContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/MapSettingsContainer/ArenaSize"]
 layout_mode = 2
 text = "Arena Size:"
 horizontal_alignment = 1
 
-[node name="SizeInput" type="SpinBox" parent="CenterContainer/VBoxContainer/ArenaSize"]
+[node name="SizeInput" type="SpinBox" parent="CenterContainer/VBoxContainer/MapSettingsContainer/ArenaSize"]
 layout_mode = 2
 min_value = 10.0
 max_value = 100.0
@@ -151,40 +167,40 @@ step = 10.0
 value = 20.0
 alignment = 1
 
-[node name="WorldGen" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+[node name="WorldGen" type="VBoxContainer" parent="CenterContainer/VBoxContainer/MapSettingsContainer"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/WorldGen"]
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen"]
 layout_mode = 2
 text = "World Generation:"
 horizontal_alignment = 1
 
-[node name="NoiseSeed" type="HBoxContainer" parent="CenterContainer/VBoxContainer/WorldGen"]
+[node name="NoiseSeed" type="HBoxContainer" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/WorldGen/NoiseSeed"]
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseSeed"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Seed:"
 
-[node name="SeedInput" type="SpinBox" parent="CenterContainer/VBoxContainer/WorldGen/NoiseSeed"]
+[node name="SeedInput" type="SpinBox" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseSeed"]
 layout_mode = 2
 max_value = 10000.0
 
-[node name="RandomSeedCheck" type="CheckBox" parent="CenterContainer/VBoxContainer/WorldGen/NoiseSeed"]
+[node name="RandomSeedCheck" type="CheckBox" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseSeed"]
 layout_mode = 2
 button_pressed = true
 text = "Random"
 
-[node name="NoiseScale" type="HBoxContainer" parent="CenterContainer/VBoxContainer/WorldGen"]
+[node name="NoiseScale" type="HBoxContainer" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/WorldGen/NoiseScale"]
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseScale"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Noise Scale:"
 
-[node name="ScaleSlider" type="HSlider" parent="CenterContainer/VBoxContainer/WorldGen/NoiseScale"]
+[node name="ScaleSlider" type="HSlider" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseScale"]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 min_value = 0.01
@@ -192,28 +208,28 @@ max_value = 0.2
 step = 0.01
 value = 0.05
 
-[node name="ValueLabel" type="Label" parent="CenterContainer/VBoxContainer/WorldGen/NoiseScale"]
+[node name="ValueLabel" type="Label" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseScale"]
 custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 text = "0.05"
 horizontal_alignment = 2
 
-[node name="HeightStep" type="HBoxContainer" parent="CenterContainer/VBoxContainer/WorldGen"]
+[node name="HeightStep" type="HBoxContainer" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/WorldGen/HeightStep"]
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/HeightStep"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Height Step:"
 
-[node name="HeightSlider" type="HSlider" parent="CenterContainer/VBoxContainer/WorldGen/HeightStep"]
+[node name="HeightSlider" type="HSlider" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/HeightStep"]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 max_value = 5.0
 step = 0.5
 value = 1.0
 
-[node name="ValueLabel" type="Label" parent="CenterContainer/VBoxContainer/WorldGen/HeightStep"]
+[node name="ValueLabel" type="Label" parent="CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/HeightStep"]
 custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 text = "1.0"
@@ -223,6 +239,11 @@ horizontal_alignment = 2
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "PLAY"
+
+[node name="RanchButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "RANCH"
 
 [node name="ControlsPanel" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -242,7 +263,10 @@ theme_override_constants/margin_bottom = 20
 layout_mode = 2
 
 
-[connection signal="pressed" from="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/FireButton" to="." method="_on_fire_button_pressed"]
-[connection signal="pressed" from="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/WaterButton" to="." method="_on_water_button_pressed"]
-[connection signal="pressed" from="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/GoatButton" to="." method="_on_goat_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/CharacterSettingsButton" to="." method="_on_character_settings_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection/HBoxContainer/FireButton" to="." method="_on_fire_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection/HBoxContainer/WaterButton" to="." method="_on_water_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/CharacterSettingsContainer/ElementalSelection/HBoxContainer/GoatButton" to="." method="_on_goat_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/MapSettingsButton" to="." method="_on_map_settings_button_pressed"]
 [connection signal="pressed" from="CenterContainer/VBoxContainer/PlayButton" to="." method="_on_play_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/RanchButton" to="." method="_on_ranch_button_pressed"]

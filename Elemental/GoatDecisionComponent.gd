@@ -107,6 +107,11 @@ func _transition_to(new_state: State) -> void:
 		State.COOLDOWN:
 			_state_timer = cooldown_duration
 
+func get_debug_state() -> String:
+	if is_controlled:
+		return "CONTROLLED"
+	return State.keys()[current_state]
+
 func _find_nearby_elemental() -> Elemental:
 	if not elemental or not elemental._arena_grid:
 		return null

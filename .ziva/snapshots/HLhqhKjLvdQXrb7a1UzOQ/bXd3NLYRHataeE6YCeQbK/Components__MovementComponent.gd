@@ -1,0 +1,94 @@
+class_name MovementComponent
+extends Node
+
+@export var target: Node3D
+@export var move_speed: float = 7.0
+@export var acceleration: float = 60.0
+@export var friction: float = 20.0
+@export var gravity: float = 9.8
+@export var jump_force: float = 5.0
+
+var speed_multiplier: float = 1.0
+var external_velocity: Vector3 = Vector3.ZERO
+
+var _is_interpolating: bool = false
+var _lerp_target: Vector3
+signal interpolation_finished
+
+func _ready() -> void:
+	if not target:
+		var parent = get_parent()
+		if parent is Node3D:
+			target = parent
+
+func _physics_process(delta: float) -> void:
+	if not target:
+		return
+		
+	if _is_interpolating:
+		_process_interpolation(delta)
+
+func _process_interpolation(delta: float) -> void:
+	target.global_position = target.global_position.move_toward(_lerp_target, move_speed * delta)
+	if target.global_position.distance_to(_lerp_target) < 0.01:
+		target.global_position = _lerp_target
+		_is_interpolating = false
+		interpolation_finished.emit()
+
+func move_to(target_pos: Vector3) -> void:
+	_lerp_target = target_pos
+	_is_interpolating = true
+
+func move(direction: Vector3, delta: float) -> void:
+	if not target or not (target is CharacterBody3D):
+		return
+	
+	var cb = target as CharacterBody3D
+	var target_vel = direction * move_speed * speed_multiplier
+	
+	# Horizontal movement
+	var horizontal_vel = Vector3(cb.velocity.x, 0, cb.velocity.z)
+	
+	if direction.length() > 0.01:
+		horizontal_vel = horizontal_vel.move_toward(target_vel, acceleration * delta)
+	else:
+		horizontal_vel = horizontal_vel.move_toward(Vector3.ZERO, friction * delta)
+	
+	cb.velocity.x = horizontal_vel.x
+	cb.velocity.z = horizontal_vel.z
+
+func apply_gravity(delta: float) -> void:
+	if not target or not (target is CharacterBody3D):
+		return
+	
+	var cb = target as CharacterBody3D
+	if not cb.is_on_floor():
+		cb.velocity.y -= gravity * delta
+	else:
+		# Reset vertical velocity when on floor to prevent accumulation
+		cb.velocity.y = 0.0
+
+func jump() -> void:
+	if not target or not (target is CharacterBody3D):
+		return
+	
+	var cb = target as CharacterBody3D
+	if cb.is_on_floor():
+		cb.velocity.y = jump_force
+
+func apply_external_force(force: Vector3) -> void:
+	if not target:
+		return
+	
+	if target is CharacterBody3D:
+		target.velocity += force
+	else:
+		# Maybe push it for a duration?
+		# For now just jump there
+		move_to(target.global_position + force)
+
+func stop(delta: float) -> void:
+	if target is CharacterBody3D:
+		move(Vector3.ZERO, delta)
+	else:
+		_is_interpolating = false

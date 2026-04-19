@@ -2,10 +2,14 @@ class_name Elemental
 extends CharacterBody3D
 
 @export_group("Movement")
-@export var move_speed: float = 7.0
+@export var move_speed: float = 7.0:
+	set(v):
+		move_speed = v
+		if movement_component:
+			movement_component.move_speed = v
 @export var acceleration: float = 60.0
 @export var friction: float = 20.0
-@export var jump_force: float = 5.0
+@export var jump_force: float = 8.0
 @export var gravity: float = 9.8
 
 @export var roam_radius: float = 22.0
@@ -39,12 +43,16 @@ var decision_component: ElementalDecisionComponent
 var is_controlled: bool = false:
 	set(value):
 		is_controlled = value
+		if is_controlled:
+			print(name, ": Controlled!")
 		if decision_component:
 			decision_component.is_controlled = value
 
 var element_type: String = "none"
 
 signal mana_changed(new_mana: float, max_mana: float)
+
+static var debug_enabled: bool = false
 
 var current_mana: float = 100.0:
 	set(value):
@@ -68,6 +76,7 @@ var _mana_particles: Array[Sprite3D] = []
 var _mana_particles_container: Node3D
 var _mana_phase: float = 0.0
 var _mana_texture: Texture2D
+var _debug_label: Label3D
 
 func _ready() -> void:
 	_rng.randomize()
@@ -83,6 +92,9 @@ func _ready() -> void:
 	
 	if _body:
 		_base_visual_y = _body.position.y
+		print(name, ": Body found.")
+	else:
+		print(name, ": Body NOT found!")
 	
 	_setup_health_component()
 	_setup_components()
@@ -93,6 +105,18 @@ func _ready() -> void:
 	_setup_elemental()
 	_setup_mana_visuals()
 	_setup_stun_visuals()
+	_setup_debug_label()
+
+func _setup_debug_label() -> void:
+	_debug_label = Label3D.new()
+	_debug_label.pixel_size = 0.005
+	_debug_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_debug_label.no_depth_test = true
+	_debug_label.render_priority = 20
+	_debug_label.position = Vector3(0, 2.5, 0) # Above HP bar
+	_debug_label.outline_render_priority = 19
+	_debug_label.modulate = Color.YELLOW
+	add_child(_debug_label)
 
 func _setup_stun_visuals() -> void:
 	# StunVisual3D is the Looney Tunes style spinning birds and stars
@@ -181,6 +205,22 @@ func _setup_elemental() -> void:
 func _process(delta: float) -> void:
 	_update_mana_visuals(delta)
 	_update_stun(delta)
+	_update_debug_label()
+
+func _update_debug_label() -> void:
+	if not _debug_label: return
+	
+	_debug_label.visible = debug_enabled
+	if not debug_enabled: return
+	
+	var state_text = "IDLE"
+	if decision_component:
+		state_text = decision_component.get_debug_state()
+	
+	if is_stunned():
+		state_text += " (STUNNED)"
+	
+	_debug_label.text = state_text
 
 func _update_stun(delta: float) -> void:
 	if _stun_timer > 0:

@@ -83,7 +83,37 @@ func _ready() -> void:
 	_setup_minimap()
 	add_to_group("arena")
 	
+	_select_initial_elemental()
+	
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+
+func _select_initial_elemental() -> void:
+	var gs = get_node_or_null("/root/GameSettings")
+	var target_type = "fire"
+	if gs: target_type = gs.selected_elemental_type
+	
+	# Try to find a player-selected goat first if we are in "goat mode"
+	if target_type == "goat":
+		for i in range(elementals.size()):
+			if elementals[i] is GoatElemental:
+				current_target_index = i
+				_update_camera_target()
+				return
+
+	# Fallback/Default logic
+	for i in range(elementals.size()):
+		var e = elementals[i]
+		var is_match = false
+		if target_type == "goat" and e is GoatElemental:
+			is_match = true
+		elif e.name.to_lower().contains(target_type):
+			is_match = true
+			
+		if is_match:
+			current_target_index = i
+			break
+	
+	_update_camera_target()
 
 func _initialize_grid() -> void:
 	var h = _grid_height_clamped()
@@ -263,7 +293,30 @@ func _setup_multimeshes(max_instances: int) -> void:
 		
 		mat.set_shader_parameter("side_scale", 1.0)
 		mat.set_shader_parameter("height_darkening", 0.4)
-		mat.set_shader_parameter("rim_highlight", 0.2)
+		mat.set_shader_parameter("rim_highlight", 0.4)
+		mat.set_shader_parameter("rim_size", 0.1)
+		mat.set_shader_parameter("top_edge_darkening", 0.4)
+		mat.set_shader_parameter("top_edge_softness", 0.15)
+		
+		# Edge details for different materials
+		match state:
+			TileConstants.State.GRASS:
+				mat.set_shader_parameter("edge_noise_amplitude", 0.45) # Extreme overhang for grass
+				mat.set_shader_parameter("edge_noise_frequency", 18.0)
+				mat.set_shader_parameter("edge_noise_bias", 0.25) # Pull down even further
+			TileConstants.State.DIRT, TileConstants.State.MUD:
+				mat.set_shader_parameter("edge_noise_amplitude", 0.3) # High crumbling noise
+				mat.set_shader_parameter("edge_noise_frequency", 14.0)
+				mat.set_shader_parameter("edge_noise_bias", -0.15) # Jagged/recessed edge
+			TileConstants.State.STONE:
+				mat.set_shader_parameter("edge_noise_amplitude", 0.12)
+				mat.set_shader_parameter("edge_noise_frequency", 8.0)
+				mat.set_shader_parameter("rim_highlight", 0.5) # Sharper stone edges
+			TileConstants.State.PUDDLE:
+				mat.set_shader_parameter("edge_noise_amplitude", 0.2)
+				mat.set_shader_parameter("edge_noise_frequency", 22.0)
+				mat.set_shader_parameter("rim_highlight", 0.7) # Extra shiny water surface
+		
 		mmi.material_override = mat
 		
 		add_child(mmi)
@@ -579,29 +632,87 @@ func _setup_ui_connections() -> void:
 	if _options_button and _options_menu:
 		_options_button.focus_mode = Control.FOCUS_NONE
 		_options_button.pressed.connect(_options_menu.toggle)
+	
+	# Add a "Finish Day" button to the UI
+	var finish_button = Button.new()
+	finish_button.text = "Finish Day"
+	finish_button.focus_mode = Control.FOCUS_NONE
+	finish_button.position = Vector2(20, 100)
+	finish_button.pressed.connect(_on_finish_day_pressed)
+	if has_node("UI"):
+		$UI.add_child(finish_button)
+
+func _on_finish_day_pressed() -> void:
+	if has_node("/root/GoatManager"):
+		get_node("/root/GoatManager").next_day()
+	get_tree().change_scene_to_file("res://Ranch/Ranch.tscn")
+
+func elemental_died(e: Node3D) -> void:
+	if elementals.has(e):
+		elementals.erase(e)
+	
+	# Check if any player-owned goats remain
+	var player_goats_left = false
+	for elemental in elementals:
+		if elemental is GoatElemental and elemental.goat_data:
+			player_goats_left = true
+			break
+	
+	if not player_goats_left:
+		_handle_game_over()
+
+func _handle_game_over() -> void:
+	if _target_label:
+		_target_label.text = "ALL GOATS HAVE PERISHED!"
+		_target_label.modulate = Color.RED
+	
+	# Disable input
+	current_controlled_elemental = null
+	
+	# Auto-return after delay
+	var timer = get_tree().create_timer(3.0)
+	timer.timeout.connect(_on_finish_day_pressed)
 
 func _spawn_elementals() -> void:
 	elementals.clear()
 	var gs = get_node_or_null("/root/GameSettings")
+	
+	# Spawn Elemental NPCs
 	if not gs:
 		_spawn_type("fire", 1, 1)
 		_spawn_type("water", grid_width, grid_height)
-		_spawn_type("goat", grid_width/2, grid_height/2)
 	else:
 		for i in gs.fire_count: _spawn_type("fire")
 		for i in gs.water_count: _spawn_type("water")
-		for i in gs.goat_count: _spawn_type("goat")
-		
-	# Find the first elemental that matches the selected type
-	current_target_index = 0
-	if gs:
-		for i in range(elementals.size()):
-			var elemental = elementals[i] as Elemental
-			if elemental and elemental.element_type == gs.selected_elemental_type:
-				current_target_index = i
-				break
-				
-	_update_camera_target()
+	
+	# Only spawn selected goats
+	if has_node("/root/GoatManager"):
+		var gm = get_node("/root/GoatManager")
+		for goat_data in gm.get_selected_goats():
+			_spawn_goat_from_data(goat_data)
+
+func _spawn_goat_from_data(data: GoatData) -> void:
+	var goat = goat_elemental_scene.instantiate() as GoatElemental
+	
+	# Random position within grid
+	var x = randi_range(1, grid_width)
+	var y = randi_range(1, grid_height)
+	
+	var pos_2d = _calculate_hex_position(x, y)
+	var tile = get_tile_at_grid_coords(x, y)
+	var h_offset = 0.0
+	if tile:
+		h_offset = _get_tile_surface_y(tile)
+	
+	goat.position = Vector3(pos_2d.x, 2.0 + h_offset, pos_2d.y)
+	add_child(goat)
+	elementals.append(goat)
+	
+	# Assign the data (this will trigger visual/stat sync in GoatElemental)
+	goat.goat_data = data
+
+func spawn_elemental(type: String) -> void:
+	_spawn_type(type)
 
 func _spawn_type(type: String, x: int = -1, y: int = -1) -> void:
 	var scene = fire_elemental_scene
@@ -628,6 +739,7 @@ func _update_camera_target() -> void:
 	var target = elementals[current_target_index % elementals.size()]
 	if _camera_follower: _camera_follower.set_target(target)
 	current_controlled_elemental = target as Elemental
+	print("Arena: Camera target changed to: ", target.name)
 	if _target_label: _target_label.text = "Following: " + target.name
 
 func next_elemental() -> void:
