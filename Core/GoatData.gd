@@ -10,49 +10,108 @@ enum Gender { DOE, BUCK }
 
 @export_group("Identity")
 @export var goat_name: String = "New Goat":
-	set(v): goat_name = v; stats_changed.emit()
+	set(v): 
+		if goat_name == v: return
+		goat_name = v
+		stats_changed.emit()
 @export var gender: Gender = Gender.DOE:
-	set(v): gender = v; stats_changed.emit()
+	set(v): 
+		if gender == v: return
+		gender = v
+		stats_changed.emit()
 
 @export_group("Genetics")
 @export var horn_type: HornType = HornType.NONE:
-	set(v): horn_type = v; stats_changed.emit()
+	set(v): 
+		if horn_type == v: return
+		horn_type = v
+		stats_changed.emit()
 @export var body_type: BodyType = BodyType.MEDIUM:
-	set(v): body_type = v; stats_changed.emit()
+	set(v): 
+		if body_type == v: return
+		body_type = v
+		stats_changed.emit()
 @export var pattern_type: PatternType = PatternType.SOLID:
-	set(v): pattern_type = v; stats_changed.emit()
+	set(v): 
+		if pattern_type == v: return
+		pattern_type = v
+		stats_changed.emit()
 @export var base_color: Color = Color.WHITE:
-	set(v): base_color = v; stats_changed.emit()
+	set(v): 
+		if base_color == v: return
+		base_color = v
+		stats_changed.emit()
 @export var pattern_color: Color = Color.GRAY:
-	set(v): pattern_color = v; stats_changed.emit()
+	set(v): 
+		if pattern_color == v: return
+		pattern_color = v
+		stats_changed.emit()
 
 @export_group("Performance Stats")
 @export var strength: float = 1.0: # Influences charge/knockback
-	set(v): strength = v; stats_changed.emit()
+	set(v): 
+		if strength == v: return
+		strength = v
+		stats_changed.emit()
 @export var toughness: float = 1.0: # Influences HP
-	set(v): toughness = v; stats_changed.emit()
+	set(v): 
+		if toughness == v: return
+		toughness = v
+		stats_changed.emit()
 @export var speed: float = 1.0: # Influences move speed
-	set(v): speed = v; stats_changed.emit()
+	set(v): 
+		if speed == v: return
+		speed = v
+		stats_changed.emit()
 @export var stamina_max: float = 100.0:
-	set(v): stamina_max = v; stats_changed.emit()
+	set(v): 
+		if stamina_max == v: return
+		stamina_max = v
+		stats_changed.emit()
 @export var stamina_current: float = 100.0:
-	set(v): stamina_current = v; stats_changed.emit()
+	set(v): 
+		if stamina_current == v: return
+		stamina_current = v
+		stats_changed.emit()
 
 @export_group("Lifecycle")
 @export var age_days: int = 0:
-	set(v): age_days = v; stats_changed.emit()
+	set(v): 
+		if age_days == v: return
+		age_days = v
+		stats_changed.emit()
 @export var is_pregnant: bool = false:
-	set(v): is_pregnant = v; stats_changed.emit()
+	set(v): 
+		if is_pregnant == v: return
+		is_pregnant = v
+		stats_changed.emit()
 @export var pregnancy_timer: int = 0:
-	set(v): pregnancy_timer = v; stats_changed.emit()
+	set(v): 
+		if pregnancy_timer == v: return
+		pregnancy_timer = v
+		stats_changed.emit()
+@export var pregnancy_father: GoatData = null:
+	set(v):
+		if pregnancy_father == v: return
+		pregnancy_father = v
+		stats_changed.emit()
 @export var is_exhausted: bool = false:
-	set(v): is_exhausted = v; stats_changed.emit()
+	set(v): 
+		if is_exhausted == v: return
+		is_exhausted = v
+		stats_changed.emit()
 @export var is_selected: bool = false:
-	set(v): is_selected = v; stats_changed.emit()
+	set(v): 
+		if is_selected == v: return
+		is_selected = v
+		stats_changed.emit()
 
 @export_group("Economy")
 @export var gold_value: int = 50:
-	set(v): gold_value = v; stats_changed.emit()
+	set(v): 
+		if gold_value == v: return
+		gold_value = v
+		stats_changed.emit()
 
 ## Helper to create a child from two parents (simplified genetics)
 static func create_offspring(doe: GoatData, buck: GoatData) -> GoatData:

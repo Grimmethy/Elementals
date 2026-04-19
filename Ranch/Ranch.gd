@@ -127,4 +127,4 @@ func _on_gold_changed(amount: int) -> void:
 	gold_label.text = "Gold: %d" % amount
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://MainMenu.tscn")
+	get_tree().change_scene_to_file("res://UI/MainMenu.tscn")

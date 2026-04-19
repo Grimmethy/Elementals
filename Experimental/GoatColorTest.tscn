@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="PackedScene" path="res://Goat.tscn" id="1_goat"]
-[ext_resource type="Script" path="res://GoatColorTest.gd" id="2_script"]
+[ext_resource type="PackedScene" path="res://Elemental/Goat.tscn" id="1_goat"]
+[ext_resource type="Script" path="res://Experimental/GoatColorTest.gd" id="2_script"]
 
 [node name="GoatColorTest" type="Control"]
 layout_mode = 3
