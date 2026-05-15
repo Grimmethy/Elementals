@@ -41,6 +41,7 @@ func spawn_initial_actors() -> void:
 						var goat_actor: Actor = goat as Actor
 						goat_actor.faction_component.setup(FactionComponent.Faction.PLAYER)
 						goat_actor.is_playable = true
+						_mark_non_capture_candidate(goat_actor)
 						if goat is GoatActor:
 							(goat as GoatActor).goat_data = goat_data
 
@@ -165,6 +166,7 @@ func _configure_quest_actor_faction(actor: Node3D, type: String) -> void:
 					actor_object.faction_component.setup(FactionComponent.Faction.NEUTRAL)
 				_:
 					actor_object.faction_component.setup(FactionComponent.Faction.MONSTERS)
+		_configure_capture_metadata(actor_object, type, true)
 
 func _get_random_spawn_tile_near(origin_position: Vector3, radius_min: float, radius_max: float) -> HexTileData:
 	if not arena or arena.tile_data_grid.is_empty():
@@ -230,6 +232,7 @@ func spawn_selected_actor_at_tile(tile: HexTileData) -> Node3D:
 
 		if actor is Actor:
 			(actor as Actor).is_playable = true
+			_mark_non_capture_candidate(actor as Actor)
 
 		arena.add_child(actor)
 		arena.actors.append(actor)
@@ -277,6 +280,8 @@ func spawn_actor_at_tile(type: String, tile: HexTileData) -> Node3D:
 		arena.actors.append(actor)
 		if arena.get("tile_signals"):
 			arena.tile_signals.register_actor(actor)
+		if actor is Actor:
+			_configure_capture_metadata(actor as Actor, type, true)
 		if type == "goat":
 			_configure_wild_goat(actor)
 		_log_spawn(actor, type)
@@ -290,8 +295,29 @@ func _configure_wild_goat(goat: Node3D) -> void:
 	wild_goat.is_playable = false
 	if wild_goat.faction_component:
 		wild_goat.faction_component.setup(FactionComponent.Faction.NEUTRAL)
+	_configure_capture_metadata(wild_goat, "goat", true)
 	if wild_goat.goat_data == null:
 		wild_goat.goat_data = _make_random_goat_data()
+
+func _configure_capture_metadata(actor: Actor, species: String, candidate: bool) -> void:
+	if actor == null:
+		return
+	var clean_species: String = species.to_lower().strip_edges()
+	if clean_species.is_empty():
+		clean_species = actor.element_type.to_lower().strip_edges()
+	if clean_species.is_empty():
+		clean_species = "creature"
+	actor.set_meta("capture_species", clean_species)
+	actor.set_meta("capture_candidate", candidate and not actor.is_playable)
+
+func _mark_non_capture_candidate(actor: Actor) -> void:
+	if actor == null:
+		return
+	actor.set_meta("capture_candidate", false)
+	var species: String = actor.element_type.to_lower().strip_edges()
+	if species.is_empty():
+		species = "player"
+	actor.set_meta("capture_species", species)
 
 func _make_random_goat_data() -> GoatData:
 	var data: GoatData = GoatData.new()

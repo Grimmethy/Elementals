@@ -337,9 +337,7 @@ func _set_target_opacity(foliage: Node, target: float) -> void:
 
 func _apply_foliage_opacity(foliage: Node, opacity: float) -> void:
 	if foliage is CSGShape3D:
-		var mat := foliage.get_surface_override_material(0) as ShaderMaterial
-		if not mat:
-			mat = foliage.material as ShaderMaterial
+		var mat := foliage.material as ShaderMaterial
 		if mat:
 			mat.set_shader_parameter("current_opacity", opacity)
 			# Debug: print occasionally to avoid spam
