@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://sbowmodel123"]
+[gd_scene format=3 uid="uid://b48io5e28uotm"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood"]
 albedo_color = Color(0.4, 0.25, 0.1, 1)
@@ -21,13 +21,13 @@ top_radius = 0.005
 bottom_radius = 0.005
 height = 0.7
 
-[node name="ShortbowModel" type="Node3D"]
+[node name="ShortbowModel" type="Node3D" unique_id=856611352]
 
-[node name="Model" type="Node3D" parent="."]
+[node name="Model" type="Node3D" parent="." unique_id=1488389754]
 
-[node name="BowArc" type="MeshInstance3D" parent="Model"]
+[node name="BowArc" type="MeshInstance3D" parent="Model" unique_id=1431826339]
 mesh = SubResource("TorusMesh_bow")
 
-[node name="String" type="MeshInstance3D" parent="Model"]
+[node name="String" type="MeshInstance3D" parent="Model" unique_id=1155302694]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.35)
 mesh = SubResource("CylinderMesh_string")

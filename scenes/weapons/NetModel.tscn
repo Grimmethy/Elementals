@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dx2g5mjrpnw74"]
+
+[ext_resource type="Script" uid="uid://iojcvio7ibyg" path="res://scenes/weapons/NetModel.gd" id="1_abc123"]
+
+[node name="NetModel" type="Node3D" unique_id=2072426104]
+script = ExtResource("1_abc123")

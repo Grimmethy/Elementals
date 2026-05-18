@@ -4,10 +4,9 @@
 class_name ArenaGrid
 extends Node3D
 
-@export var tree_feature_scene: PackedScene = preload("res://Play Space/tree_feature.tscn")
 @export var house_feature_scene: PackedScene = preload("res://Play Space/house_feature.tscn")
 @export var fence_feature_scene: PackedScene = preload("res://Play Space/fence_feature.tscn")
-@export var grid_width: int = 20
+@export var grid_width: int =  20
 @export var grid_height: int = 20
 @export var hex_size: float = 1.5
 @export_range(0.25, 3.0, 0.05) var tile_scale: float = 1.5
@@ -363,8 +362,8 @@ func _register_static_obstacles() -> void:
 
 		# Trees and Fences
 		if tile.feature:
-			if tile.feature is TreeFeature:
-				if tile.feature.current_state in [TreeFeature.State.TREE, TreeFeature.State.STUMP, TreeFeature.State.BURNT_STUMP]:
+			if tile.feature is HarvestableTree:
+				if tile.feature.current_state in [HarvestableTree.State.STANDBY, HarvestableTree.State.FELLEDB]:
 					is_blocker = true
 					weight = 1.5
 			elif tile.feature is FenceFeature:
