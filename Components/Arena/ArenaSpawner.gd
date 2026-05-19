@@ -8,6 +8,7 @@ var arena: Node3D # ArenaGrid
 @export var water_actor_scene: PackedScene = preload("res://scenes/actors/WaterActor.tscn")
 @export var goat_actor_scene: PackedScene = preload("res://scenes/actors/GoatActor.tscn")
 @export var goblin_scene: PackedScene = preload("res://scenes/actors/GoblinMinion.tscn")
+@export var mimic_scene: PackedScene = preload("res://scenes/actors/MimicActor.tscn")
 @export var scarecrow_scene: PackedScene = preload("res://scenes/actors/ScarecrowDummy.tscn")
 @export_range(0, 20, 1) var random_wild_goat_count: int = 4
 
@@ -54,6 +55,7 @@ func get_selected_actor_scene() -> PackedScene:
 		"fire": return fire_actor_scene
 		"water": return water_actor_scene
 		"goat": return goat_actor_scene
+		"mimic": return mimic_scene
 	return farmer_scene
 
 func spawn_actor(type: String) -> Node3D:
@@ -252,6 +254,8 @@ func spawn_selected_actor_at_tile(tile: HexTileData) -> Node3D:
 			var default_weapon_name: String = "Quarterstaff"
 			if type == "goblin":
 				default_weapon_name = "Dagger"
+			elif type == "mimic":
+				default_weapon_name = "Unarmed strike"
 
 			var weapons_value: Variant = wl.get("weapons")
 			if typeof(weapons_value) == TYPE_ARRAY:
@@ -272,6 +276,7 @@ func spawn_actor_at_tile(type: String, tile: HexTileData) -> Node3D:
 		"water": scene = water_actor_scene
 		"goat": scene = goat_actor_scene
 		"goblin": scene = goblin_scene
+		"mimic": scene = mimic_scene
 
 	if scene:
 		var actor: Node3D = scene.instantiate()
@@ -341,14 +346,8 @@ func _random_goat_name() -> String:
 	]
 	return "%s the Wild" % names.pick_random()
 
-func _log_spawn(actor: Node, type_name: String) -> void:
-	if not actor or not actor is Actor:
-		return
-	var faction_name: String = "Unknown"
-	var actor_object: Actor = actor as Actor
-	if actor_object.faction_component:
-		faction_name = FactionComponent.Faction.keys()[actor_object.faction_component.faction]
-	print("[%s] of [%s] spawned in" % [type_name.capitalize(), faction_name.capitalize()])
+func _log_spawn(_actor: Node, _type_name: String) -> void:
+	return
 
 func _get_random_spawn_tile() -> HexTileData:
 	if not arena or arena.tile_data_grid.is_empty():
