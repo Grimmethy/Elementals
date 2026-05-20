@@ -85,13 +85,18 @@ func randomize() -> void:
 	rng.randomize()
 	var g: Dictionary = default_genome()
 
-	# 1) Cap profile — weighted: dome 55% / flat 20% / cone 15% / bell 10%
+	# 1) Cap profile — 8 profiles now. Adding new ones: append to the array
+	# + the weights array + add a build case in ProceduralMushroomBody._build_cap.
+	var cap_profiles: Array = ["dome", "flat", "cone", "bell", "umbrella", "coral", "puffball", "parasol"]
+	var cap_weights: Array = [0.30, 0.15, 0.10, 0.10, 0.10, 0.08, 0.10, 0.07]
 	var profile_roll: float = rng.randf()
+	var profile_acc: float = 0.0
 	var profile: String = "dome"
-	if profile_roll < 0.55: profile = "dome"
-	elif profile_roll < 0.75: profile = "flat"
-	elif profile_roll < 0.90: profile = "cone"
-	else: profile = "bell"
+	for i in range(cap_profiles.size()):
+		profile_acc += cap_weights[i]
+		if profile_roll <= profile_acc:
+			profile = cap_profiles[i]
+			break
 	g["cap"]["profile"] = profile
 
 	# 2) Cap size variation. Roll the STEM height FIRST so we can clamp the

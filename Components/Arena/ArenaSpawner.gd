@@ -36,23 +36,40 @@ func spawn_initial_actors() -> void:
 		if mushroom_tile:
 			spawn_actor_at_tile("mushroom", mushroom_tile)
 
-	# Spawn persistent/selected goats from HerdManager if applicable.
+	# Spawn the player-selected herd members (group mode). The SOLO "Play As"
+	# creature is handled by spawn_selected_actor_at_tile via the farmstead-
+	# center spawn path, NOT here — putting it here too caused a duplicate
+	# spawn (one bred creature at random tile, one default actor at the
+	# farmstead center) and the player ended up controlling the default.
 	if has_node("/root/HerdManager"):
 		var hm: Node = get_node("/root/HerdManager")
-		if hm.has_method("get_selected_goats"):
+		# If a solo creature is queued, the farmstead-center path already
+		# spawned it as the player — skip group mode entirely.
+		var solo_queued: Variant = hm.get("pending_individual_creature") if "pending_individual_creature" in hm else null
+		var has_solo: bool = solo_queued is ActorData
+		if not has_solo and hm.has_method("get_selected_goats"):
 			var selected_value: Variant = hm.call("get_selected_goats")
-			var selected_goats: Array = (selected_value as Array) if typeof(selected_value) == TYPE_ARRAY else []
-			for goat_data in selected_goats:
-				var g_tile: HexTileData = _get_random_spawn_tile()
-				if g_tile:
-					var goat: Node3D = spawn_actor_at_tile("goat", g_tile)
-					if goat and goat is Actor:
-						var goat_actor: Actor = goat as Actor
-						goat_actor.faction_component.setup(FactionComponent.Faction.PLAYER)
-						goat_actor.is_playable = true
-						_mark_non_capture_candidate(goat_actor)
-						if goat is GoatActor:
-							(goat as GoatActor).goat_data = goat_data
+			var selected_creatures: Array = (selected_value as Array) if typeof(selected_value) == TYPE_ARRAY else []
+			for creature_data in selected_creatures:
+				if creature_data == null:
+					continue
+				var c_tile: HexTileData = _get_random_spawn_tile()
+				if c_tile == null:
+					continue
+				var actor_type: String = _arena_actor_type_for_data(creature_data)
+				var spawned: Node3D = spawn_actor_at_tile(actor_type, c_tile)
+				if spawned == null or not (spawned is Actor):
+					continue
+				var spawned_actor: Actor = spawned as Actor
+				spawned_actor.faction_component.setup(FactionComponent.Faction.PLAYER)
+				spawned_actor.is_playable = true
+				_mark_non_capture_candidate(spawned_actor)
+				_assign_data_to_actor(spawned_actor, creature_data)
+		# One-shot transport — clear after all spawn paths have read it so a
+		# subsequent arena entry (e.g. return-to-menu then re-enter) doesn't
+		# accidentally re-use the previous Play-As selection.
+		if has_solo:
+			hm.set("pending_individual_creature", null)
 
 func get_selected_actor_scene() -> PackedScene:
 	var type: String = _get_selected_actor_type()
@@ -234,6 +251,26 @@ func spawn_scarecrow() -> void:
 			break
 
 func spawn_selected_actor_at_tile(tile: HexTileData) -> Node3D:
+	# SOLO "Play As" OVERRIDE: if the Ranch set a pending individual creature,
+	# spawn THAT instead of the menu-selected default. Same farmstead-center
+	# spawn position so the player ends up controlling their bred creature
+	# from the start. Prevents the bug where the default actor type and the
+	# bred creature both spawned, with the player controlling the default.
+	var hm: Node = null
+	var solo_creature: ActorData = null
+	if has_node("/root/HerdManager"):
+		hm = get_node("/root/HerdManager")
+		var solo_value: Variant = hm.get("pending_individual_creature") if "pending_individual_creature" in hm else null
+		if solo_value is ActorData:
+			solo_creature = solo_value as ActorData
+	if solo_creature != null:
+		# NOTE: do NOT clear pending_individual_creature here. The later
+		# spawn_initial_actors call ALSO reads this flag to decide whether
+		# to skip group-mode herd spawning. Clearing now would let the
+		# group spawn run on top of the solo creature. spawn_initial_actors
+		# clears it once at the end of its work.
+		return _spawn_solo_player_at_tile(solo_creature, tile)
+
 	var type: String = _get_selected_actor_type()
 
 	var scene: PackedScene = get_selected_actor_scene()
@@ -369,3 +406,99 @@ func _get_random_spawn_tile() -> HexTileData:
 			return tile
 		attempts += 1
 	return null
+
+## Pick the arena actor scene type string ("goat" / "mimic" / "mushroom" /
+## "goblin") that matches the given herd member's data class. Used when
+## spawning the player's selected herd into the arena — each creature gets
+## the correct procedural body instead of being forced into a GoatActor.
+##
+## Adding a new species: add one branch. No other arena code changes.
+func _arena_actor_type_for_data(data: ActorData) -> String:
+	if data is MimicData:
+		return "mimic"
+	if data is MushroomData:
+		return "mushroom"
+	if data is GoblinData:
+		return "goblin"
+	# Default + explicit GoatData branch — captured wild creatures stored
+	# as GoatData (HerdManager._build_captured_data) hit this path.
+	return "goat"
+
+## Assign a herd member's ActorData to whichever data field the spawned
+## actor exposes. GoatActor expects goat_data: GoatData; MimicActor expects
+## mimic_data: MimicData; MushroomActor expects mushroom_data: MushroomData.
+## GoblinMinion currently has no data slot — it reads stats from its actor
+## script's @export fields, so we skip the assignment for goblin and the
+## creature still spawns with default goblin stats. (TODO: thread GoblinData
+## through GoblinMinion._ready when GoblinMinion grows a data field.)
+##
+## Each branch checks property existence via `"<name>" in actor` so the
+## assignment can't crash on type mismatch — a hybrid Mimic kid stored as
+## MimicData spawning into a MimicActor finds `mimic_data` and assigns it;
+## same kid into a GoatActor would fall through both branches and the
+## creature spawns with default stats.
+func _assign_data_to_actor(actor: Actor, data: ActorData) -> void:
+	if actor == null or data == null:
+		return
+	if actor is GoatActor and data is GoatData:
+		(actor as GoatActor).goat_data = data as GoatData
+		return
+	if "mimic_data" in actor and data is MimicData:
+		actor.set("mimic_data", data)
+		return
+	if "mushroom_data" in actor and data is MushroomData:
+		actor.set("mushroom_data", data)
+		return
+	# No matching slot — actor spawns with default stats from its script.
+	# This is the fallback for goblin (no data field yet) and any future
+	# species that hasn't wired its data slot.
+
+## Spawn the player's bred creature at the farmstead-center tile. Called by
+## spawn_selected_actor_at_tile when HerdManager.pending_individual_creature
+## is set — this is the "Play As" solo entry from the Ranch.
+##
+## CRITICAL TIMING: the creature's data field (mimic_data / mushroom_data /
+## goat_data) is set BEFORE add_child so the actor's _ready picks it up.
+## Without this ordering, _ready would see mimic_data == null and create a
+## fresh RANDOMIZED MimicData, then our assignment afterwards would just
+## change the field but the procedural body would have already run with the
+## random data. Player would see a random creature instead of their bred one.
+func _spawn_solo_player_at_tile(data: ActorData, tile: HexTileData) -> Node3D:
+	if data == null or tile == null:
+		return null
+	var actor_type: String = _arena_actor_type_for_data(data)
+	var scene: PackedScene = null
+	match actor_type:
+		"goat":     scene = goat_actor_scene
+		"goblin":   scene = goblin_scene
+		"mimic":    scene = mimic_scene
+		"mushroom": scene = mushroom_scene
+		_:          scene = goat_actor_scene
+	if scene == null:
+		return null
+	var actor: Node3D = scene.instantiate()
+	actor.transform.origin = tile.position + Vector3(0, arena._get_tile_surface_y(tile) + 1.0, 0)
+	# Set the data BEFORE add_child — see docstring. @export properties are
+	# available pre-_ready, so this assignment sticks and the actor's _ready
+	# sees the data is non-null and skips its "create random" fallback.
+	if "mimic_data" in actor and data is MimicData:
+		actor.set("mimic_data", data)
+	elif "mushroom_data" in actor and data is MushroomData:
+		actor.set("mushroom_data", data)
+	# Player flags also before add_child so _ready sees is_playable = true
+	# and the actor's faction-fallback ("if NEUTRAL, set MONSTERS") skips us.
+	if actor is Actor:
+		(actor as Actor).is_playable = true
+		_mark_non_capture_candidate(actor as Actor)
+	arena.add_child(actor)
+	# GoatData's data flow runs through _data setter which is fine post-_ready
+	# since the setter handles the stat recompute. So set goat_data AFTER add.
+	if actor is GoatActor and data is GoatData:
+		(actor as GoatActor).goat_data = data as GoatData
+	arena.actors.append(actor)
+	if arena.get("tile_signals"):
+		arena.tile_signals.register_actor(actor)
+	if actor is Actor:
+		(actor as Actor).faction_component.setup(FactionComponent.Faction.PLAYER)
+	print("[Arena] Solo Play-As: spawned %s as player." % actor_type)
+	return actor

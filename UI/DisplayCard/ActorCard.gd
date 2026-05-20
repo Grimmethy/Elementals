@@ -13,6 +13,7 @@ extends DisplayCardBase
 @onready var cha_label: Label = $VBoxContainer/StatsGrid/ChaLabel
 @onready var ac_label: Label = $VBoxContainer/ACLabel
 @onready var arena_checkbox: CheckBox = $VBoxContainer/ArenaCheckBox
+@onready var play_as_button: Button = $VBoxContainer/PlayAsButton
 
 ## Accepts ANY ActorData subclass (GoatData / MimicData / MushroomData /
 ## GoblinData / hybrid) so cheat-spawned and bred creatures all show up in
@@ -71,10 +72,23 @@ func _ready() -> void:
 	super._ready()
 	_update_ui()
 	arena_checkbox.toggled.connect(_on_arena_toggled)
-	
+	if play_as_button:
+		play_as_button.pressed.connect(_on_play_as_pressed)
 	if name_edit:
 		name_edit.text_submitted.connect(_on_name_submitted)
 		name_edit.focus_exited.connect(_on_name_focus_exited)
+
+## Solo arena entry — store the creature's data on HerdManager so the
+## ArenaSpawner picks it up as the player-controlled actor (no group spawn),
+## then change scene to the arena. ArenaSpawner clears the field after spawn.
+func _on_play_as_pressed() -> void:
+	if actor_resource == null:
+		return
+	if has_node("/root/HerdManager"):
+		var hm: Node = get_node("/root/HerdManager")
+		hm.set("pending_individual_creature", actor_resource)
+		print("[Ranch] Solo entry: launching arena as %s." % actor_resource.get_actor_type())
+	get_tree().change_scene_to_file("res://Play Space/Arena.tscn")
 
 func _update_ui() -> void:
 	if not is_node_ready(): return

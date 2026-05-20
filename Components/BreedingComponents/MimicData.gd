@@ -213,10 +213,18 @@ func randomize_genome() -> void:
 	var g: Dictionary = default_genome()
 
 	# --- Body shape (weighted) ---
-	# Treasure chest is the iconic mimic so it stays common; other shapes
-	# round out the disguise vocabulary.
-	var shapes: Array = ["wooden_box", "treasure_chest", "vase", "casket", "barrel", "crate"]
-	var weights: Array = [0.20, 0.30, 0.15, 0.12, 0.13, 0.10]
+	# Treasure chest is the iconic mimic so it stays the most common; other
+	# shapes round out the disguise vocabulary. Adding new shapes: append
+	# to both arrays + add a _build_X_body function + add a case in
+	# _build_body_for_shape() dispatch.
+	var shapes: Array = [
+		"wooden_box", "treasure_chest", "vase", "casket", "barrel", "crate",
+		"drum", "urn", "sarcophagus", "plant_pot", "pillar"
+	]
+	var weights: Array = [
+		0.13, 0.20, 0.10, 0.08, 0.09, 0.07,
+		0.07, 0.08, 0.06, 0.06, 0.06
+	]
 	var roll: float = rng.randf()
 	var acc: float = 0.0
 	var picked: String = "treasure_chest"
@@ -261,6 +269,37 @@ func randomize_genome() -> void:
 			g["body"]["height"] = rng.randf_range(0.50, 0.70)
 			g["body"]["depth"] = rng.randf_range(0.50, 0.65)
 			g["body"]["plank_count"] = rng.randi_range(3, 5)
+		"drum":
+			# Drum: short stout cylinder, banded heavily.
+			g["body"]["width"] = rng.randf_range(0.62, 0.82)
+			g["body"]["height"] = rng.randf_range(0.45, 0.65)
+			g["body"]["depth"] = g["body"]["width"]
+			g["body"]["plank_count"] = rng.randi_range(6, 10)
+		"urn":
+			# Urn: round body, narrow lip, more bulbous than vase.
+			g["body"]["width"] = rng.randf_range(0.42, 0.60)
+			g["body"]["height"] = rng.randf_range(0.55, 0.80)
+			g["body"]["depth"] = g["body"]["width"]
+			g["body"]["neck_ratio"] = rng.randf_range(0.65, 0.82)
+			g["body"]["neck_radius_ratio"] = rng.randf_range(0.40, 0.60)
+		"sarcophagus":
+			# Sarcophagus: tall narrow human-shaped, very long.
+			g["body"]["width"] = rng.randf_range(0.42, 0.58)
+			g["body"]["height"] = rng.randf_range(0.95, 1.30)
+			g["body"]["depth"] = rng.randf_range(0.32, 0.45)
+			g["body"]["length_stretch"] = rng.randf_range(1.0, 1.1)
+		"plant_pot":
+			# Plant pot: wide top, narrow base, classic terracotta shape.
+			g["body"]["width"] = rng.randf_range(0.55, 0.75)
+			g["body"]["height"] = rng.randf_range(0.40, 0.60)
+			g["body"]["depth"] = g["body"]["width"]
+			g["body"]["neck_ratio"] = rng.randf_range(0.78, 0.92)
+			g["body"]["neck_radius_ratio"] = rng.randf_range(0.70, 0.90)
+		"pillar":
+			# Pillar: tall and thin like a column.
+			g["body"]["width"] = rng.randf_range(0.28, 0.42)
+			g["body"]["height"] = rng.randf_range(1.10, 1.50)
+			g["body"]["depth"] = g["body"]["width"]
 
 	# --- Lid (depends on shape) ---
 	# Treasure chests are the canonical rounded-lid variant; wooden boxes
@@ -279,8 +318,15 @@ func randomize_genome() -> void:
 		"casket":
 			# 60% flat, 40% peaked.
 			g["lid"]["variant"] = "peaked" if rng.randf() < 0.40 else "flat"
-		"vase", "barrel":
+		"vase", "barrel", "urn", "drum", "pillar":
+			# These shapes have an open top, no hinged lid.
 			g["lid"]["variant"] = "none"
+		"sarcophagus":
+			# Sarcophagi always have a peaked / human-shaped lid.
+			g["lid"]["variant"] = "peaked" if rng.randf() < 0.70 else "flat"
+		"plant_pot":
+			# 50% flat lid (like a stone slab), 50% none (open pot).
+			g["lid"]["variant"] = "flat" if rng.randf() < 0.50 else "none"
 	g["lid"]["thickness"] = rng.randf_range(0.05, 0.10)
 	g["lid"]["open_angle_idle"] = rng.randf_range(8.0, 28.0)
 
@@ -358,6 +404,38 @@ func randomize_genome() -> void:
 			g["decorations"]["gem_count"] = 0
 			g["decorations"]["lock_present"] = rng.randf() < 0.15
 			g["decorations"]["handle_present"] = rng.randf() < 0.20
+		"drum":
+			# Drums are ALL bands — that's their whole aesthetic.
+			g["decorations"]["band_count"] = rng.randi_range(4, 6)
+			g["decorations"]["clasp_count"] = 0
+			g["decorations"]["gem_count"] = 0
+			g["decorations"]["lock_present"] = false
+			g["decorations"]["handle_present"] = false
+		"urn":
+			g["decorations"]["band_count"] = rng.randi_range(1, 3)  # painted rings
+			g["decorations"]["clasp_count"] = 0
+			g["decorations"]["gem_count"] = rng.randi_range(0, 2)
+			g["decorations"]["lock_present"] = false
+			g["decorations"]["handle_present"] = rng.randf() < 0.40
+		"sarcophagus":
+			g["decorations"]["band_count"] = rng.randi_range(2, 4)
+			g["decorations"]["clasp_count"] = rng.randi_range(1, 3)
+			g["decorations"]["gem_count"] = rng.randi_range(1, 4)  # ornate
+			g["decorations"]["lock_present"] = rng.randf() < 0.50
+			g["decorations"]["handle_present"] = false
+		"plant_pot":
+			g["decorations"]["band_count"] = rng.randi_range(0, 2)
+			g["decorations"]["clasp_count"] = 0
+			g["decorations"]["gem_count"] = 0
+			g["decorations"]["lock_present"] = false
+			g["decorations"]["handle_present"] = rng.randf() < 0.30
+		"pillar":
+			# Pillars have a base + capital, modeled as bands.
+			g["decorations"]["band_count"] = rng.randi_range(2, 3)
+			g["decorations"]["clasp_count"] = 0
+			g["decorations"]["gem_count"] = 0
+			g["decorations"]["lock_present"] = false
+			g["decorations"]["handle_present"] = false
 
 	# --- Limbs (NEVER for pure mimics) ---
 	# Pure mimics are blob-like; arms/legs are reserved for hybrid offspring.

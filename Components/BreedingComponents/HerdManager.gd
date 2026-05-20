@@ -23,6 +23,16 @@ var current_day: int:
 
 const MAX_TEAM_SIZE = 4
 const NET_CAPTURE_CHANCE: float = 0.5
+
+## When set, the next arena spawn enters SOLO MODE — only this creature
+## spawns (not the group of "Select for Arena" checked members) and the
+## player controls it directly with its full bred genome.
+##
+## Set by ActorCard's "Play As" button. Cleared by ArenaSpawner after spawn.
+## Lives on HerdManager because it's a one-shot transport between scenes —
+## doesn't belong in GameSettings (which is persistent config) and doesn't
+## belong on any per-actor data resource.
+var pending_individual_creature: ActorData = null
 const NET_DISABLE_DURATION: float = 1.6
 const NET_CLOSE_RANGE: float = 2.6
 const NET_THROW_RANGE: float = 12.0

@@ -7,6 +7,7 @@ extends Control
 @onready var green_slider: HSlider = $PanelContainer/MarginContainer/VBoxContainer/GoatColorContainer/G/GreenSlider
 @onready var blue_slider: HSlider = $PanelContainer/MarginContainer/VBoxContainer/GoatColorContainer/B/BlueSlider
 @onready var volume_slider: HSlider = $PanelContainer/MarginContainer/VBoxContainer/VolumeContainer/VolumeSlider
+@onready var brightness_slider: HSlider = $PanelContainer/MarginContainer/VBoxContainer/BrightnessContainer/BrightnessSlider
 
 func _ready() -> void:
 	hide()
@@ -32,6 +33,11 @@ func _ready() -> void:
 		volume_slider.value_changed.connect(_on_volume_changed)
 		volume_slider.value = GameSettings.master_volume
 		_apply_volume(GameSettings.master_volume)
+	if brightness_slider:
+		brightness_slider.focus_mode = Control.FOCUS_NONE
+		brightness_slider.value_changed.connect(_on_brightness_changed)
+		brightness_slider.value = GameSettings.brightness
+		GameSettings.apply_brightness(GameSettings.brightness)
 
 func toggle() -> void:
 	visible = !visible
@@ -79,6 +85,10 @@ func _on_volume_changed(value: float) -> void:
 	GameSettings.master_volume = value
 	GameSettings.save_settings()
 	_apply_volume(value)
+
+func _on_brightness_changed(value: float) -> void:
+	GameSettings.apply_brightness(value)
+	GameSettings.save_settings()
 
 func _apply_volume(value: float) -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(value))

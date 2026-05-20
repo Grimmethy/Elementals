@@ -103,10 +103,231 @@ func rebuild_from_genome() -> void:
 	_limbs_root.position.y = foot_offset
 	add_child(_limbs_root)
 	# FRANKENSTEIN GRAFT: cross-species body parts inherited via breeding.
-	# Adds visible Mimic bands wrapping the stem + Mimic teeth on the cap
-	# edge (for Mushroom × Mimic kids) or other species' visible features.
 	if g.has("grafted"):
 		_apply_cross_species_graft(g["grafted"], body_slot, palette, foot_offset)
+	# UNIVERSAL MUTATIONS: shared-pool weirdness layered on top of any
+	# graft. Each flag is rendered independently — kids accumulate mutations
+	# across generations so deep-lineage chimeras look truly bizarre.
+	if g.has("universal_mutations"):
+		_apply_universal_mutations(g["universal_mutations"], body_slot, palette, foot_offset)
+
+# === Universal mutation rendering =========================================
+
+func _apply_universal_mutations(um: Dictionary, body_slot: Dictionary, palette: Dictionary, foot_offset: float) -> void:
+	var stem_height: float = float(body_slot.get("height", 0.55))
+	var stem_r_top: float = float(body_slot.get("radius_top", 0.16))
+	var mut_root := Node3D.new()
+	mut_root.name = "UniversalMutations"
+	mut_root.position.y = foot_offset
+	add_child(mut_root)
+	if bool(um.get("third_eye", false)):
+		_mutation_third_eye(mut_root, stem_height, stem_r_top, palette)
+	if bool(um.get("glowing_veins", false)):
+		_mutation_glowing_veins(mut_root, stem_height, stem_r_top, palette)
+	if bool(um.get("oversized_limb", false)):
+		# Skip — handled by limb-render passing a scale modifier in the future.
+		pass
+	if bool(um.get("halo", false)):
+		_mutation_halo(mut_root, stem_height + 0.30, palette)
+	if bool(um.get("tail_stub", false)):
+		_mutation_tail_stub(mut_root, stem_r_top, palette)
+	if bool(um.get("spike_ridge", false)):
+		_mutation_spike_ridge(mut_root, stem_height, stem_r_top, palette)
+	if bool(um.get("crystal_growth", false)):
+		_mutation_crystal_growth(mut_root, stem_height, stem_r_top, palette)
+	if bool(um.get("living_moss", false)):
+		_mutation_living_moss(mut_root, stem_height, stem_r_top)
+	if bool(um.get("chitin_plate", false)):
+		_mutation_chitin_plate(mut_root, stem_height, stem_r_top)
+	if bool(um.get("floating_orb", false)):
+		_mutation_floating_orb(mut_root, stem_height + 0.20, palette)
+	if bool(um.get("extra_mouth", false)):
+		_mutation_extra_mouth(mut_root, stem_height, stem_r_top)
+
+func _mutation_third_eye(parent: Node3D, stem_height: float, stem_r_top: float, palette: Dictionary) -> void:
+	var eye := MeshInstance3D.new()
+	eye.name = "MutThirdEye"
+	var sph := SphereMesh.new()
+	sph.radius = 0.05
+	sph.height = 0.10
+	eye.mesh = sph
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(palette.get("eye_color", Color(0.9, 0.2, 0.1)))
+	mat.emission_enabled = true
+	mat.emission = mat.albedo_color
+	mat.emission_energy_multiplier = 2.4
+	eye.material_override = mat
+	eye.position = Vector3(0, stem_height * 0.70, stem_r_top * 0.95)
+	parent.add_child(eye)
+
+func _mutation_glowing_veins(parent: Node3D, stem_height: float, stem_r_top: float, palette: Dictionary) -> void:
+	# Thin emissive vertical stripes around the stem.
+	var color: Color = Color(palette.get("eye_color", Color(0.4, 1.0, 0.6)))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 1.6
+	for i in range(6):
+		var theta: float = (float(i) / 6.0) * TAU
+		var vein := MeshInstance3D.new()
+		vein.name = "Vein_%d" % i
+		var box := BoxMesh.new()
+		box.size = Vector3(0.012, stem_height * 0.7, 0.008)
+		vein.mesh = box
+		vein.material_override = mat
+		vein.position = Vector3(cos(theta) * stem_r_top * 1.02, stem_height * 0.45, sin(theta) * stem_r_top * 1.02)
+		vein.rotation.y = -theta
+		parent.add_child(vein)
+
+func _mutation_halo(parent: Node3D, y_offset: float, palette: Dictionary) -> void:
+	var halo := MeshInstance3D.new()
+	halo.name = "MutHalo"
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.13
+	torus.outer_radius = 0.16
+	torus.ring_segments = 16
+	torus.rings = 32
+	halo.mesh = torus
+	var color: Color = Color(palette.get("eye_color", Color(1.0, 0.85, 0.4)))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 1.8
+	halo.material_override = mat
+	halo.position = Vector3(0, y_offset, 0)
+	parent.add_child(halo)
+
+func _mutation_tail_stub(parent: Node3D, stem_r_top: float, palette: Dictionary) -> void:
+	var tail := MeshInstance3D.new()
+	tail.name = "MutTail"
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.025
+	cone.bottom_radius = 0.06
+	cone.height = 0.20
+	tail.mesh = cone
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(palette.get("stem_color", Color(0.85, 0.78, 0.68)))
+	tail.material_override = mat
+	tail.position = Vector3(0, 0.08, -stem_r_top * 1.1)
+	tail.rotation = Vector3(deg_to_rad(-40), 0, 0)
+	parent.add_child(tail)
+
+func _mutation_spike_ridge(parent: Node3D, stem_height: float, stem_r_top: float, palette: Dictionary) -> void:
+	# Vertical row of spikes along the back of the stem.
+	var color: Color = Color(palette.get("stem_color", Color.WHITE)).darkened(0.20)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	for i in range(5):
+		var t: float = float(i) / 4.0
+		var y: float = lerpf(stem_height * 0.20, stem_height * 0.85, t)
+		var spike := MeshInstance3D.new()
+		var cone := CylinderMesh.new()
+		cone.top_radius = 0.005
+		cone.bottom_radius = 0.025
+		cone.height = 0.07
+		spike.mesh = cone
+		spike.material_override = mat
+		spike.position = Vector3(0, y, -stem_r_top * 1.0)
+		spike.rotation = Vector3(deg_to_rad(-90), 0, 0)
+		parent.add_child(spike)
+
+func _mutation_crystal_growth(parent: Node3D, stem_height: float, stem_r_top: float, palette: Dictionary) -> void:
+	var color: Color = Color(palette.get("eye_color", Color(0.5, 0.85, 1.0)))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.metallic = 0.4
+	mat.roughness = 0.10
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 0.6
+	for i in range(4):
+		var theta: float = (float(i) / 4.0) * TAU + 0.3
+		var crystal := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.04, 0.10, 0.04)
+		crystal.mesh = box
+		crystal.material_override = mat
+		var y: float = stem_height * (0.30 + (i % 2) * 0.20)
+		crystal.position = Vector3(cos(theta) * stem_r_top * 1.10, y, sin(theta) * stem_r_top * 1.10)
+		crystal.rotation = Vector3(randf_range(-0.3, 0.3), -theta, randf_range(-0.3, 0.3))
+		parent.add_child(crystal)
+
+func _mutation_living_moss(parent: Node3D, stem_height: float, stem_r_top: float) -> void:
+	# Green moss patches with tiny embedded eyes.
+	var moss_color := Color(0.30, 0.55, 0.25)
+	var moss_mat := StandardMaterial3D.new()
+	moss_mat.albedo_color = moss_color
+	moss_mat.roughness = 0.95
+	var eye_mat := StandardMaterial3D.new()
+	eye_mat.albedo_color = Color(0.05, 0.05, 0.05)
+	for i in range(3):
+		var theta: float = (float(i) / 3.0) * TAU + 0.8
+		var patch := MeshInstance3D.new()
+		var sph := SphereMesh.new()
+		sph.radius = 0.045
+		sph.height = 0.06
+		patch.mesh = sph
+		patch.material_override = moss_mat
+		patch.scale = Vector3(1.3, 0.5, 1.3)
+		var y: float = stem_height * (0.25 + (i % 2) * 0.30)
+		patch.position = Vector3(cos(theta) * stem_r_top * 0.95, y, sin(theta) * stem_r_top * 0.95)
+		parent.add_child(patch)
+		# Tiny eye inside.
+		var eye := MeshInstance3D.new()
+		var esph := SphereMesh.new()
+		esph.radius = 0.012
+		esph.height = 0.024
+		eye.mesh = esph
+		eye.material_override = eye_mat
+		eye.position = patch.position + Vector3(0, 0.012, 0.020)
+		parent.add_child(eye)
+
+func _mutation_chitin_plate(parent: Node3D, stem_height: float, stem_r_top: float) -> void:
+	var plate := MeshInstance3D.new()
+	plate.name = "MutChitinPlate"
+	var box := BoxMesh.new()
+	box.size = Vector3(stem_r_top * 1.7, 0.035, stem_r_top * 1.7)
+	plate.mesh = box
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.35, 0.22, 0.10)
+	mat.metallic = 0.30
+	mat.roughness = 0.20
+	plate.material_override = mat
+	plate.position = Vector3(0, stem_height + 0.020, 0)
+	parent.add_child(plate)
+
+func _mutation_floating_orb(parent: Node3D, y_offset: float, palette: Dictionary) -> void:
+	var orb := MeshInstance3D.new()
+	orb.name = "MutFloatingOrb"
+	var sph := SphereMesh.new()
+	sph.radius = 0.05
+	sph.height = 0.10
+	orb.mesh = sph
+	var color: Color = Color(palette.get("eye_color", Color(0.6, 0.85, 1.0)))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 2.2
+	mat.metallic = 0.50
+	mat.roughness = 0.05
+	orb.material_override = mat
+	orb.position = Vector3(0, y_offset + 0.12, 0.04)
+	parent.add_child(orb)
+
+func _mutation_extra_mouth(parent: Node3D, stem_height: float, stem_r_top: float) -> void:
+	var mouth := MeshInstance3D.new()
+	mouth.name = "MutExtraMouth"
+	var box := BoxMesh.new()
+	box.size = Vector3(0.10, 0.025, 0.012)
+	mouth.mesh = box
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.10, 0.05, 0.05)
+	mouth.material_override = mat
+	mouth.position = Vector3(0, stem_height * 0.20, stem_r_top * 0.96)
+	parent.add_child(mouth)
 
 func _clear_built_children() -> void:
 	# IMMEDIATE free instead of queue_free so rebuilds in the same frame
@@ -205,8 +426,64 @@ func _build_cap(cap_slot: Dictionary, palette: Dictionary) -> Node3D:
 			var bell_h: float = maxf(radius * 2.4, height * 2.6)
 			sph.height = bell_h
 			cap_mesh.mesh = sph
-			cap_y_offset = bell_h * 0.5 - radius * 0.5  # bias dome upward, slight overlap with stem
+			cap_y_offset = bell_h * 0.5 - radius * 0.5
 			cap_y_extent = bell_h * 0.5
+		"umbrella":
+			# Wide flat disc with a small dimple. Built as a squashed cylinder
+			# wider than the stem, very thin. Top face acts as the umbrella.
+			var umb := CylinderMesh.new()
+			umb.top_radius = radius * 1.20  # wider than stem
+			umb.bottom_radius = radius * 1.20
+			var umb_h: float = maxf(height * 0.35, 0.06)
+			umb.height = umb_h
+			umb.radial_segments = 24
+			cap_mesh.mesh = umb
+			cap_y_offset = umb_h * 0.5
+			cap_y_extent = umb_h * 0.5
+		"coral":
+			# Coral / branched cap: irregular bulbous lump. Use a TallSphere
+			# scaled non-uniformly so it reads as organic / asymmetric.
+			var coral_sph := SphereMesh.new()
+			coral_sph.radius = radius * 0.85
+			coral_sph.height = radius * 2.4
+			cap_mesh.mesh = coral_sph
+			cap_mesh.scale = Vector3(1.15, 1.0, 0.85)  # squash asymmetrically
+			cap_y_offset = radius * 0.4
+			cap_y_extent = radius * 1.2
+		"puffball":
+			# Puffball: nearly spherical cap, almost like a ball sitting on
+			# the stem. Larger radius, less squashed.
+			var puff := SphereMesh.new()
+			puff.radius = radius * 1.05
+			puff.height = radius * 2.10  # nearly true sphere
+			cap_mesh.mesh = puff
+			cap_y_offset = radius * 0.95  # lift fully above stem
+			cap_y_extent = radius * 1.05
+		"parasol":
+			# Parasol mushroom: wide flat top WITH a tall central bump.
+			# Build as a cylinder + a smaller cone on top.
+			var brim := CylinderMesh.new()
+			brim.top_radius = radius * 1.10
+			brim.bottom_radius = radius * 1.10
+			var brim_h: float = maxf(height * 0.30, 0.05)
+			brim.height = brim_h
+			brim.radial_segments = 22
+			cap_mesh.mesh = brim
+			cap_y_offset = brim_h * 0.5
+			cap_y_extent = brim_h * 0.5
+			# Add a central peaked bump as a second mesh under cap_root.
+			var bump := MeshInstance3D.new()
+			bump.name = "ParasolBump"
+			var bump_cone := CylinderMesh.new()
+			bump_cone.top_radius = radius * 0.10
+			bump_cone.bottom_radius = radius * 0.45
+			bump_cone.height = height * 0.50
+			bump.mesh = bump_cone
+			var bump_mat := StandardMaterial3D.new()
+			bump_mat.albedo_color = Color(palette.get("cap_color", Color(0.86, 0.25, 0.25))).darkened(0.10)
+			bump.material_override = bump_mat
+			bump.position = Vector3(0, brim_h + height * 0.25, 0)
+			root.add_child(bump)
 		_:  # "dome"
 			# Classic mushroom cap. Use a FULL sphere — the upper half forms
 			# the visible dome, the lower half becomes the cap's underside

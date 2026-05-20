@@ -382,6 +382,80 @@ or the breeding flow.
 
 ---
 
+## Layer 10 — Shared mutation pool (cross-species weirdness)
+
+`ActorData.MUTATION_POOL: Array[String]` — a flat list of mutation tags any
+creature can carry on top of its genome. Current pool:
+
+```
+third_eye, glowing_veins, fur_patches, scale_patches, oversized_limb,
+color_drift, asymmetric_eyes, extra_mouth, halo, tail_stub,
+crystal_growth, living_moss, spike_ridge, chitin_plate, floating_orb
+```
+
+During `universal_crossover_breed`, the kid rolls `1 + (hybrid_generation / 2)`
+distinct mutations from the pool (capped at 5) via
+`apply_universal_mutations(kid, count)`. Mutations write `true` flags into
+`genome.universal_mutations` (a flat `String -> bool` dict).
+
+Each procedural body has `_apply_universal_mutations(um)` that checks each
+flag and renders the corresponding visual. **Same mutation tags on every
+procedural body** — `third_eye` looks recognizable whether it's on a Mimic
+or a Mushroom. New species follow the same convention: implement render
+branches for the universal mutations they support.
+
+**Adding a mutation**: append the tag to `MUTATION_POOL` + add a render
+branch in each procedural body's `_apply_universal_mutations`. No changes
+to breeding, data classes, or UI.
+
+---
+
+## Layer 11 — Hybrid generation accumulation
+
+`ActorData.hybrid_generation: int` — 0 for pure-species spawn, increments by
+1 on every cross-species breed. Same-species breeds inherit the higher
+parent's generation. Set in `universal_crossover_breed` as
+`max(parent_a.gen, parent_b.gen) + 1`.
+
+Effects of higher generation:
+- **More mutation rolls** (`1 + gen/2`, capped at 5)
+- **Chimeric name prefix** at gen ≥ 2 (e.g. "Chimeric Brakelin", "Twisted
+  Zifosken"). At gen ≥ 4 the prefix pool switches to a deeper set ("Voidwarped",
+  "Apex", "Primordial").
+- Future patches can scale graft probabilities, color drift chance, etc.
+
+---
+
+## Layer 12 — Tier-1 scaffold for future modular composition
+
+`ActorData.shared_body_plan: Dictionary` — universal schema with slots
+`base`, `top`, `face`, `limbs`, `ornaments`, `palette`. Each slot has a
+`type: String` that matches an entry in a renderer registry (not yet
+implemented).
+
+**Currently unused by Mimic/Mushroom** — they still read their own
+species-specific genome slots. The dict exists as a SEAM for the next
+architectural step: a unified `ProceduralCreatureBody` that reads
+`shared_body_plan` and dispatches to part-builders by type string.
+
+Migration path (future patches):
+1. Populate `shared_body_plan` during `universal_crossover_breed` with each
+   slot independently rolled from either parent (per-slot parent selection,
+   not the current "primary parent wins" model).
+2. Build the renderer registry as a const Dictionary mapping
+   `String -> Callable`.
+3. New species' procedural bodies prefer `shared_body_plan` over their own
+   genome slots.
+4. Existing Mimic/Mushroom procedural bodies stay backward compatible —
+   migrate at leisure.
+
+The point: today's hybrid still "looks like one parent with grafts" because
+the body type is solo-bred. Once `shared_body_plan` is consumed, hybrids
+can have mom's `base.type` + dad's `top.type` + a `face.eye_count` averaged
+from both — true chimera composition.
+
+---
+
 ## Invariants — things that MUST stay true
 
 1. **Every species declares the FULL slot list in `default_genome()`** —

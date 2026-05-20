@@ -210,10 +210,12 @@ func rebuild_from_genome() -> void:
 	# 6) Mutation overlays
 	_apply_mutations(g.get("mutation", {}), palette_slot)
 	# 7) FRANKENSTEIN GRAFT: cross-species body parts inherited via breeding.
-	# Adds a visible mushroom cap on top of the lid (for Mimic × Mushroom
-	# kids), or goblin/goat skin tints, depending on the secondary parent.
 	if g.has("grafted"):
 		_apply_cross_species_graft(g["grafted"])
+	# 8) UNIVERSAL MUTATIONS: shared-pool weirdness from ActorData.MUTATION_POOL.
+	# Each flag renders independently — accumulates across generations.
+	if g.has("universal_mutations"):
+		_apply_universal_mutations(g["universal_mutations"])
 
 func _clear_built_children() -> void:
 	# IMMEDIATE free, not queue_free. queue_free is deferred to end-of-frame,
@@ -243,6 +245,11 @@ func _build_body_for_shape(shape: String, body_slot: Dictionary, palette: Dictio
 		"casket":         _build_casket_body(body_slot, palette)
 		"barrel":         _build_barrel_body(body_slot, palette)
 		"crate":          _build_crate_body(body_slot, palette)
+		"drum":           _build_drum_body(body_slot, palette)
+		"urn":            _build_urn_body(body_slot, palette)
+		"sarcophagus":    _build_sarcophagus_body(body_slot, palette)
+		"plant_pot":      _build_plant_pot_body(body_slot, palette)
+		"pillar":         _build_pillar_body(body_slot, palette)
 		_:                _build_wooden_box_body(body_slot, palette)
 
 func _build_wooden_box_body(_body_slot: Dictionary, palette: Dictionary) -> void:
@@ -347,6 +354,107 @@ func _build_crate_body(body_slot: Dictionary, palette: Dictionary) -> void:
 		_add_box(_body_root, Vector3(0, y, -_D * 0.5 - 0.003), Vector3(_W * 1.005, gap, 0.005), palette["body_color"].darkened(0.45), 1.0, 0.0)
 		_add_box(_body_root, Vector3(_W * 0.5 + 0.003, y, 0), Vector3(0.005, gap, _D * 1.005), palette["body_color"].darkened(0.45), 1.0, 0.0)
 		_add_box(_body_root, Vector3(-_W * 0.5 - 0.003, y, 0), Vector3(0.005, gap, _D * 1.005), palette["body_color"].darkened(0.45), 1.0, 0.0)
+
+func _build_drum_body(body_slot: Dictionary, palette: Dictionary) -> void:
+	# Drum: short squat cylinder. The "bands" decoration carries the rest of
+	# the drum identity — we just build the wooden barrel here.
+	var radius: float = _W * 0.5
+	var height: float = _H * 0.85
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = radius * 0.95
+	cyl.bottom_radius = radius * 0.95
+	cyl.height = height
+	cyl.radial_segments = 22
+	_add_mesh(_body_root, cyl, Vector3(0, height * 0.5, 0), palette["body_color"], 0.82, 0.04)
+	# Recessed top + bottom faces (slightly darker) — gives drumhead feel.
+	var rim_h: float = 0.025
+	var rim_cyl := CylinderMesh.new()
+	rim_cyl.top_radius = radius * 0.88
+	rim_cyl.bottom_radius = radius * 0.88
+	rim_cyl.height = rim_h
+	_add_mesh(_body_root, rim_cyl, Vector3(0, height - rim_h * 0.5, 0), palette["body_color"].darkened(0.20), 0.92, 0.0)
+	_add_mesh(_body_root, rim_cyl, Vector3(0, rim_h * 0.5, 0), palette["body_color"].darkened(0.20), 0.92, 0.0)
+
+func _build_urn_body(body_slot: Dictionary, palette: Dictionary) -> void:
+	# Urn: bulbous round body + slightly flared narrow neck. Built from
+	# a stretched sphere + a short cylinder neck above.
+	var radius: float = _W * 0.5
+	var height: float = _H
+	var neck_ratio: float = clampf(float(body_slot.get("neck_ratio", 0.70)), 0.55, 0.85)
+	var body_height: float = height * neck_ratio
+	# Bulb (squashed sphere).
+	var bulb := SphereMesh.new()
+	bulb.radius = radius
+	bulb.height = body_height * 1.05
+	_add_mesh(_body_root, bulb, Vector3(0, body_height * 0.5, 0), palette["body_color"], 0.82, 0.02)
+	# Neck.
+	var neck_h: float = height * (1.0 - neck_ratio)
+	var neck_cyl := CylinderMesh.new()
+	neck_cyl.top_radius = radius * 0.35
+	neck_cyl.bottom_radius = radius * 0.45
+	neck_cyl.height = neck_h
+	_add_mesh(_body_root, neck_cyl, Vector3(0, body_height + neck_h * 0.5, 0), palette["body_color"], 0.78, 0.02)
+	# Lip flare.
+	var lip_h: float = neck_h * 0.18
+	var lip := CylinderMesh.new()
+	lip.top_radius = radius * 0.42
+	lip.bottom_radius = radius * 0.35
+	lip.height = lip_h
+	_add_mesh(_body_root, lip, Vector3(0, height - lip_h * 0.5, 0), palette["accent_color"], 0.55, 0.30)
+
+func _build_sarcophagus_body(body_slot: Dictionary, palette: Dictionary) -> void:
+	# Sarcophagus: tall narrow rectangular box, vaguely human-shaped. We
+	# build a base box plus a narrower upper "shoulder" section.
+	var body_h: float = _H * 0.82
+	# Lower body (waist down) — wider.
+	var lower_h: float = body_h * 0.55
+	_add_box(_body_root, Vector3(0, lower_h * 0.5, 0), Vector3(_W * 0.95, lower_h, _D * 0.95), palette["body_color"], 0.68, 0.04)
+	# Upper body (chest/shoulders) — slightly wider in X for shoulders.
+	var upper_h: float = body_h - lower_h
+	_add_box(_body_root, Vector3(0, lower_h + upper_h * 0.5, 0), Vector3(_W * 1.08, upper_h, _D * 0.95), palette["body_color"], 0.68, 0.04)
+	# Decorative center stripe down the front (ornate sarcophagus look).
+	_add_box(_body_root, Vector3(0, body_h * 0.5, _D * 0.5 + 0.005), Vector3(_W * 0.18, body_h * 0.92, 0.012), palette["accent_color"], 0.50, 0.35)
+
+func _build_plant_pot_body(body_slot: Dictionary, palette: Dictionary) -> void:
+	# Plant pot: classic terracotta — narrow at base, flaring to wide top.
+	var radius_top: float = _W * 0.5
+	var radius_bot: float = _W * 0.35
+	var pot_h: float = _H * 0.85
+	var pot := CylinderMesh.new()
+	pot.top_radius = radius_top
+	pot.bottom_radius = radius_bot
+	pot.height = pot_h
+	pot.radial_segments = 22
+	_add_mesh(_body_root, pot, Vector3(0, pot_h * 0.5, 0), palette["body_color"], 0.85, 0.0)
+	# Rim ring at the top.
+	var rim_h: float = 0.04
+	var rim := CylinderMesh.new()
+	rim.top_radius = radius_top * 1.05
+	rim.bottom_radius = radius_top * 1.05
+	rim.height = rim_h
+	_add_mesh(_body_root, rim, Vector3(0, pot_h, 0), palette["body_color"].darkened(0.15), 0.85, 0.0)
+
+func _build_pillar_body(body_slot: Dictionary, palette: Dictionary) -> void:
+	# Pillar / column: tall thin cylinder with a wider base + capital cap.
+	var col_radius: float = _W * 0.5
+	var col_h: float = _H * 0.80
+	var base_h: float = _H * 0.10
+	var cap_h: float = _H * 0.10
+	# Column shaft.
+	var shaft := CylinderMesh.new()
+	shaft.top_radius = col_radius
+	shaft.bottom_radius = col_radius
+	shaft.height = col_h
+	shaft.radial_segments = 22
+	_add_mesh(_body_root, shaft, Vector3(0, base_h + col_h * 0.5, 0), palette["body_color"], 0.72, 0.04)
+	# Base (wider).
+	var base_box := BoxMesh.new()
+	base_box.size = Vector3(_W * 1.30, base_h, _W * 1.30)
+	_add_mesh(_body_root, base_box, Vector3(0, base_h * 0.5, 0), palette["body_color"].darkened(0.15), 0.75, 0.04)
+	# Capital (wider, at the top).
+	var cap_box := BoxMesh.new()
+	cap_box.size = Vector3(_W * 1.30, cap_h, _W * 1.30)
+	_add_mesh(_body_root, cap_box, Vector3(0, base_h + col_h + cap_h * 0.5, 0), palette["body_color"].darkened(0.15), 0.75, 0.04)
 
 # === Lid ===================================================================
 
@@ -991,7 +1099,7 @@ func _body_top_world_y() -> float:
 	# Y where the body ends and the lid begins.
 	match _shape:
 		"vase":
-			return _H * 0.95  # vase opening is near the top
+			return _H * 0.95
 		"barrel":
 			return _H * 0.88
 		"casket":
@@ -1000,6 +1108,17 @@ func _body_top_world_y() -> float:
 			return _H * 0.70
 		"treasure_chest":
 			return _H * 0.65
+		"drum":
+			return _H * 0.85
+		"urn":
+			return _H * 0.92
+		"sarcophagus":
+			return _H * 0.82
+		"plant_pot":
+			return _H * 0.85
+		"pillar":
+			# Pillar: capital sits ON TOP. Body proper ends just below it.
+			return _H * 0.90
 		_:
 			return _H * 0.70
 
@@ -1394,3 +1513,200 @@ func _graft_goat_features(grafted: Dictionary) -> void:
 		else:
 			horn.position = Vector3(side * (_W * 0.35), _body_top_world_y() + 0.06, _D * 0.30)
 		horn_parent.add_child(horn)
+
+# === Universal mutation rendering =========================================
+#
+# Renders shared-pool mutations (third eye, glowing veins, halo, etc.) on
+# top of any chest body. Each flag is rendered independently so deep-lineage
+# chimeras accumulate weirdness visibly. Mirror of the same system on
+# ProceduralMushroomBody — same tag names, similar visual language.
+
+func _apply_universal_mutations(um: Dictionary) -> void:
+	var palette: Dictionary = mimic_data.genome.get("palette", {}) if mimic_data else {}
+	var mut_root := Node3D.new()
+	mut_root.name = "UniversalMutations"
+	add_child(mut_root)
+	if bool(um.get("third_eye", false)):
+		_mut_third_eye(mut_root, palette)
+	if bool(um.get("glowing_veins", false)):
+		_mut_glowing_veins(mut_root, palette)
+	if bool(um.get("halo", false)):
+		_mut_halo(mut_root, palette)
+	if bool(um.get("tail_stub", false)):
+		_mut_tail_stub(mut_root, palette)
+	if bool(um.get("spike_ridge", false)):
+		_mut_spike_ridge(mut_root, palette)
+	if bool(um.get("crystal_growth", false)):
+		_mut_crystal_growth(mut_root, palette)
+	if bool(um.get("living_moss", false)):
+		_mut_living_moss(mut_root)
+	if bool(um.get("chitin_plate", false)):
+		_mut_chitin_plate(mut_root)
+	if bool(um.get("floating_orb", false)):
+		_mut_floating_orb(mut_root, palette)
+	if bool(um.get("extra_mouth", false)):
+		_mut_extra_mouth(mut_root)
+
+func _mut_third_eye(parent: Node3D, palette: Dictionary) -> void:
+	var eye := MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = 0.06
+	sph.height = 0.12
+	eye.mesh = sph
+	var color: Color = Color(palette.get("eye_color", Color(0.9, 0.2, 0.1)))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 2.4
+	eye.material_override = mat
+	# Center-front of the body, above the mouth.
+	eye.position = Vector3(0, _H * 0.45, _D * 0.5 + 0.01)
+	parent.add_child(eye)
+
+func _mut_glowing_veins(parent: Node3D, palette: Dictionary) -> void:
+	var color: Color = Color(palette.get("eye_color", Color(0.4, 1.0, 0.6)))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 1.6
+	for i in range(5):
+		var vein := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.014, _H * 0.4, 0.008)
+		vein.mesh = box
+		vein.material_override = mat
+		var x: float = lerpf(-_W * 0.4, _W * 0.4, float(i) / 4.0)
+		vein.position = Vector3(x, _H * 0.30, _D * 0.5 + 0.005)
+		parent.add_child(vein)
+
+func _mut_halo(parent: Node3D, palette: Dictionary) -> void:
+	var halo := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = _W * 0.30
+	torus.outer_radius = _W * 0.35
+	torus.ring_segments = 16
+	torus.rings = 32
+	halo.mesh = torus
+	var color: Color = Color(palette.get("eye_color", Color(1.0, 0.85, 0.4)))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 1.8
+	halo.material_override = mat
+	halo.position = Vector3(0, _body_top_world_y() + 0.35, 0)
+	parent.add_child(halo)
+
+func _mut_tail_stub(parent: Node3D, palette: Dictionary) -> void:
+	var tail := MeshInstance3D.new()
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.030
+	cone.bottom_radius = 0.07
+	cone.height = 0.22
+	tail.mesh = cone
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(palette.get("body_color", Color(0.4, 0.3, 0.2)))
+	tail.material_override = mat
+	tail.position = Vector3(0, _H * 0.20, -_D * 0.5 - 0.05)
+	tail.rotation = Vector3(deg_to_rad(40), 0, 0)
+	parent.add_child(tail)
+
+func _mut_spike_ridge(parent: Node3D, palette: Dictionary) -> void:
+	var color: Color = Color(palette.get("body_color", Color.WHITE)).darkened(0.30)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	for i in range(5):
+		var t: float = float(i) / 4.0
+		var x: float = lerpf(-_W * 0.4, _W * 0.4, t)
+		var spike := MeshInstance3D.new()
+		var cone := CylinderMesh.new()
+		cone.top_radius = 0.005
+		cone.bottom_radius = 0.030
+		cone.height = 0.10
+		spike.mesh = cone
+		spike.material_override = mat
+		spike.position = Vector3(x, _body_top_world_y() + 0.06, 0)
+		parent.add_child(spike)
+
+func _mut_crystal_growth(parent: Node3D, palette: Dictionary) -> void:
+	var color: Color = Color(palette.get("eye_color", Color(0.5, 0.85, 1.0)))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.metallic = 0.4
+	mat.roughness = 0.10
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 0.6
+	for i in range(5):
+		var crystal := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.05, 0.12, 0.05)
+		crystal.mesh = box
+		crystal.material_override = mat
+		# Pseudo-random scatter on the front face.
+		var x: float = lerpf(-_W * 0.35, _W * 0.35, fmod(float(i) * 0.37 + 0.1, 1.0))
+		var y: float = lerpf(_H * 0.20, _H * 0.55, fmod(float(i) * 0.51 + 0.2, 1.0))
+		crystal.position = Vector3(x, y, _D * 0.5 + 0.020)
+		crystal.rotation = Vector3(0, 0, deg_to_rad(float(i) * 25.0))
+		parent.add_child(crystal)
+
+func _mut_living_moss(parent: Node3D) -> void:
+	var moss_color := Color(0.30, 0.55, 0.25)
+	var moss_mat := StandardMaterial3D.new()
+	moss_mat.albedo_color = moss_color
+	moss_mat.roughness = 0.95
+	for i in range(4):
+		var patch := MeshInstance3D.new()
+		var sph := SphereMesh.new()
+		sph.radius = 0.06
+		sph.height = 0.08
+		patch.mesh = sph
+		patch.material_override = moss_mat
+		patch.scale = Vector3(1.4, 0.45, 1.4)
+		var x: float = lerpf(-_W * 0.35, _W * 0.35, float(i) / 3.0)
+		patch.position = Vector3(x, _H * (0.20 + (i % 2) * 0.25), _D * 0.5 + 0.005)
+		parent.add_child(patch)
+
+func _mut_chitin_plate(parent: Node3D) -> void:
+	var plate := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(_W * 0.8, 0.045, _D * 0.8)
+	plate.mesh = box
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.35, 0.22, 0.10)
+	mat.metallic = 0.30
+	mat.roughness = 0.20
+	plate.material_override = mat
+	plate.position = Vector3(0, _body_top_world_y() + 0.030, 0)
+	parent.add_child(plate)
+
+func _mut_floating_orb(parent: Node3D, palette: Dictionary) -> void:
+	var orb := MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = 0.06
+	sph.height = 0.12
+	orb.mesh = sph
+	var color: Color = Color(palette.get("eye_color", Color(0.6, 0.85, 1.0)))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 2.2
+	mat.metallic = 0.50
+	mat.roughness = 0.05
+	orb.material_override = mat
+	orb.position = Vector3(0, _body_top_world_y() + 0.45, _D * 0.10)
+	parent.add_child(orb)
+
+func _mut_extra_mouth(parent: Node3D) -> void:
+	var mouth := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(0.14, 0.030, 0.012)
+	mouth.mesh = box
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.10, 0.05, 0.05)
+	mouth.material_override = mat
+	mouth.position = Vector3(0, _H * 0.18, _D * 0.5 + 0.008)
+	parent.add_child(mouth)
