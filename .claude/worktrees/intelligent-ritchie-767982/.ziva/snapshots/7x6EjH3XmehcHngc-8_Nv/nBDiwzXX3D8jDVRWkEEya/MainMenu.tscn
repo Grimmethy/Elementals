@@ -1,0 +1,237 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://MainMenu.gd" id="1_xxx"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_xxx")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.12, 0.14, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Elemental Arena"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ElementalSelection" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/ElementalSelection"]
+layout_mode = 2
+text = "Select Starting Elemental:"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer/ElementalSelection"]
+layout_mode = 2
+alignment = 1
+
+[node name="FireButton" type="Button" parent="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Fire Elemental"
+
+[node name="WaterButton" type="Button" parent="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "Water Elemental"
+
+[node name="GoatButton" type="Button" parent="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "Goat"
+
+[node name="NPCSelection" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection"]
+layout_mode = 2
+text = "NPC Counts:"
+horizontal_alignment = 1
+
+[node name="FireNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/NPCSelection"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection/FireNPCs"]
+layout_mode = 2
+text = "Fire:"
+
+[node name="FireCount" type="SpinBox" parent="CenterContainer/VBoxContainer/NPCSelection/FireNPCs"]
+layout_mode = 2
+min_value = 0.0
+max_value = 20.0
+value = 1.0
+
+[node name="WaterNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/NPCSelection"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection/WaterNPCs"]
+layout_mode = 2
+text = "Water:"
+
+[node name="WaterCount" type="SpinBox" parent="CenterContainer/VBoxContainer/NPCSelection/WaterNPCs"]
+layout_mode = 2
+min_value = 0.0
+max_value = 20.0
+value = 1.0
+
+[node name="GoatNPCs" type="HBoxContainer" parent="CenterContainer/VBoxContainer/NPCSelection"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/NPCSelection/GoatNPCs"]
+layout_mode = 2
+text = "Goat:"
+
+[node name="GoatCount" type="SpinBox" parent="CenterContainer/VBoxContainer/NPCSelection/GoatNPCs"]
+layout_mode = 2
+min_value = 0.0
+max_value = 20.0
+value = 1.0
+
+[node name="ArenaSize" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/ArenaSize"]
+layout_mode = 2
+text = "Arena Size:"
+horizontal_alignment = 1
+
+[node name="SizeInput" type="SpinBox" parent="CenterContainer/VBoxContainer/ArenaSize"]
+layout_mode = 2
+min_value = 10.0
+max_value = 100.0
+step = 10.0
+value = 20.0
+alignment = 1
+
+[node name="PlayButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "PLAY"
+
+[node name="ControlsPanel" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -240.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Panel" type="PanelContainer" parent="ControlsPanel"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="ControlsPanel/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ControlsPanel/Panel/MarginContainer"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "CONTROLS"
+horizontal_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Grid" type="GridContainer" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/h_separation = 15
+columns = 2
+
+[node name="MoveLabel" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Move:"
+
+[node name="MoveKeys" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "WASD / Arrows"
+
+[node name="JumpLabel" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Jump:"
+
+[node name="JumpKeys" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Space"
+
+[node name="AttackLabel" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Attack:"
+
+[node name="AttackKeys" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Left Click"
+
+[node name="SpecialLabel" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Special:"
+
+[node name="SpecialKeys" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Right Click"
+
+[node name="CycleLabel" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Cycle Patterns:"
+
+[node name="CycleKeys" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Q / E"
+
+[node name="ZoomLabel" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Zoom:"
+
+[node name="ZoomKeys" type="Label" parent="ControlsPanel/Panel/MarginContainer/VBoxContainer/Grid"]
+layout_mode = 2
+text = "Mouse Wheel"
+
+
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/FireButton" to="." method="_on_fire_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/WaterButton" to="." method="_on_water_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ElementalSelection/HBoxContainer/GoatButton" to="." method="_on_goat_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/PlayButton" to="." method="_on_play_button_pressed"]

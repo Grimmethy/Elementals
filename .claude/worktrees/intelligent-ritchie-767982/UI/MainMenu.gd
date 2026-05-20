@@ -1,0 +1,307 @@
+extends Control
+
+@onready var character_tab_container: VBoxContainer = $CenterContainer/VBoxContainer/CharacterTabContainer
+@onready var weapon_tab_container: VBoxContainer = $CenterContainer/VBoxContainer/WeaponTabContainer
+@onready var character_cards_container: HBoxContainer = $CenterContainer/VBoxContainer/CharacterTabContainer/ActorSelection/CharacterCards
+@onready var map_settings_container: VBoxContainer = $CenterContainer/VBoxContainer/MapSettingsContainer
+@onready var controls_panel: MarginContainer = $ControlsPanel
+@onready var size_input: SpinBox = $CenterContainer/VBoxContainer/MapSettingsContainer/ArenaSize/SizeInput
+@onready var seed_input: SpinBox = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseSeed/SeedInput
+@onready var random_seed_check: CheckBox = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseSeed/RandomSeedCheck
+@onready var scale_slider: HSlider = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseScale/ScaleSlider
+@onready var scale_value_label: Label = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseScale/ValueLabel
+@onready var height_slider: HSlider = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/HeightStep/HeightSlider
+@onready var height_value_label: Label = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/HeightStep/ValueLabel
+@onready var dirt_slider: HSlider = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/DirtThreshold/DirtSlider
+@onready var dirt_value_label: Label = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/DirtThreshold/ValueLabel
+
+var selected_actor_path: String = ""
+
+const ACTOR_SCENES: Dictionary = {
+	"farmer": "res://scenes/actors/FarmerActor.tscn",
+	"fire": "res://scenes/actors/FireActor.tscn",
+	"water": "res://scenes/actors/WaterActor.tscn",
+	"goat": "res://scenes/actors/GoatActor.tscn",
+	"goblin": "res://scenes/actors/GoblinMinion.tscn",
+	"scarecrow": "res://scenes/actors/ScarecrowDummy.tscn"
+}
+
+var CHARACTER_EQUIPMENT: Dictionary = {}
+
+func _init() -> void:
+	# Initialize CHARACTER_EQUIPMENT at runtime so we can call functions
+	CHARACTER_EQUIPMENT = {
+		"goblin": {
+			"weapons": ["Dagger", "Scimitar", "Shortbow"],
+			"abilities": _get_goblin_abilities(),
+			"armor": ["None", "Leather", "Chain Shirt"]
+		},
+		"farmer": {
+			"weapons": ["Pitchfork", "Shovel", "None"],
+			"abilities": ["Repair", "Calm Animal"],
+			"armor": ["Clothes", "Leather Apron"]
+		},
+		"goat": {
+			"weapons": ["Headbutt"],
+			"abilities": _get_goat_abilities(),
+			"armor": ["Fur"]
+		},
+		"scarecrow": {
+			"weapons": ["Scythe", "Pitchfork"],
+			"abilities": ["Intimidate", "Scare"],
+			"armor": ["Straw"]
+		},
+		"fire": {
+			"weapons": ["Flame Burst"],
+			"abilities": ["Fireball", "Flame Wall"],
+			"armor": ["Magma Shell"]
+		},
+		"water": {
+			"weapons": ["Water Jet"],
+			"abilities": ["Tidal Wave", "Healing Waters"],
+			"armor": ["Water Shield"]
+		}
+	}
+
+## Look up ability names through the AbilityRegistry autoload. The per-actor
+## allow-list stays here because the registry intentionally does not know which
+## actor type owns which ability — that policy lives with the MainMenu.
+## NOTE: The displayed names match the `ability_name` field on each
+## AbilityAction subclass; the registry resolves them without instantiating
+## anything at menu-open time.
+func _get_goblin_abilities() -> Array:
+	return _resolve_ability_names_for(["Nimble Escape", "Redirect Attack"])
+
+func _get_goat_abilities() -> Array:
+	return _resolve_ability_names_for(["Headbutt Charge"])
+
+## Resolves a per-actor allow-list of ability display names against the
+## AbilityRegistry. Unknown entries are silently dropped (rather than crashing
+## the menu) so registry coverage gaps don't kill the UI.
+func _resolve_ability_names_for(allow_list: Array) -> Array:
+	var result: Array = []
+	var registry: Node = get_node_or_null("/root/AbilityRegistry")
+	if registry == null:
+		# Defensive fallback: if the autoload is missing, surface the labels
+		# the caller asked for so the UI is at least readable.
+		for label in allow_list:
+			result.append(String(label))
+		return result
+	for label in allow_list:
+		var key: StringName = StringName(label)
+		if registry.get_ability_script(key) != null:
+			result.append(String(label))
+	return result
+
+# Goblin base stats (for reference in info display)
+const GOBLIN_STATS: Dictionary = {
+	"hp": 7.0, "max_hp": 7.0,
+	"ac": 12,
+	"stealth": 6,
+	"perception": 9,
+	"str": -1, "dex": 2, "con": 0,
+	"int": -1, "wis": 0, "cha": -1
+}
+
+var character_cards: Dictionary = {}
+var selected_character: String = "goblin"
+
+func _ready() -> void:
+	# Add weapons inventory to the weapon tab
+	var inventory = load("res://UI/EquipmentInventory.tscn").instantiate()
+	weapon_tab_container.add_child(inventory)
+	
+	_populate_character_cards()
+	
+	random_seed_check.toggled.connect(_on_random_seed_toggled)
+	_on_random_seed_toggled(random_seed_check.button_pressed)
+	
+	scale_slider.value_changed.connect(_on_scale_changed)
+	height_slider.value_changed.connect(_on_height_changed)
+	dirt_slider.value_changed.connect(_on_dirt_changed)
+	
+	# Initialize values from GameSettings
+	var gs = get_node_or_null("/root/GameSettings")
+	if gs:
+		size_input.value = gs.grid_width
+		seed_input.value = gs.noise_seed
+		scale_slider.value = gs.noise_frequency
+		height_slider.value = gs.height_step
+		dirt_slider.value = gs.dirt_threshold
+		
+		# Set initial actor path from settings if it exists
+		if gs.get("selected_actor_type") in ACTOR_SCENES:
+			selected_actor_path = ACTOR_SCENES[gs.selected_actor_type]
+		else:
+			selected_actor_path = ACTOR_SCENES["fire"] # Default
+		
+		_on_scale_changed(scale_slider.value)
+		_on_height_changed(height_slider.value)
+		_on_dirt_changed(dirt_slider.value)
+	
+	# Ensure mouse is visible for the menu
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	
+	_style_all_buttons()
+
+func _style_all_buttons() -> void:
+	var container: VBoxContainer = $CenterContainer/VBoxContainer
+	for child in container.find_children("*", "Button", true):
+		if child is Button:
+			UIStyle.apply_button_theme(child as Button)
+
+func _populate_character_cards() -> void:
+	# Clear existing cards
+	for child in character_cards_container.get_children():
+		child.queue_free()
+	character_cards.clear()
+	
+	var gs = get_node_or_null("/root/GameSettings")
+	var current_type = gs.selected_actor_type if gs else "goblin"
+	
+	var card_scene = load("res://UI/CharacterSelectCard.tscn")
+	
+	for actor_name in ACTOR_SCENES:
+		var card = card_scene.instantiate()
+		var equipment = CHARACTER_EQUIPMENT.get(actor_name, {"weapons": [], "abilities": [], "armor": []})
+		
+		# Set stats (using goblin stats for all for now, could be expanded per character)
+		var stats_dict = null
+		if actor_name == "goblin":
+			stats_dict = GOBLIN_STATS
+		
+		# Capture actor_name for the lambda, ignore signal's argument since we use captured value
+		var captured_actor_name = actor_name
+		card.character_selected.connect(func(_sig_arg): _on_character_selected(captured_actor_name))
+		card.equipment_changed.connect(_on_equipment_changed)
+		
+		character_cards_container.add_child(card)
+		character_cards[actor_name] = card
+		
+		# Call setup deferred so @onready variables are initialized
+		var selected = actor_name == current_type
+		# Determine saved equipment indices for this actor
+		var saved_weapon = 0
+		var saved_ability = 0
+		var saved_armor = 0
+		if gs and actor_name == gs.selected_actor_type:
+			saved_weapon = gs.selected_weapon_index
+			saved_ability = gs.selected_ability_index
+			saved_armor = gs.selected_armor_index
+		
+		card.call_deferred("setup",
+			actor_name.capitalize(),
+			Array(equipment.get("weapons", [])),
+			Array(equipment.get("abilities", [])),
+			Array(equipment.get("armor", [])),
+			selected,
+			saved_weapon,
+			saved_ability,
+			saved_armor
+		)
+		
+		# Set stats after setup (call_deferred for non-signal methods)
+		if actor_name == "goblin":
+			card.call_deferred("set_stats", GOBLIN_STATS)
+	
+	# Select the initial character
+	selected_character = current_type
+	_update_card_selections()
+
+func _on_character_selected(actor_name: String) -> void:
+	selected_character = actor_name
+	_update_card_selections()
+	
+	# Update selected actor path
+	if actor_name in ACTOR_SCENES:
+		selected_actor_path = ACTOR_SCENES[actor_name]
+
+func _on_equipment_changed(actor_name: String, weapon_index: int, ability_index: int, armor_index: int) -> void:
+	var gs = get_node_or_null("/root/GameSettings")
+	if gs and actor_name == selected_character:
+		gs.selected_weapon_index = weapon_index
+		gs.selected_ability_index = ability_index
+		gs.selected_armor_index = armor_index
+
+func _update_card_selections() -> void:
+	for actor_name in character_cards:
+		var card = character_cards[actor_name]
+		if card and card is CharacterSelectCard:
+			card.is_selected_card = (actor_name == selected_character)
+
+func _on_scale_changed(value: float) -> void:
+	if scale_value_label: scale_value_label.text = "%.2f" % value
+
+func _on_height_changed(value: float) -> void:
+	if height_value_label: height_value_label.text = "%.1f" % value
+
+func _on_dirt_changed(value: float) -> void:
+	if dirt_value_label:
+		dirt_value_label.text = "%.2f" % MapSettingsHelper.normalize_dirt_value(value)
+
+func _on_character_tab_button_pressed() -> void:
+	character_tab_container.visible = !character_tab_container.visible
+	if character_tab_container.visible:
+		weapon_tab_container.visible = false
+		map_settings_container.visible = false
+		controls_panel.visible = false
+	else:
+		_update_controls_panel_visibility()
+
+func _on_weapon_tab_button_pressed() -> void:
+	weapon_tab_container.visible = !weapon_tab_container.visible
+	if weapon_tab_container.visible:
+		character_tab_container.visible = false
+		map_settings_container.visible = false
+		controls_panel.visible = false
+	else:
+		_update_controls_panel_visibility()
+
+func _on_map_settings_button_pressed() -> void:
+	map_settings_container.visible = !map_settings_container.visible
+	if map_settings_container.visible:
+		character_tab_container.visible = false
+		weapon_tab_container.visible = false
+		controls_panel.visible = false
+	else:
+		_update_controls_panel_visibility()
+
+func _on_ranch_button_pressed() -> void:
+	get_tree().change_scene_to_file("res://Components/BreedingComponents/Ranch/Ranch.tscn")
+
+func _on_random_seed_toggled(button_pressed: bool) -> void:
+	seed_input.editable = !button_pressed
+
+func _update_controls_panel_visibility() -> void:
+	# Only show the controls panel when no other panels are visible
+	var no_panels_open = !character_tab_container.visible and !weapon_tab_container.visible and !map_settings_container.visible
+	controls_panel.visible = no_panels_open
+
+func _on_play_button_pressed() -> void:
+	var gs = get_node_or_null("/root/GameSettings")
+	if gs:
+		# Use helper to get settings from controls
+		var settings = MapSettingsHelper.get_settings_dict(
+			size_input, seed_input, random_seed_check,
+			scale_slider, height_slider, dirt_slider
+		)
+		MapSettingsHelper.apply_settings_to_game_settings(settings, gs)
+		
+		# Find the actor name from the path
+		for actor_name in ACTOR_SCENES:
+			if ACTOR_SCENES[actor_name] == selected_actor_path:
+				gs.selected_actor_type = actor_name.to_lower()
+				break
+		
+		# Get equipment selection from card
+		if selected_character in character_cards:
+			var card = character_cards[selected_character]
+			var equipment = card.get_selected_equipment()
+			gs.selected_weapon_index = equipment.weapon_index
+			gs.selected_ability_index = equipment.ability_index
+			gs.selected_armor_index = equipment.armor_index
+		
+		# Persist settings to disk
+		gs.save_settings()
+		
+	get_tree().change_scene_to_file("res://Play Space/Arena.tscn")

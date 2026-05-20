@@ -1,0 +1,137 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/RanchUI.gd" id="1_ranch"]
+
+[node name="RanchUI" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ranch")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.470588)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="DoesPanel" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/DoesPanel"]
+layout_mode = 2
+text = "DOES"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/HBoxContainer/DoesPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DoesContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer/DoesPanel/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ActionCenter" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Status" type="HBoxContainer" parent="MarginContainer/HBoxContainer/ActionCenter"]
+layout_mode = 2
+alignment = 1
+
+[node name="DayLabel" type="Label" parent="MarginContainer/HBoxContainer/ActionCenter/Status"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Day: 1"
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/HBoxContainer/ActionCenter/Status"]
+layout_mode = 2
+
+[node name="GoldLabel" type="Label" parent="MarginContainer/HBoxContainer/ActionCenter/Status"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Gold: 100"
+
+[node name="Selection" type="HBoxContainer" parent="MarginContainer/HBoxContainer/ActionCenter"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="SelectedDoeCard" type="Control" parent="MarginContainer/HBoxContainer/ActionCenter/Selection"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 220)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/ActionCenter/Selection"]
+layout_mode = 2
+text = "+"
+
+[node name="SelectedBuckCard" type="Control" parent="MarginContainer/HBoxContainer/ActionCenter/Selection"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 220)
+layout_mode = 2
+
+[node name="BreedButton" type="Button" parent="MarginContainer/HBoxContainer/ActionCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "BREED"
+
+[node name="NextDayButton" type="Button" parent="MarginContainer/HBoxContainer/ActionCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "NEXT DAY"
+
+[node name="CloseButton" type="Button" parent="MarginContainer/HBoxContainer/ActionCenter"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "CLOSE"
+
+[node name="CloseButton" type="Button" parent="MarginContainer/HBoxContainer/ActionCenter"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "CLOSE"
+
+[node name="BucksPanel" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/BucksPanel"]
+layout_mode = 2
+text = "BUCKS"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/HBoxContainer/BucksPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BucksContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer/BucksPanel/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CaptureProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Components/ActorComponents/CaptureProfile.gd" id="1_capture"]
+
+[resource]
+script = ExtResource("1_capture")
+save_dc = 12
+save_ability = &"dexterity"
+stun_duration = 4.0
+catch_chance = 0.4
+allowed_actor_types = []
