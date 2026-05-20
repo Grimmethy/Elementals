@@ -86,7 +86,16 @@ func _process_tile(tile: HexTileData, check_time: float) -> void:
 			_process_puddle(tile, check_time)
 
 func _process_fire(tile: HexTileData, _check_time: float) -> void:
-	# Fire has two events: spread at 4s, extinguish at 5s
+	# Fire has two events: spread at 4s, extinguish at 5s.
+	# fire_duration was never incremented anywhere, so the original
+	# conditions never fired. Advance it based on which scheduled event
+	# this callback represents (the schedule was set up to land exactly
+	# at duration 4.0 then 5.0 via _get_next_check_time).
+	if not tile.fire_spread_triggered:
+		tile.fire_duration = 4.0
+	else:
+		tile.fire_duration = 5.0
+
 	if not tile.fire_spread_triggered and tile.fire_duration >= 4.0:
 		tile.fire_spread_triggered = true
 		arena.tile_interaction.spread_fire(tile)
