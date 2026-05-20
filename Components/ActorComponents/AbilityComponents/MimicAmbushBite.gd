@@ -29,8 +29,24 @@ func execute(type: String, _value = null) -> void:
 		_emit_message("No target in Ambush Bite range.")
 		return
 	var dir: Vector3 = (target.global_position - actor.global_position).normalized()
-	target.take_damage(PIERCE_DAMAGE, "piercing", dir)
-	target.take_damage(ACID_DAMAGE, "acid", dir)
+	# Grappler trait (D&D 5e Mimic): advantage on attacks against a creature
+	# the mimic is grappling. We simulate "advantage" on the damage roll by
+	# rolling twice and taking the higher — applied here as a bite-damage
+	# crit-multiplier when the target carries our grapple meta.
+	var has_grappler: bool = bool(actor.get_meta("grappler_advantage", false))
+	var target_is_glued: bool = bool(target.get_meta("grappled_by_mimic", false))
+	var pierce_damage: float = PIERCE_DAMAGE
+	var acid_damage: float = ACID_DAMAGE
+	if has_grappler and target_is_glued:
+		# Roll twice (advantage proxy) and apply the higher multiplier.
+		var roll_a: float = randf_range(1.0, 1.5)
+		var roll_b: float = randf_range(1.0, 1.5)
+		var mult: float = maxf(roll_a, roll_b)
+		pierce_damage *= mult
+		acid_damage *= mult
+		_emit_message("%s bites %s with Grappler advantage!" % [actor.name, target.name])
+	target.take_damage(pierce_damage, "piercing", dir)
+	target.take_damage(acid_damage, "acid", dir)
 	if target.has_method("stun"):
 		target.stun(STUN_DURATION)
 	_cooldown_left = COOLDOWN

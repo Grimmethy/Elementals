@@ -9,8 +9,10 @@ var arena: Node3D # ArenaGrid
 @export var goat_actor_scene: PackedScene = preload("res://scenes/actors/GoatActor.tscn")
 @export var goblin_scene: PackedScene = preload("res://scenes/actors/GoblinMinion.tscn")
 @export var mimic_scene: PackedScene = preload("res://scenes/actors/MimicActor.tscn")
+@export var mushroom_scene: PackedScene = preload("res://scenes/actors/MushroomActor.tscn")
 @export var scarecrow_scene: PackedScene = preload("res://scenes/actors/ScarecrowDummy.tscn")
 @export_range(0, 20, 1) var random_wild_goat_count: int = 4
+@export_range(0, 20, 1) var mushroom_count: int = 0
 
 func _get_selected_actor_type() -> String:
 	return GameSettings.selected_actor_type
@@ -27,6 +29,12 @@ func spawn_initial_actors() -> void:
 
 	# Spawn ambient wildlife through the arena spawner, not through the quest board.
 	spawn_random_wild_goats(random_wild_goat_count)
+
+	# Spawn wild Mushrooms (first species using the procedural-genome system).
+	for i in range(maxi(0, mushroom_count)):
+		var mushroom_tile: HexTileData = _get_random_spawn_tile()
+		if mushroom_tile:
+			spawn_actor_at_tile("mushroom", mushroom_tile)
 
 	# Spawn persistent/selected goats from HerdManager if applicable.
 	if has_node("/root/HerdManager"):
@@ -56,6 +64,7 @@ func get_selected_actor_scene() -> PackedScene:
 		"water": return water_actor_scene
 		"goat": return goat_actor_scene
 		"mimic": return mimic_scene
+		"mushroom": return mushroom_scene
 	return farmer_scene
 
 func spawn_actor(type: String) -> Node3D:
@@ -277,6 +286,7 @@ func spawn_actor_at_tile(type: String, tile: HexTileData) -> Node3D:
 		"goat": scene = goat_actor_scene
 		"goblin": scene = goblin_scene
 		"mimic": scene = mimic_scene
+		"mushroom": scene = mushroom_scene
 
 	if scene:
 		var actor: Node3D = scene.instantiate()

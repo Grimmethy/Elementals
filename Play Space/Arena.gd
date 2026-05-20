@@ -371,7 +371,7 @@ func _register_static_obstacles() -> void:
 		# Trees and Fences
 		if tile.feature:
 			if tile.feature is HarvestableTree:
-				if tile.feature.current_state in [HarvestableTree.State.STANDBY, HarvestableTree.State.FELLEDB]:
+				if tile.feature.get_state() in [HarvestableTree.State.STANDBY, HarvestableTree.State.FELLEDB]:
 					is_blocker = true
 					weight = 1.5
 			elif tile.feature is FenceFeature:

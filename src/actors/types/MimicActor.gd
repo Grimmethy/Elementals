@@ -5,6 +5,10 @@ const MimicControllerScript = preload("res://src/actors/types/MimicController.gd
 const MimicShapechangeScript = preload("res://Components/ActorComponents/AbilityComponents/MimicShapechange.gd")
 const MimicAmbushBiteScript = preload("res://Components/ActorComponents/AbilityComponents/MimicAmbushBite.gd")
 
+## Optional genome carrier. Wild mimics get a fresh randomized one in _ready;
+## captured / bred mimics inherit theirs from the breeding pipeline.
+@export var mimic_data: MimicData = null
+
 func _init() -> void:
 	element_type = "mimic"
 	should_bob = false
@@ -19,10 +23,50 @@ func _ready() -> void:
 	super._ready()
 	if faction_component and not is_playable and faction_component.faction == FactionComponent.Faction.NEUTRAL:
 		faction_component.setup(FactionComponent.Faction.MONSTERS)
+	# Ensure we have a genome to drive the procedural body. Wild spawns and
+	# player-selected mimics both get a fresh randomized one so each Mimic
+	# in the world looks like a different piece of disguised furniture.
+	if mimic_data == null:
+		mimic_data = MimicData.new()
+		mimic_data.randomize_genome()
 	_apply_mimic_stat_profile()
+	_apply_mimic_dnd_cap()
 	call_deferred("_equip_default_unarmed")
+	call_deferred("_push_genome_to_body")
 	_setup_ability_from_settings()
 	call_deferred("_refresh_selected_ability_ui")
+
+## Push the randomized/inherited genome to ProceduralMimicChest so it can
+## rebuild from the genome shape instead of the legacy voxel defaults.
+##
+## We ONLY assign mimic_data here — the setter on ProceduralMimicChest fires
+## rebuild_from_genome() automatically when in-tree. Calling it explicitly
+## after the assignment would trigger a second rebuild in the same frame,
+## which leaves the first rebuild's nodes queue_freed but still in the tree
+## until end-of-frame (visible as faint "ghost" geometry that the player
+## might describe as "the old tongue is still there").
+func _push_genome_to_body() -> void:
+	var body: Node = get_node_or_null("Body")
+	if body == null:
+		return
+	if "mimic_data" in body:
+		body.mimic_data = mimic_data
+
+## Apply the D&D 5e Mimic statblock cap:
+##   - Stealth +5 (mimicking object)
+##   - Prone-immune (Mimics have no traditional legs to knock out)
+##   - Grappler trait (advantage vs grappled targets — checked by MimicAmbushBite)
+##   - Adhesive trait is on the CreatureMorphComponent (triggered while in object form)
+## All four are exposed via metadata so external systems (StatusEffectComponent,
+## the future Stealth roll system, MimicAmbushBite) can opt into the bonus without
+## hard-coding MimicActor references.
+func _apply_mimic_dnd_cap() -> void:
+	set_meta("stealth_bonus", 5)
+	set_meta("prone_immune", true)
+	set_meta("grappler_advantage", true)
+	# Adhesive escape DC (5e Mimic: DC 13 Strength).
+	set_meta("adhesive_escape_dc", 13)
+	set_meta("adhesive_disadvantage_on_escape", true)
 
 func _create_controller() -> ActorAIController:
 	return MimicControllerScript.new()

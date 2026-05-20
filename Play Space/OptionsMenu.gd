@@ -56,8 +56,8 @@ func _update_goat_controls() -> void:
 		
 		if is_goat:
 			var gc = target.get_node_or_null("GeneticComponent")
-			if gc and gc.goat_data:
-				var color = gc.goat_data.base_color
+			if gc and gc.actor_data:
+				var color = gc.actor_data.base_color
 				red_slider.value = color.r
 				green_slider.value = color.g
 				blue_slider.value = color.b
@@ -68,8 +68,8 @@ func _on_color_slider_changed(_value: float) -> void:
 		var target = arena.current_controlled_actor
 		if target:
 			var gc = target.get_node_or_null("GeneticComponent")
-			if gc and gc.goat_data:
-				gc.goat_data.base_color = Color(red_slider.value, green_slider.value, blue_slider.value)
+			if gc and gc.actor_data:
+				gc.actor_data.base_color = Color(red_slider.value, green_slider.value, blue_slider.value)
 
 func _on_return_pressed() -> void:
 	get_tree().paused = false

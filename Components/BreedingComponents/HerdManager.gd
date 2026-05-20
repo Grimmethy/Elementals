@@ -98,18 +98,33 @@ func breed(parent_a: ActorData, parent_b: ActorData) -> bool:
 
 func next_day() -> void:
 	progression_manager.advance_day(herd_manager.herd)
-	
-	# Process pregnancies with generic handler
+
+	# Process pregnancies with the generic polymorphic handler. Any kid
+	# returned (GoatData, MimicData, GoblinData hybrid, ...) is added to the
+	# herd via the actor-type-agnostic add_goat() — HerdComponent stores the
+	# herd as Array[ActorData], not Array[GoatData].
 	var new_kids: Array[ActorData] = breeding_manager.process_pregnancy(herd_manager.herd)
 	for kid in new_kids:
-		# For now, add as GoatData if possible; future types may have their own handlers
-		var goat_kid = kid as GoatData
-		if goat_kid:
-			add_goat(goat_kid)
-		# TODO: Add handlers for other actor types (GoblinData, ElementalData, etc.)
-	
+		if kid == null:
+			continue
+		add_goat(kid)
+		if kid.inherit_mimic_skills:
+			print("[Breeding] %s inherited mimic skills (mimic_blood=%.2f)" % [
+				_kid_display_name(kid),
+				kid.mimic_blood
+			])
+
 	# Any other day-transition logic...
 	GameEvents.herd_updated.emit()
+
+func _kid_display_name(kid: ActorData) -> String:
+	if kid == null:
+		return "<null>"
+	if "goat_name" in kid:
+		return String(kid.goat_name)
+	if "creature_name" in kid:
+		return String(kid.creature_name)
+	return kid.get_actor_type()
 
 func save_game() -> void:
 	save_manager.save_game(herd_manager.herd, economy_manager.gold, progression_manager.current_day)
@@ -283,6 +298,16 @@ func _build_captured_data(target: Actor, species_id: String) -> GoatData:
 			data.base_color = Color(0.46, 0.31, 0.17)
 			data.pattern_color = Color(0.24, 0.16, 0.08)
 			data.gold_value = 80
+			# Captured mimics retain their full bloodline. Without this, the
+			# only way a player ever gets mimic blood into the herd today (the
+			# net) would silently downgrade the creature to a vanilla goat for
+			# breeding purposes, defeating the 30/60/100 probability gates.
+			data.mimic_blood = 1.0
+			data.inherit_mimic_skills = true
+		"mushroom":
+			data.base_color = Color(0.86, 0.25, 0.25)
+			data.pattern_color = Color(0.95, 0.95, 0.88)
+			data.gold_value = 45
 		_:
 			data.base_color = Color(0.68, 0.58, 0.43)
 			data.pattern_color = Color(0.30, 0.23, 0.16)
