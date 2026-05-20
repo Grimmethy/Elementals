@@ -7,7 +7,98 @@ Capture is a multi-stage loop: **encounter → restrain → drag → tame**. Wil
 
 We translate this into a capture tool with short range (5/15), hit points (5 HP, AC 10), and a Restraint Rating that makes following steps possible.
 
-## Restraint Tiers & Items
+---
+
+## Current Implementation
+
+The capture system is implemented across these scripts:
+
+### HerdManager.gd (Lines 117-324)
+Primary capture logic via:
+- `attempt_capture_with_net(capturer, target_position, reach)` → Calls `throw_net_at()`
+- `use_net_close(capturer, target_position, use_target_position, max_distance)` → Close-range capture
+- `throw_net_at(capturer, target_position, max_distance, impact_radius)` → Ranged net throw
+- `_resolve_capture_attempt(capturer, target)` → Resolves capture with d20 roll
+- `_find_capture_target(capturer, search_center, max_distance, point_radius)` → Target acquisition
+- `_is_capture_candidate(capturer, target)` → Validates capture eligibility
+- `_build_captured_data(actor)` → Creates `GoatData` from captured actor
+
+### WeaponComponent.gd (Lines 238-289)
+Net trigger methods:
+- `use_net_close_at(target_position)` → Calls `_execute_net_capture(pos, false)`
+- `throw_net_capture_at(target_position)` → Calls `_execute_net_capture(pos, true)`
+- `_execute_net_capture(target_pos, consume_net)` → Consumes net, calls HerdManager
+
+### Constants (HerdManager.gd)
+```gdscript
+const NET_THROW_RANGE: float = 15.0      # Ranged attack range
+const NET_CLOSE_RANGE: float = 5.0       # Melee-range capture
+const NET_CAPTURE_CHANCE: float = 0.65  # 65% base capture probability
+const NET_THROW_IMPACT_RADIUS: float = 2.0
+```
+
+### Capture Resolution Flow
+1. Player triggers attack with net-equipped weapon
+2. `WeaponComponent._execute_net_capture()` called (consumes ammo if thrown)
+3. `HerdManager.use_net_close()` or `throw_net_at()` invoked
+4. Target search within radius (5 close, 15 throw)
+5. d20 roll against `NET_CAPTURE_CHANCE` (20 = auto-success, 1 = auto-fail)
+6. On success: `GoatData` created, actor removed from arena, added to herd
+
+---
+
+## Relevant Project Scripts
+
+```
+res://
+├── Components/
+│   ├── BreedingComponents/
+│   │   ├── GoatData.gd              # Captured actor data structure
+│   │   ├── HerdManager.gd           # ← PRIMARY CAPTURE LOGIC
+│   │   └── Ranch/
+│   │       └── Ranch.gd             # Home base for confined creatures
+│   └── WeaponComponents/
+│       ├── WeaponComponent.gd       # ← NET TRIGGER METHODS
+│       └── WeaponVisualComponent.gd  # Net weapon visuals
+├── Core/
+│   └── ItemsAutoload.gd             # Net item definition
+└── Markdowns/
+	└── Capture.md                   # ← THIS DOCUMENT
+```
+
+---
+
+## Net Visual Specification
+
+### Structure
+- **4 metal spheres** — one in each corner of the net
+- **Rope grid** — 4×4 grid of cylindrical connections
+- **Material** — Metallic spheres, rope/chain texture for cylinders
+
+### Layout (Top-Down View)
+```
+	●───────────────●
+	│               │
+	│   4×4 rope    │
+	│     grid      │
+	│               │
+	●───────────────●
+```
+
+### Grid Connections
+- 5 nodes per row × 5 nodes per column = 25 total intersection points
+- Horizontal ropes connect adjacent nodes (left to right): 4 per row × 5 rows = 20 segments
+- Vertical ropes connect adjacent nodes (top to bottom): 5 per column × 4 columns = 20 segments
+- Total rope segments: 40 cylindrical connections
+
+### Edge Cases
+- **Collapsed state** — Net curls into a ball when not deployed (tightly packed spheres and ropes)
+- **Stretching** — Ropes stretch slightly when net is thrown (visual only, not physics-based)
+- **Damage** — Net can break at cylinder segments (HP-based destruction, AC 10)
+
+---
+
+## Restraint Tiers & Items (Design)
 
 1. **Net (Tier 2)**: Launches the encounter. Grants Restraint Rating 2, base Escape DC 10 STR (Athletics). Creature stays Restrained (cannot move) but can escape with repeated checks.
 2. **Ropes/snare/lasso (Tier 1)**: Soft binds. Add Restraint Rating +1 each when applied, raise escape DC, but easy to break. Useful when approaching restrained targets.

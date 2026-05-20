@@ -38,9 +38,9 @@ The `DetailLevel` enum is the master switch that controls complexity across ever
 
 ```gdscript
 enum DetailLevel {
-    SIMPLE,    # Background NPCs, crowds, distant enemies
-    MODERATE,  # Standard enemies, secondary characters
-    COMPLEX    # Player character, bosses, hero NPCs, cinematics
+	SIMPLE,    # Background NPCs, crowds, distant enemies
+	MODERATE,  # Standard enemies, secondary characters
+	COMPLEX    # Player character, bosses, hero NPCs, cinematics
 }
 ```
 
@@ -72,10 +72,10 @@ Detail level can be changed at runtime — the generator rebuilds the affected s
 ```gdscript
 # In CreatureGenerator
 func set_detail_level(level: DetailLevel) -> void:
-    definition.detail_level = level
-    _rebuild_mesh()        # ShapeAssembler reruns with new segment counts
-    _rebuild_skeleton()    # SkeletonInferer updates bone count
-    _configure_animation() # AnimationController enables/disables subsystems
+	definition.detail_level = level
+	_rebuild_mesh()        # ShapeAssembler reruns with new segment counts
+	_rebuild_skeleton()    # SkeletonInferer updates bone count
+	_configure_animation() # AnimationController enables/disables subsystems
 ```
 
 ---
@@ -93,9 +93,9 @@ func set_detail_level(level: DetailLevel) -> void:
 │                    │                        │
 │         writes / reads                      │
 └──────────────────────────────────┬──────────┘
-                                   │
-                    CreatureDefinition.tres
-                                   │
+								   │
+					CreatureDefinition.tres
+								   │
 ┌──────────────────────────────────▼──────────┐
 │            RUNTIME GENERATION LAYER         │
 │                                             │
@@ -243,10 +243,10 @@ Handles reading and writing `CreatureDefinition` resources. Thin wrapper around 
 ```gdscript
 # DefinitionSerializer.gd
 func save(definition: CreatureDefinition, path: String) -> void:
-    # Validate: ensure no default-only fields are ambiguous
-    _validate(definition)
-    ResourceSaver.save(definition, path)
-    # Register in the editor's recent files
+	# Validate: ensure no default-only fields are ambiguous
+	_validate(definition)
+	ResourceSaver.save(definition, path)
+	# Register in the editor's recent files
     EditorInterface.get_resource_filesystem().scan()
 ```
 
@@ -567,7 +567,7 @@ res://
 │   └── scenes/
 │       └── creature_root.tscn   ← one scene, many definitions
 └── demo/
-    └── demo_scene.tscn
+	└── demo_scene.tscn
 ```
 
 ---
@@ -962,4 +962,3 @@ class_name: CreatureGizmoPlugin
 ---
 
 *Implementation ready. Begin with Phase 1 — CreatureDefinition.*
-
