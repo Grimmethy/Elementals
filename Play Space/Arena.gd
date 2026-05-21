@@ -32,7 +32,6 @@ var minimap_component: Node # ArenaMinimapHandler
 var actor_spawner: ArenaSpawnerComponent
 var player_input: PlayerInputComponent
 var grid_generator: GridGenerator
-var tree_spawner: TreeSpawner
 
 var farmstead_interior_tiles: Array[HexTileData]:
 	get: return grid_generator.farmstead_interior_tiles if grid_generator else []
@@ -72,8 +71,6 @@ func _ready() -> void:
 	grid_generator.setup_farmstead()
 	if actor_spawner:
 		actor_spawner.spawn_initial_actors()
-	if tree_spawner:
-		tree_spawner.spawn_trees()
 	add_to_group("arena")
 
 	if player_input:
