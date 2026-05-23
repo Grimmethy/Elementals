@@ -58,7 +58,7 @@ layout_mode = 2
 text = "Select Your Fighter:"
 horizontal_alignment = 1
 
-[node name="CharacterScroll" type="ScrollContainer" parent="CenterContainer/VBoxContainer/CharacterTabContainer/ActorSelection"]
+[node name="CharacterScroll" type="ScrollContainer" parent="CenterContainer/VBoxContainer/CharacterTabContainer/ActorSelection" unique_id=1125472102]
 custom_minimum_size = Vector2(0, 360)
 layout_mode = 2
 horizontal_scroll_mode = 2
