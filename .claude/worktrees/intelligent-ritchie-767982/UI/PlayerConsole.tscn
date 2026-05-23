@@ -1,0 +1,138 @@
+[gd_scene format=3 uid="uid://dfugpdrbvku5s"]
+
+[ext_resource type="Script" uid="uid://ugsediyp1jss" path="res://UI/PlayerConsole.gd" id="1_p_console"]
+[ext_resource type="PackedScene" uid="uid://c4bn2q222h0rt" path="res://UI/DisplayCard/WeaponCard.tscn" id="2_w4v5c"]
+[ext_resource type="PackedScene" path="res://UI/DisplayCard/AbilityCard.tscn" id="3_a4v5c"]
+[ext_resource type="PackedScene" uid="uid://becy15jcmkmob" path="res://UI/DisplayCard/ActorCard.tscn" id="4_actor_card"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_o6x3k"]
+bg_color = Color(0.08, 0.085, 0.11, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.46, 0.36, 0.18, 0.88)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="PlayerConsole" type="CanvasLayer" unique_id=758921307]
+script = ExtResource("1_p_console")
+
+[node name="Control" type="Control" parent="." unique_id=651431327]
+layout_mode = 3
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -344.0
+offset_right = 440.0
+offset_bottom = -20.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control" unique_id=289090941]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Control/VBoxContainer" unique_id=1046011799]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="ListPanel" type="PanelContainer" parent="Control/VBoxContainer/HBoxContainer" unique_id=2107840319]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_o6x3k")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Control/VBoxContainer/HBoxContainer/ListPanel" unique_id=813357431]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="WeaponList" type="VBoxContainer" parent="Control/VBoxContainer/HBoxContainer/ListPanel/ScrollContainer" unique_id=1898528903]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CardContainer" type="VBoxContainer" parent="Control/VBoxContainer/HBoxContainer" unique_id=2034826206]
+layout_mode = 2
+size_flags_vertical = 8
+alignment = 2
+
+[node name="CycleNote" type="Label" parent="Control/VBoxContainer/HBoxContainer/CardContainer" unique_id=1835871709]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.588235)
+theme_override_font_sizes/font_size = 12
+text = "use Q & E to cycle weapons"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="CardsHBox" type="HBoxContainer" parent="Control/VBoxContainer/HBoxContainer/CardContainer" unique_id=764645966]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="WeaponCard" parent="Control/VBoxContainer/HBoxContainer/CardContainer/CardsHBox" unique_id=563808204 instance=ExtResource("2_w4v5c")]
+unique_name_in_owner = true
+layout_mode = 2
+highlight_color = null
+base_color = null
+hover_color = null
+
+[node name="AbilityCard" parent="Control/VBoxContainer/HBoxContainer/CardContainer/CardsHBox" unique_id=867506386 instance=ExtResource("3_a4v5c")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="DebugListToggle" type="CheckBox" parent="Control/VBoxContainer/HBoxContainer" unique_id=364430989]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Debug: Show Weapon List"
+
+[node name="CardsToggle" type="CheckBox" parent="Control/VBoxContainer/HBoxContainer" unique_id=364430990]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+button_pressed = true
+text = "Show Cards"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="Control/VBoxContainer" unique_id=1046011800]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ActorCardContainer" type="Control" parent="." unique_id=275931617]
+layout_mode = 3
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -340.0
+offset_top = -320.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="ActorCard" parent="ActorCardContainer" unique_id=562202231 instance=ExtResource("4_actor_card")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -150.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2

@@ -267,6 +267,21 @@ max_value = 1.0
 step = 0.01
 value = 1.0
 
+[node name="BrightnessContainer" type="VBoxContainer" parent="UI/OptionsMenu/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="UI/OptionsMenu/PanelContainer/MarginContainer/VBoxContainer/BrightnessContainer"]
+layout_mode = 2
+text = "Brightness"
+horizontal_alignment = 1
+
+[node name="BrightnessSlider" type="HSlider" parent="UI/OptionsMenu/PanelContainer/MarginContainer/VBoxContainer/BrightnessContainer"]
+layout_mode = 2
+min_value = 0.25
+max_value = 1.6
+step = 0.02
+value = 0.85
+
 [node name="DebugContainer" type="VBoxContainer" parent="UI/OptionsMenu/PanelContainer/MarginContainer/VBoxContainer" unique_id=1950969912]
 layout_mode = 2
 script = ExtResource("3")

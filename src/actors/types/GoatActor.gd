@@ -21,7 +21,6 @@ signal screamed(position: Vector3)
 var scream_component: GoatScreamComponent
 
 @onready var _whack_player: AudioStreamPlayer3D = get_node_or_null("WhackPlayer")
-@onready var _swoosh_player: AudioStreamPlayer3D = get_node_or_null("SwooshPlayer")
 
 var goat_data: GoatData:
 	get: return _data as GoatData
@@ -51,25 +50,75 @@ func _ready() -> void:
 	# Configure goat-specific communication (uses the "screamed" signal)
 	if communication_component:
 		communication_component.broadcast_signal_name = &"screamed"
-		communication_component.range = 15.0
+		communication_component.communication_range = 15.0
 		communication_component.probability = 0.25
 
 
 func _on_data_changed_impl() -> void:
 	if not goat_data:
 		return
-	
+
 	# Goat-specific scaling (Base ability scores and move_speed are synced in Actor)
 	if health_component:
 		max_hp = health_component.roll_max_health(1, 8, _rng)
-	
+
 	charge_speed = 25.0 + (5.0 * ability_scores_component.strength)
 	charge_distance = 5.0 + (1.0 * ability_scores_component.strength)
-	
+
 	actor_size = goat_data.body_type as Size
-	
+
 	if visual_component:
 		visual_component.update_goat_visuals(goat_data)
+
+	# Hybrid-breeding consumer: a goat whose data carries the inherit_mimic_skills
+	# flag (rolled during breeding via ActorData.apply_mimic_lineage) gains the
+	# Mimic CreatureMorphComponent + SkillCopyComponent + MimicShapechange ability.
+	# Without this graft the headline 30%/60%/100% probability gate would be inert.
+	if goat_data.inherit_mimic_skills:
+		_graft_mimic_kit()
+	# Propagate mimic_blood as actor meta so future systems (visual tints, AI
+	# behavior, capture-tool resistance) can read it without holding an
+	# ActorData reference.
+	set_meta("mimic_blood", goat_data.mimic_blood)
+
+## Add the Mimic ability suite to this goat. AbilityAction instances are
+## per-actor (must not be shared across actors), so we new() them fresh.
+func _graft_mimic_kit() -> void:
+	if has_meta("mimic_kit_grafted"):
+		return
+	set_meta("mimic_kit_grafted", true)
+	# CreatureMorphComponent + SkillCopyComponent are children of the actor.
+	const MorphScript = preload("res://Components/ActorComponents/CreatureMorphComponent.gd")
+	const SkillCopyScript = preload("res://Components/ActorComponents/SkillCopyComponent.gd")
+	const MimicShapechangeScript = preload("res://Components/ActorComponents/AbilityComponents/MimicShapechange.gd")
+	if get_node_or_null("CreatureMorphComponent") == null:
+		var morph: Node = MorphScript.new()
+		morph.name = "CreatureMorphComponent"
+		add_child(morph)
+		if morph.has_method("setup"):
+			morph.call("setup", self)
+	if get_node_or_null("SkillCopyComponent") == null:
+		var skill_copy: Node = SkillCopyScript.new()
+		skill_copy.name = "SkillCopyComponent"
+		add_child(skill_copy)
+		if skill_copy.has_method("setup"):
+			skill_copy.call("setup", self)
+	if ability_component:
+		# Replace whatever default action a wild goat would have so the hybrid
+		# kid leads with Shapechange. Future patches can keep GoatCharge AND
+		# add Shapechange as a secondary ability slot.
+		var has_shapechange: bool = false
+		for action in ability_component.actions:
+			if action is MimicShapechange:
+				has_shapechange = true
+				break
+		if not has_shapechange:
+			var shapechange: AbilityAction = MimicShapechangeScript.new(self, ability_component)
+			ability_component.add_action(shapechange)
+	print("[Hybrid] %s inherited Mimic kit (mimic_blood=%.2f)." % [
+		goat_data.goat_name if goat_data else name,
+		goat_data.mimic_blood if goat_data else 0.0
+	])
 
 func die() -> void:
 	if is_dead:
@@ -113,6 +162,9 @@ func _physics_process(delta: float) -> void:
 func _play_whack() -> void:
 	if _whack_player:
 		_whack_player.play()
+
+func emit_screamed(position: Vector3) -> void:
+	screamed.emit(position)
 
 func _show_thwak_visual(pos: Vector3) -> void:
 	## Displays a "THWAK!" comic book style popup at the collision point.

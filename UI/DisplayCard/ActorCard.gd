@@ -2,6 +2,7 @@ class_name ActorCard
 extends DisplayCardBase
 
 @onready var actor_renderer: GoatRenderer = $VBoxContainer/GoatRenderer
+@onready var creature_preview: CreaturePreview = $VBoxContainer/CreaturePreview
 @onready var name_edit: LineEdit = $VBoxContainer/TopRow/NameEdit
 @onready var info_label: Label = $VBoxContainer/InfoLabel
 @onready var str_label: Label = $VBoxContainer/StatsGrid/StrLabel
@@ -12,15 +13,21 @@ extends DisplayCardBase
 @onready var cha_label: Label = $VBoxContainer/StatsGrid/ChaLabel
 @onready var ac_label: Label = $VBoxContainer/ACLabel
 @onready var arena_checkbox: CheckBox = $VBoxContainer/ArenaCheckBox
+@onready var play_as_button: Button = $VBoxContainer/PlayAsButton
 
-var actor_resource: GoatData:
+## Accepts ANY ActorData subclass (GoatData / MimicData / MushroomData /
+## GoblinData / hybrid) so cheat-spawned and bred creatures all show up in
+## the Ranch herd UI without crashing. Display name, age, and stats are
+## resolved polymorphically via property existence checks.
+var actor_resource: ActorData:
 	get:
-		return data_resource as GoatData
+		return data_resource as ActorData
 	set(v):
 		setup(v)
 
-# Alias for compatibility with existing code
-var goat_data: GoatData:
+# Alias for compatibility with existing code (Ranch.gd still writes
+# `card.goat_data = goat`). Accepts any ActorData under the hood.
+var goat_data: ActorData:
 	get: return actor_resource
 	set(v): actor_resource = v
 
@@ -65,10 +72,23 @@ func _ready() -> void:
 	super._ready()
 	_update_ui()
 	arena_checkbox.toggled.connect(_on_arena_toggled)
-	
+	if play_as_button:
+		play_as_button.pressed.connect(_on_play_as_pressed)
 	if name_edit:
 		name_edit.text_submitted.connect(_on_name_submitted)
 		name_edit.focus_exited.connect(_on_name_focus_exited)
+
+## Solo arena entry — store the creature's data on HerdManager so the
+## ArenaSpawner picks it up as the player-controlled actor (no group spawn),
+## then change scene to the arena. ArenaSpawner clears the field after spawn.
+func _on_play_as_pressed() -> void:
+	if actor_resource == null:
+		return
+	if has_node("/root/HerdManager"):
+		var hm: Node = get_node("/root/HerdManager")
+		hm.set("pending_individual_creature", actor_resource)
+		print("[Ranch] Solo entry: launching arena as %s." % actor_resource.get_actor_type())
+	get_tree().change_scene_to_file("res://Play Space/Arena.tscn")
 
 func _update_ui() -> void:
 	if not is_node_ready(): return
@@ -81,15 +101,41 @@ func _update_ui() -> void:
 		visible = false
 
 func _update_resource_ui() -> void:
-	actor_renderer.visible = true
-	actor_renderer.goat_data = actor_resource
-	
+	# Render the preview using whichever renderer fits the resource type.
+	# GoatData -> legacy 2D GoatRenderer (sprites). Everything else (Mimic /
+	# Mushroom / Goblin / hybrid) -> CreaturePreview, which spawns the actual
+	# procedural body in a SubViewport so the player can SEE what they're
+	# picking to breed (chest shape, mushroom limbs, goblin tint, etc.).
+	if actor_resource is GoatData:
+		actor_renderer.visible = true
+		actor_renderer.goat_data = actor_resource as GoatData
+		if creature_preview:
+			creature_preview.visible = false
+			creature_preview.actor_data = null
+	else:
+		actor_renderer.visible = false
+		if creature_preview:
+			creature_preview.visible = true
+			creature_preview.actor_data = actor_resource
+
+	# Polymorphic display name: GoatData uses goat_name, all other ActorData
+	# subclasses (MimicData / MushroomData / GoblinData) use creature_name.
+	# Fall back to the type tag if neither field is present.
+	var display_name: String = ""
+	if "goat_name" in actor_resource:
+		display_name = String(actor_resource.goat_name)
+	elif "creature_name" in actor_resource:
+		display_name = String(actor_resource.creature_name)
+	else:
+		display_name = actor_resource.get_actor_type()
 	if not name_edit.has_focus():
-		name_edit.text = actor_resource.goat_name
-	
+		name_edit.text = display_name
+
 	var gender_str = "Female" if actor_resource.gender == ActorData.Gender.FEMALE else "Male"
-	info_label.text = "%s - Lvl: %d - Age: %d" % [gender_str, actor_resource.level, actor_resource.age_days]
-	
+	var level_value: int = int(actor_resource.level) if "level" in actor_resource else 1
+	var age_value: int = int(actor_resource.age_days) if "age_days" in actor_resource else 0
+	info_label.text = "%s - Lvl: %d - Age: %d" % [gender_str, level_value, age_value]
+
 	if actor_resource.is_pregnant:
 		info_label.text += " [P]"
 	if actor_resource.is_exhausted:
@@ -193,9 +239,19 @@ func _toggle_arena_selection() -> void:
 
 func _on_name_submitted(new_text: String) -> void:
 	if actor_resource:
-		actor_resource.goat_name = new_text
+		_set_display_name(new_text)
 	name_edit.release_focus()
 
 func _on_name_focus_exited() -> void:
 	if actor_resource:
-		actor_resource.goat_name = name_edit.text
+		_set_display_name(name_edit.text)
+
+## Write the new display name into whichever field the resource has —
+## goat_name for GoatData, creature_name for the other ActorData subclasses.
+func _set_display_name(new_name: String) -> void:
+	if actor_resource == null:
+		return
+	if "goat_name" in actor_resource:
+		actor_resource.goat_name = new_name
+	elif "creature_name" in actor_resource:
+		actor_resource.creature_name = new_name

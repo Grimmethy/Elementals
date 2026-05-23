@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://becy15jcmkmob"]
+[gd_scene load_steps=5 format=3 uid="uid://becy15jcmkmob"]
 
 [ext_resource type="Script" uid="uid://crxh7omyleiuo" path="res://UI/DisplayCard/ActorCard.gd" id="1_p4l2m"]
 [ext_resource type="PackedScene" path="res://UI/GoatRenderer.tscn" id="2_r8y2u"]
+[ext_resource type="PackedScene" path="res://UI/CreaturePreview.tscn" id="3_preview"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_acard"]
 bg_color = Color(0.08, 0.085, 0.11, 0.94)
@@ -46,6 +47,13 @@ custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
+
+[node name="CreaturePreview" parent="VBoxContainer" instance=ExtResource("3_preview")]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+visible = false
 
 [node name="InfoLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
@@ -115,3 +123,10 @@ size_flags_vertical = 10
 focus_mode = 0
 theme_override_font_sizes/font_size = 12
 text = "Select for Arena"
+
+[node name="PlayAsButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+text = "Play As"

@@ -103,15 +103,21 @@ func _set_character_sprite() -> void:
 			sprite.texture = preload("res://assets/generated/Fire Elemental_frame_0.png")
 		"water":
 			sprite.texture = preload("res://assets/generated/Water Elemental_frame_0.png")
+		"mimic":
+			sprite.texture = preload("res://assets/BigImages/MimicChest.png")
+		"mushroom":
+			# No dedicated mushroom portrait yet — reuse the mimic image as a
+			# neutral monster placeholder so the menu doesn't fall through
+			# to the warning path. Replace with a real mushroom asset later.
+			sprite.texture = preload("res://assets/BigImages/MimicChest.png")
 		"scarecrow":
 			sprite.texture = preload("res://assets/generated/Scarecrow Character_frame_0.png")
 		_:
 			print("CharacterSelectCard: No specific image mapping for: '", clean_name, "'")
 			# Try to load a generic one or keep default
-			pass 
+			pass
 	
 	if sprite.texture:
-		print("CharacterSelectCard: Texture assigned: ", sprite.texture.resource_path)
 		# Center the sprite in the ModelContainer (100x100)
 		sprite.centered = true
 		sprite.position = Vector2(50, 50)
@@ -275,7 +281,7 @@ func cycle_armor() -> void:
 
 func _emit_equipment_changed() -> void:
 	equipment_changed.emit(
-		actor_name,
+		actor_name.to_lower(),
 		_weapon_cycler.current_index,
 		_ability_cycler.current_index,
 		_armor_cycler.current_index

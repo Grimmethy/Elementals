@@ -1,0 +1,65 @@
+[gd_scene load_steps=4 format=3 uid="uid://cxuqt0d6aexr2"]
+
+[ext_resource type="Script" path="res://UI/DisplayCard/GoatCard.gd" id="1_p4l2m"]
+[ext_resource type="PackedScene" path="res://UI/ActorCardRenderer.tscn" id="2_r8y2u"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gcard"]
+bg_color = Color(0.08, 0.085, 0.11, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.46, 0.36, 0.18, 0.88)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="GoatCard" type="PanelContainer"]
+custom_minimum_size = Vector2(140, 240)
+offset_right = 140.0
+offset_bottom = 200.0
+mouse_default_cursor_shape = 2
+script = ExtResource("1_p4l2m")
+theme_override_styles/panel = SubResource("StyleBoxFlat_gcard")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="TopRow" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="NameEdit" type="LineEdit" parent="VBoxContainer/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "Goat Name"
+alignment = 1
+flat = true
+select_all_on_focus = true
+
+[node name="ActorCardRenderer" parent="VBoxContainer" instance=ExtResource("2_r8y2u")]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+
+[node name="StatsLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Doe - Age: 0
+Strength: 1.0
+Toughness: 1.0
+Speed: 1.0"
+horizontal_alignment = 1
+
+[node name="ArenaCheckBox" type="CheckBox" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 10
+focus_mode = 0
+theme_override_font_sizes/font_size = 12
+text = "Select for Arena"

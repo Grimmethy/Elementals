@@ -175,10 +175,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -100.0
-offset_right = 150.0
-offset_bottom = 100.0
+offset_left = -180.0
+offset_top = -200.0
+offset_right = 180.0
+offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -195,6 +195,31 @@ alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 text = "GIVE MAX LVL (20) GOAT"
+
+[node name="SpawnMimicButton" type="Button" parent="CheatPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "GIVE MAX LVL (20) MIMIC"
+
+[node name="SpawnMushroomButton" type="Button" parent="CheatPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "GIVE MAX LVL (20) MUSHROOM"
+
+[node name="SpawnGoblinButton" type="Button" parent="CheatPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "GIVE MAX LVL (20) GOBLIN"
+
+[node name="CompleteAllPregnanciesButton" type="Button" parent="CheatPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "COMPLETE ALL PREGNANCIES"
+
+[node name="ClearHerdButton" type="Button" parent="CheatPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CLEAR ALL HERD"
 
 [node name="CloseCheatButton" type="Button" parent="CheatPanel/VBoxContainer"]
 unique_name_in_owner = true

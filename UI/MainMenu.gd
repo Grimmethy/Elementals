@@ -2,7 +2,7 @@ extends Control
 
 @onready var character_tab_container: VBoxContainer = $CenterContainer/VBoxContainer/CharacterTabContainer
 @onready var weapon_tab_container: VBoxContainer = $CenterContainer/VBoxContainer/WeaponTabContainer
-@onready var character_cards_container: HBoxContainer = $CenterContainer/VBoxContainer/CharacterTabContainer/ActorSelection/CharacterCards
+@onready var character_cards_container: HBoxContainer = %CharacterCards
 @onready var map_settings_container: VBoxContainer = $CenterContainer/VBoxContainer/MapSettingsContainer
 @onready var controls_panel: MarginContainer = $ControlsPanel
 @onready var size_input: SpinBox = $CenterContainer/VBoxContainer/MapSettingsContainer/ArenaSize/SizeInput
@@ -23,6 +23,8 @@ const ACTOR_SCENES: Dictionary = {
 	"water": "res://scenes/actors/WaterActor.tscn",
 	"goat": "res://scenes/actors/GoatActor.tscn",
 	"goblin": "res://scenes/actors/GoblinMinion.tscn",
+	"mimic": "res://scenes/actors/MimicActor.tscn",
+	"mushroom": "res://scenes/actors/MushroomActor.tscn",
 	"scarecrow": "res://scenes/actors/ScarecrowDummy.tscn"
 }
 
@@ -60,6 +62,16 @@ func _init() -> void:
 			"weapons": ["Water Jet"],
 			"abilities": ["Tidal Wave", "Healing Waters"],
 			"armor": ["Water Shield"]
+		},
+		"mimic": {
+			"weapons": ["Unarmed strike"],
+			"abilities": ["Transmorph", "Adhesive Bite"],
+			"armor": ["Natural Armor"]
+		},
+		"mushroom": {
+			"weapons": ["Fungal Bite"],
+			"abilities": ["Spore Burst"],
+			"armor": ["Fungal Cap"]
 		}
 	}
 
@@ -201,7 +213,7 @@ func _populate_character_cards() -> void:
 			saved_armor = gs.selected_armor_index
 		
 		card.call_deferred("setup",
-			actor_name.capitalize(),
+			actor_name,
 			Array(equipment.get("weapons", [])),
 			Array(equipment.get("abilities", [])),
 			Array(equipment.get("armor", [])),
