@@ -178,6 +178,20 @@ func get_actor_type() -> String:
 		return script.get_global_name()
 	return "ActorData"
 
+## Applies spawn-time ability score defaults from ActorTypeData for the given
+## type name. Call once from _init() — after this the per-actor stats are live
+## and owned by this instance; ActorTypeData is never consulted again.
+func _apply_type_defaults(type_name: String) -> void:
+	var d := ActorTypeData.get_defaults(type_name)
+	if d.is_empty():
+		return
+	strength     = d.get("strength",     strength)
+	dexterity    = d.get("dexterity",    dexterity)
+	constitution = d.get("constitution", constitution)
+	intelligence = d.get("intelligence", intelligence)
+	wisdom       = d.get("wisdom",       wisdom)
+	charisma     = d.get("charisma",     charisma)
+
 # === Shared body plan (Tier-1 scaffold, future modular composition) =========
 #
 # Universal cross-species body schema. Currently NOT consumed by any

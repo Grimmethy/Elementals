@@ -52,14 +52,7 @@ signal genome_changed
 		stats_changed.emit()
 
 func _init() -> void:
-	# Mimic stat profile (matches MimicActor._apply_mimic_stat_profile).
-	strength = 3.0
-	dexterity = 1.0
-	constitution = 2.0
-	intelligence = -3.0
-	wisdom = 1.0
-	charisma = -1.0
-	# Pure mimic by definition.
+	_apply_type_defaults("Mimic")
 	mimic_blood = 1.0
 	base_color = Color(0.46, 0.31, 0.17)
 	pattern_color = Color(0.24, 0.16, 0.08)

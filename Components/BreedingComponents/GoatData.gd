@@ -35,12 +35,7 @@ enum PatternType { SOLID, PIEBALD, SPOTTED }
 		stats_changed.emit()
 
 func _init() -> void:
-	strength = 1.0
-	dexterity = 1.0
-	constitution = 0.0
-	intelligence = -4.0
-	wisdom = 0.0
-	charisma = -3.0
+	_apply_type_defaults("Goat")
 	if render_seed == 0:
 		render_seed = randi()
 	# Auto-name from render_seed — every fresh GoatData gets a unique fantasy

@@ -19,17 +19,13 @@ func _init() -> void:
 func _create_controller() -> ActorAIController:
 	return GoblinController.new()
 
+func _on_data_changed_impl() -> void:
+	move_speed = 3.0
+
 func _ready() -> void:
+	_data = GoblinData.new()
 	super._ready()
 	faction_component.setup(FactionComponent.Faction.GOBLINS)
-	
-	# Stat bonuses
-	ability_scores_component.strength = -1
-	ability_scores_component.dexterity = 2.5
-	ability_scores_component.constitution = 0
-	ability_scores_component.intelligence = 0
-	ability_scores_component.wisdom = -1
-	ability_scores_component.charisma = -1
 
 	# Armor Setup: based on GameSettings selection for player, randomized for NPC goblins
 	if armor_class_component:

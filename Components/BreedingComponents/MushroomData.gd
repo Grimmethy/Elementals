@@ -55,13 +55,7 @@ signal genome_changed
 		stats_changed.emit()
 
 func _init() -> void:
-	# Baseline Mushroom Monster stat profile (small fungus, sluggish, sturdy).
-	strength = 1.0
-	dexterity = -1.0
-	constitution = 2.0
-	intelligence = -4.0
-	wisdom = 0.0
-	charisma = -3.0
+	_apply_type_defaults("Mushroom")
 	base_color = Color(0.86, 0.25, 0.25)   # red-cap
 	pattern_color = Color(0.95, 0.95, 0.88) # cream spots
 	# Per-creature deterministic render seed so the procedural body produces

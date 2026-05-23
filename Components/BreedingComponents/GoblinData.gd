@@ -26,13 +26,7 @@ extends ActorData
 		stats_changed.emit()
 
 func _init() -> void:
-	# Goblin baseline (matches GoblinMinion._ready stats).
-	strength = -1.0
-	dexterity = 2.5
-	constitution = 0.0
-	intelligence = 0.0
-	wisdom = -1.0
-	charisma = -1.0
+	_apply_type_defaults("Goblin")
 	base_color = Color(0.42, 0.66, 0.28)
 	pattern_color = Color(0.20, 0.36, 0.14)
 	if render_seed == 0:
