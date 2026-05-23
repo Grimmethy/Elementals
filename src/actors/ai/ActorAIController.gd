@@ -1,7 +1,27 @@
 ## Specialized controller for Actors that navigate a hexagonal grid.
 ## Handles tile-based movement, obstacle avoidance, and basic combat logic.
+## Behaviors registered via ActorTypeData "ai_behaviors" run each frame
+## alongside the state machine and can override movement when active.
 class_name ActorAIController
 extends ActorController
+
+const _BEHAVIOR_REGISTRY: Dictionary = {
+	"rowdy":          preload("res://src/actors/ai/behaviors/RowdyBehavior.gd"),
+	"flock":          preload("res://src/actors/ai/behaviors/FlockBehavior.gd"),
+	"charge_on_sight":preload("res://src/actors/ai/behaviors/ChargeOnSightBehavior.gd"),
+}
+
+## Behaviors instantiated from ActorTypeData for this actor type.
+var behaviors: Array = []
+
+## Set to true by a behavior that is controlling movement this frame.
+## Reset to false at the start of each _handle_ai_logic call.
+var _movement_claimed: bool = false
+
+## Called by a behavior to claim movement for this frame.
+## Subsequent behaviors and the state machine will skip their movement updates.
+func claim_movement() -> void:
+	_movement_claimed = true
 
 ## Maximum distance from the starting position the actor will roam.
 @export var roam_radius: float = 22.0
@@ -42,6 +62,7 @@ func _ready() -> void:
 		# Deferred initialization because the actor may not have finished creating
 		# all components (tile_interaction_component, stun_component, etc.) yet.
 		call_deferred("_init_state_machine")
+		call_deferred("_setup_behaviors")
 		call_deferred("_connect_stun_signals")
 		call_deferred("_connect_death_signals")
 		call_deferred("_choose_new_target")
@@ -93,8 +114,23 @@ func _on_actor_tile_changed_npc(new_tile: HexTileData) -> void:
 				radius2.append(nn)
 	_nearby_cliffs = radius2
 
+## Instantiates behaviors listed in ActorTypeData for this actor's type key.
+func _setup_behaviors() -> void:
+	var a := actor as Actor
+	if not a or a._type_key.is_empty():
+		return
+	var config := ActorTypeData.get_defaults(a._type_key)
+	for behavior_name in config.get("ai_behaviors", []):
+		if _BEHAVIOR_REGISTRY.has(behavior_name):
+			var behavior: AIBehavior = _BEHAVIOR_REGISTRY[behavior_name].new()
+			behavior.setup(self, config)
+			behaviors.append(behavior)
+			behavior.register_states()
+
 ## Frame-update hook for non-physics state logic (animations, timers, etc.).
 func _process(delta: float) -> void:
+	for behavior in behaviors:
+		behavior.process_tick(delta)
 	if state_machine:
 		state_machine.update(delta)
 
@@ -109,16 +145,27 @@ func _physics_process(delta: float) -> void:
 
 	super._physics_process(delta)
 
-## Dispatches AI logic to the active state machine state.
+## Dispatches AI logic to behaviors then the state machine.
+## Behaviors run first; any that claim movement prevent the state machine
+## from issuing its own movement commands this frame.
 func _handle_ai_logic(delta: float) -> void:
 	if not actor or not actor._arena_grid or not movement_component:
 		return
 
-	if state_machine:
-		state_machine.physics_update(delta)
-	else:
-		# Fallback for safety if state machine failed to initialize
-		_execute_legacy_ai(delta)
+	_movement_claimed = false
+	var speed_mult := 1.0
+	for behavior in behaviors:
+		speed_mult *= behavior.physics_tick(delta)
+
+	var a := actor as Actor
+	var terrain := a.terrain_speed_modifier_component.get_speed_multiplier() if a and a.terrain_speed_modifier_component else 1.0
+	movement_component.speed_multiplier = speed_mult * terrain
+
+	if not _movement_claimed:
+		if state_machine:
+			state_machine.physics_update(delta)
+		else:
+			_execute_legacy_ai(delta)
 
 ## Legacy AI behavior kept as a fallback when the state machine is unavailable.
 func _execute_legacy_ai(delta: float) -> void:

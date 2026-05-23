@@ -16,20 +16,32 @@ VERSION LOG:
   v1.0 (2025-01-09) - Initial documentation
   v1.1 (2025-01-10) - Updated file paths to reflect directory restructuring
   v1.2 (2026-05-23) - Corrected base type (CharacterBody3D); rewrote properties,
-                      signals, and methods to match current Actor.gd; added Stats
-                      Data Layer section documenting ActorData/_data bridge,
-                      ActorTypeData registry, _apply_type_defaults(), and
-                      _on_data_changed_impl() override pattern; added MimicActor
-                      and MushroomActor to derived actors; updated GoblinMinion
-                      to reflect _data wiring and move speed override; updated
-                      file structure to include ActorTypeData.gd and
-                      BreedingComponents/.
+					  signals, and methods to match current Actor.gd; added Stats
+					  Data Layer section documenting ActorData/_data bridge,
+					  ActorTypeData registry, _apply_type_defaults(), and
+					  _on_data_changed_impl() override pattern; added MimicActor
+					  and MushroomActor to derived actors; updated GoblinMinion
+					  to reflect _data wiring and move speed override; updated
+					  file structure to include ActorTypeData.gd and
+					  BreedingComponents/.
 ================================================================================
 -->
 
 ## Overview
 
+Actors are every living thing in Elementals — the goats you breed and fight with, the goblins defending the arena, the elemental creatures lurking in the world. From the player's perspective, each actor is a character with personality expressed through stats: a high-dex goat darts across the battlefield, a high-strength goblin hits harder. The Actor system is the backbone that makes every creature feel distinct and reactive without requiring bespoke code for each type.
+
 The Actor system is a modular, component-based architecture for game entities. It uses a **Finite State Machine (FSM)** for AI behavior, a **Component pattern** for extensibility, and a **Data Layer** (`ActorData` resource + `ActorTypeData` registry) to drive spawn-time stats and persist per-actor stat evolution through breeding. Supports both player-controlled and AI-controlled actors.
+
+---
+
+## Player Fantasy
+
+**Playing with actors** feels like commanding a team of creatures with real personalities. Your bred goat has a name, a stat history, and a charge that hits harder because *you* raised it. Enemy goblins feel like threats with distinct behaviors — one flees when hurt, another calls for help. The player should feel the difference between a freshly spawned minion and a veteran creature without reading a stat sheet.
+
+**Creating a new actor type** should feel empowering, not boilerplate-heavy. The data bridge and component system mean a designer can wire up a new creature in one file and immediately get working movement, health, AI, and stat scaling.
+
+**Watching actors die** should feel meaningful — a dramatic fall, a `died` signal that the rest of the world reacts to, not an entity that just disappears.
 
 ---
 
@@ -110,10 +122,10 @@ Each species subclass calls `_apply_type_defaults("TypeName")` in `_init()` to s
 ```gdscript
 # In GoatData._init():
 func _init() -> void:
-    _apply_type_defaults("Goat")   # reads ActorTypeData once
-    if render_seed == 0:
-        render_seed = randi()
-    goat_name = ActorData.generate_name_from_seed(render_seed)
+	_apply_type_defaults("Goat")   # reads ActorTypeData once
+	if render_seed == 0:
+		render_seed = randi()
+	goat_name = ActorData.generate_name_from_seed(render_seed)
 ```
 
 **`_apply_type_defaults(type_name: String)`** — defined on `ActorData`. Applies `strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma` from the registry onto `self`. Only the six ability scores; component-level stats (`max_health`, `armor_class`, etc.) are set by the actor node, not the resource.
@@ -124,14 +136,14 @@ func _init() -> void:
 
 ```gdscript
 func _on_data_changed() -> void:
-    ability_scores_component.strength     = _data.strength
-    ability_scores_component.dexterity    = _data.dexterity
-    ability_scores_component.constitution = _data.constitution
-    ability_scores_component.intelligence = _data.intelligence
-    ability_scores_component.wisdom       = _data.wisdom
-    ability_scores_component.charisma     = _data.charisma
-    move_speed = 3.0 * _data.dexterity    # dex scales move speed (see note below)
-    _on_data_changed_impl()               # override hook for subclasses
+	ability_scores_component.strength     = _data.strength
+	ability_scores_component.dexterity    = _data.dexterity
+	ability_scores_component.constitution = _data.constitution
+	ability_scores_component.intelligence = _data.intelligence
+	ability_scores_component.wisdom       = _data.wisdom
+	ability_scores_component.charisma     = _data.charisma
+	move_speed = 3.0 * _data.dexterity    # dex scales move speed (see note below)
+	_on_data_changed_impl()               # override hook for subclasses
 ```
 
 **Move speed note:** The dexterity scaling (`move_speed = 3.0 * dex`) is intentional for GoatActor — bred goats with higher dex move faster in the arena. Actor subclasses that need a fixed move speed must override `_on_data_changed_impl()` and reset it there (see GoblinMinion).
@@ -143,20 +155,20 @@ Override hook called at the end of `_on_data_changed()`. Use this in Actor subcl
 ```gdscript
 # Example: GoatActor
 func _on_data_changed_impl() -> void:
-    charge_speed = 25.0 + (5.0 * ability_scores_component.strength)
-    charge_distance = 5.0 + (1.0 * ability_scores_component.strength)
+	charge_speed = 25.0 + (5.0 * ability_scores_component.strength)
+	charge_distance = 5.0 + (1.0 * ability_scores_component.strength)
 
 # Example: GoblinMinion (pins move speed regardless of dex)
 func _on_data_changed_impl() -> void:
-    move_speed = 3.0
+	move_speed = 3.0
 ```
 
 ### Wiring _data in a new actor type
 
 ```gdscript
 func _ready() -> void:
-    _data = GoblinData.new()   # set BEFORE super._ready() so the bridge fires
-    super._ready()             # calls _setup_components() then _on_data_changed()
+	_data = GoblinData.new()   # set BEFORE super._ready() so the bridge fires
+	super._ready()             # calls _setup_components() then _on_data_changed()
 ```
 
 Set `_data` before `super._ready()`. `Actor._ready()` calls `_setup_components()` first, then checks if `_data` is set and calls `_on_data_changed()` — so the components exist when the stats are applied.
@@ -328,13 +340,13 @@ Located in `res://src/actors/ai/states/`:
 
 ```
 AIIdleState
-    ↓ (target detected)
+	↓ (target detected)
 AIChaseState
-    ↓ (in attack range)
+	↓ (in attack range)
 AIAttackState
-    ↓ (target escapes / low health)
+	↓ (target escapes / low health)
 AIChaseState / AIFleeState
-    ↓ (death)
+	↓ (death)
 AIDeathState
 ```
 
@@ -342,13 +354,15 @@ AIDeathState
 
 ## Actor Controllers
 
+> **Deprecation Goal**: These controller scripts should be eliminated. Per-actor behavioral differences belong in `ActorTypeData.gd` as data, not in individualized scripts. New actor types must not get their own controller — configure them through the registry instead. Existing controllers should be migrated to data-driven entries in `ActorTypeData` and then deleted.
+
 Located in `res://src/actors/types/`:
 
 | File | Description |
 |------|-------------|
-| `GoatController.gd` | AI logic for GoatActor |
-| `FarmerController.gd` | AI logic for FarmerActor |
-| `GoblinController.gd` | AI logic for GoblinMinion |
+| `GoatController.gd` | AI logic for GoatActor — **migrate to ActorTypeData** |
+| `FarmerController.gd` | AI logic for FarmerActor — **migrate to ActorTypeData** |
+| `GoblinController.gd` | AI logic for GoblinMinion — **migrate to ActorTypeData** |
 
 ---
 
@@ -364,8 +378,8 @@ Uses `_data` (`GoatData`) set externally by the spawning system. Overrides `_on_
 
 ```gdscript
 var goat_data: GoatData:
-    get: return _data as GoatData
-    set(v): _data = v
+	get: return _data as GoatData
+	set(v): _data = v
 ```
 
 ### GoblinMinion
@@ -376,12 +390,12 @@ Creates a fresh `GoblinData` instance in `_ready()` before calling `super._ready
 
 ```gdscript
 func _ready() -> void:
-    _data = GoblinData.new()
-    super._ready()
-    ...
+	_data = GoblinData.new()
+	super._ready()
+	...
 
 func _on_data_changed_impl() -> void:
-    move_speed = 3.0
+	move_speed = 3.0
 ```
 
 ### MimicActor
@@ -437,9 +451,9 @@ class_name NewData
 extends ActorData
 
 func _init() -> void:
-    _apply_type_defaults("NewTypeName")  # reads ActorTypeData registry
-    if render_seed == 0:
-        render_seed = randi()
+	_apply_type_defaults("NewTypeName")  # reads ActorTypeData registry
+	if render_seed == 0:
+		render_seed = randi()
 
 # 2. Add "NewTypeName" to ActorTypeData.ACTOR_TYPES and CATEGORY_MAP
 
@@ -448,12 +462,12 @@ class_name NewActor
 extends Actor
 
 func _ready() -> void:
-    _data = NewData.new()
-    super._ready()
+	_data = NewData.new()
+	super._ready()
 
 # 4. Override _on_data_changed_impl() for any derived stats:
 func _on_data_changed_impl() -> void:
-    move_speed = 2.5  # if you need a fixed speed
+	move_speed = 2.5  # if you need a fixed speed
 ```
 
 ### Handling damage
@@ -462,15 +476,15 @@ func _on_data_changed_impl() -> void:
 actor.died.connect(_on_death)
 
 func _on_death():
-    queue_free()
+	queue_free()
 ```
 
 ### Terrain speed modifier
 
 ```gdscript
 terrain_speed_modifier_component.configure_multipliers({
-    TileConstants.Type.MUD: 0.5,
-    TileConstants.Type.GRASS: 1.2,
+	TileConstants.Type.MUD: 0.5,
+	TileConstants.Type.GRASS: 1.2,
 })
 ```
 
@@ -483,6 +497,97 @@ skill_check_component.start_skill_check(SkillCheckComponent.SkillType.LOCKPICKIN
 
 ---
 
+## Dependencies
+
+### Requires
+| System | Why |
+|---|---|
+| `ActorTypeData` | Spawn-time stat registry — must exist before any actor is instantiated |
+| `ActorData` subclass | Per-actor stat resource — each actor type needs one in `Components/BreedingComponents/` |
+| `GameEvents` | Global signal bus — `actor_died` is emitted on death; arena and quest systems listen |
+| `GameClockComponent` | Centralized tick registration; falls back to local ticking if absent |
+
+### Consumed By
+| System | What it uses |
+|---|---|
+| Breeding | Reads/writes `ActorData` stats; crossover produces new `ActorData` instances |
+| Arena | Spawns actors, manages lifecycle, listens to `died`, tracks in `actors` list |
+| Quest System | Listens to `actor_died` via `GameEvents` to track kill objectives |
+| PlayerInputComponent | Reads `is_playable`, `is_controlled`; cycles actor selection |
+| UI / PlayerConsole | Reads `health_component`, `mana_component` for HUD display |
+
+---
+
+## Edge Cases
+
+| Condition | Resolution |
+|---|---|
+| `_data` assigned after `super._ready()` | `_on_data_changed()` never fires during init — components will have default stats, not resource stats. Always assign `_data` before `super._ready()`. |
+| Actor subclass with fixed move speed | The base formula `move_speed = 3.0 × dex` runs in `_on_data_changed()`. Override `_on_data_changed_impl()` to reset it — do not fight it in `_init()`. |
+| `MimicActor` / `MushroomActor` with no `_data` | These actors bypass the `_data` bridge entirely. Stats are applied directly to `ability_scores_component` via their own profile methods. Do not attempt to set `_data` on them. |
+| Actor removed from scene while dying | `die()` disables components and emits `died`. If `queue_free()` is called immediately from the signal, downstream listeners may not fire. Use a deferred free or let the Arena handle lifecycle. |
+| `stats_changed` signal not emitted after manual component write | Writing directly to `ability_scores_component` bypasses the bridge. The resource and component will be out of sync. Always mutate stats via `_data`. |
+
+---
+
+## Formulas
+
+### Move Speed
+
+| Variable | Source | Notes |
+|---|---|---|
+| `dexterity` | `ActorData._data` | Modifier float; 0.0 = baseline |
+| `move_speed` | Computed | Forwarded to `MovementComponent` |
+
+```
+move_speed = 3.0 × dexterity
+```
+
+> Override in `_on_data_changed_impl()` to pin a fixed speed (e.g. GoblinMinion sets `move_speed = 3.0` regardless of dex).
+
+### Goat Charge
+
+| Variable | Source | Notes |
+|---|---|---|
+| `strength` | `ability_scores_component` | Set via `_data` bridge |
+| `charge_speed` | Computed in `GoatActor` | Units/sec |
+| `charge_distance` | Computed in `GoatActor` | World units |
+
+```
+charge_speed    = 25.0 + (5.0 × strength)
+charge_distance =  5.0 + (1.0 × strength)
+```
+
+### Ability Score → Integer Score
+
+| Variable | Source | Notes |
+|---|---|---|
+| `modifier` | `AbilityScoresComponent` | Float, 0.0 = baseline |
+| `score` | Computed | D&D-style integer |
+
+```
+score = 10 + (modifier × 2)
+```
+
+---
+
+## Tuning Knobs
+
+| Parameter | Location | Current Value | Effect |
+|---|---|---|---|
+| `move_speed` base scalar | `Actor._on_data_changed()` | `3.0` | Multiplied by dexterity modifier; raise to make all actors faster |
+| `charge_speed` base | `GoatActor._on_data_changed_impl()` | `25.0` | Flat charge velocity floor before strength scaling |
+| `charge_speed` strength scalar | `GoatActor._on_data_changed_impl()` | `5.0` | Speed gained per point of strength |
+| `charge_distance` base | `GoatActor._on_data_changed_impl()` | `5.0` | Minimum charge range in world units |
+| `charge_distance` strength scalar | `GoatActor._on_data_changed_impl()` | `1.0` | Range gained per point of strength |
+| `max_hp` | `Actor` export | `10.0` | Base health before component init |
+| `max_mana` | `Actor` export | `100.0` | Base mana pool |
+| `armor_class` | `Actor` export | `10` | Base AC before `ArmorClassComponent` modifiers |
+| `awareness_radius` | `ActorAIController` export | — | Detection radius for AI target acquisition |
+| `attack_range` | `ActorAIController` export | — | Distance at which AI transitions to attack state |
+
+---
+
 ## Best Practices
 
 1. **Stats** — Never write ability scores directly to `ability_scores_component` in a new actor type. Set stats on `_data` and let `_on_data_changed()` sync them.
@@ -491,6 +596,20 @@ skill_check_component.start_skill_check(SkillCheckComponent.SkillType.LOCKPICKIN
 4. **AI states** — Keep state logic minimal; delegate complex behavior to dedicated systems.
 5. **Damage** — Always route through `take_damage()` to respect disengage and invincibility logic.
 6. **_data timing** — Assign `_data` before `super._ready()` so components exist when the bridge fires.
+
+---
+
+## Acceptance Criteria
+
+| # | Given | When | Then |
+|---|---|---|---|
+| 1 | A new actor type is created with `_data = NewData.new()` set before `super._ready()` | The scene is instantiated | `ability_scores_component` reflects the stats from `NewData` immediately |
+| 2 | A GoatActor with `strength = 2.0` is spawned | `_on_data_changed()` fires | `charge_speed == 35.0` and `charge_distance == 7.0` |
+| 3 | A GoblinMinion is spawned with any dexterity value | `_on_data_changed()` fires | `move_speed == 3.0` regardless of dexterity |
+| 4 | An actor's `health_component` reaches 0 | `die()` is called | `is_dead == true`, `died` signal emitted, `GameEvents.actor_died` emitted, physics disabled |
+| 5 | `ability_scores_component` is written to directly (bypassing `_data`) | `stats_changed` is not emitted | `_data` and `ability_scores_component` are out of sync — this is a bug, not intended behavior |
+| 6 | A `MimicActor` is instantiated | Any code attempts to set `_data` | Stats are not applied via the bridge; `_apply_mimic_stat_profile()` must be used instead |
+| 7 | An actor emits `died` | A listener calls `queue_free()` synchronously | Downstream signal listeners may not fire — defer or let Arena handle |
 
 ---
 

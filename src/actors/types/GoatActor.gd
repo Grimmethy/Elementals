@@ -28,30 +28,15 @@ var goat_data: GoatData:
 
 func _init() -> void:
 	element_type = "goat"
-	should_bob = false
+	_type_key = "Goat"
 
 func _ready() -> void:
 	super._ready()
-	
+
 	# Set up GoatScreamComponent for goat-specific screaming (visuals, cooldowns)
 	scream_component = GoatScreamComponent.new()
 	scream_component.setup(self)
 	add_child(scream_component)
-	
-	# Configure goat-specific terrain speed modifiers
-	terrain_speed_modifier_component.configure_multipliers({
-		TileConstants.Type.MUD: 0.5,
-		TileConstants.Type.PUDDLE: 0.7,
-		TileConstants.Type.GRASS: 1.2,
-		TileConstants.Type.STONE: 1.0,
-		TileConstants.Type.FIRE: 1.3
-	})
-
-	# Configure goat-specific communication (uses the "screamed" signal)
-	if communication_component:
-		communication_component.broadcast_signal_name = &"screamed"
-		communication_component.communication_range = 15.0
-		communication_component.probability = 0.25
 
 
 func _on_data_changed_impl() -> void:
@@ -62,8 +47,9 @@ func _on_data_changed_impl() -> void:
 	if health_component:
 		max_hp = health_component.roll_max_health(1, 8, _rng)
 
-	charge_speed = 25.0 + (5.0 * ability_scores_component.strength)
-	charge_distance = 5.0 + (1.0 * ability_scores_component.strength)
+	var type_config := ActorTypeData.get_defaults(_type_key)
+	charge_speed = type_config.get("charge_speed_base", 25.0) + (type_config.get("charge_speed_per_str", 5.0) * ability_scores_component.strength)
+	charge_distance = type_config.get("charge_distance_base", 5.0) + (type_config.get("charge_dist_per_str", 1.0) * ability_scores_component.strength)
 
 	actor_size = goat_data.body_type as Size
 
@@ -134,9 +120,6 @@ func die() -> void:
 
 
 const THWAK_TEXTURE = preload("res://assets/generated/thwak_popup_frame_0_1774916398.png")
-
-func _create_controller() -> ActorAIController:
-	return GoatController.new()
 
 func _process(delta: float) -> void:
 	## Main update loop handling visual updates and cooldowns.

@@ -179,18 +179,56 @@ signal tile_changed(new_tile: HexTileData)
 
 var is_dead: bool = false
 
+var _type_key: String = ""
+
 var _arena_grid: ArenaGrid
 var _origin: Vector3
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+const _TILE_TYPE_NAMES: Dictionary = {
+	"grass": TileConstants.Type.GRASS,
+	"dirt":  TileConstants.Type.DIRT,
+	"fire":  TileConstants.Type.FIRE,
+	"stone": TileConstants.Type.STONE,
+	"mud":   TileConstants.Type.MUD,
+	"puddle":TileConstants.Type.PUDDLE,
+}
 
 func _ready() -> void:
 	_rng.randomize()
 	_arena_grid = _find_arena_grid()
 	_origin = global_transform.origin
-	
+
 	_setup_components()
+	_apply_type_config()
 	if _data:
 		_on_data_changed()
+
+func _apply_type_config() -> void:
+	if _type_key.is_empty():
+		return
+	var config := ActorTypeData.get_defaults(_type_key)
+	if config.is_empty():
+		return
+
+	if config.has("should_bob"):
+		should_bob = config["should_bob"]
+
+	if config.has("terrain_multipliers") and terrain_speed_modifier_component:
+		var raw: Dictionary = config["terrain_multipliers"]
+		var resolved: Dictionary = {}
+		for key in raw:
+			if _TILE_TYPE_NAMES.has(key):
+				resolved[_TILE_TYPE_NAMES[key]] = raw[key]
+		terrain_speed_modifier_component.configure_multipliers(resolved)
+
+	if communication_component:
+		if config.has("comm_signal"):
+			communication_component.broadcast_signal_name = StringName(config["comm_signal"])
+		if config.has("comm_range"):
+			communication_component.communication_range = config["comm_range"]
+		if config.has("comm_probability"):
+			communication_component.probability = config["comm_probability"]
 
 func _on_data_changed() -> void:
 	if not _data:
