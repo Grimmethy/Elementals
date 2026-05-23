@@ -4,8 +4,8 @@
 ================================================================================
 VERSION CONTROL
 ================================================================================
-Document Version: 1.1
-Last Synced:     2025-01-10
+Document Version: 1.2
+Last Synced:     2026-05-23
 Godot Version:   4.2+
 
 SYNC RULE: When modifying actor structure (add/remove/modify components,
@@ -15,137 +15,263 @@ same commit. Keep version numbers in sync across files.
 VERSION LOG:
   v1.0 (2025-01-09) - Initial documentation
   v1.1 (2025-01-10) - Updated file paths to reflect directory restructuring
+  v1.2 (2026-05-23) - Corrected base type (CharacterBody3D); rewrote properties,
+                      signals, and methods to match current Actor.gd; added Stats
+                      Data Layer section documenting ActorData/_data bridge,
+                      ActorTypeData registry, _apply_type_defaults(), and
+                      _on_data_changed_impl() override pattern; added MimicActor
+                      and MushroomActor to derived actors; updated GoblinMinion
+                      to reflect _data wiring and move speed override; updated
+                      file structure to include ActorTypeData.gd and
+                      BreedingComponents/.
 ================================================================================
 -->
 
 ## Overview
 
-The Actor system is a modular, component-based architecture for game entities. It uses a **Finite State Machine (FSM)** for AI behavior, **Component pattern** for extensibility, and supports both **player-controlled** and **AI-controlled** actors.
+The Actor system is a modular, component-based architecture for game entities. It uses a **Finite State Machine (FSM)** for AI behavior, a **Component pattern** for extensibility, and a **Data Layer** (`ActorData` resource + `ActorTypeData` registry) to drive spawn-time stats and persist per-actor stat evolution through breeding. Supports both player-controlled and AI-controlled actors.
 
 ---
 
 ## Architecture Diagram
 
 ```
-Actor (CharacterBody2D)
-├── Components (in res://Components/ActorComponents/)
-│   ├── HealthComponent        - Death, damage events, invincibility frames
-│   ├── MovementComponent      - Movement speed, acceleration
-│   ├── CommunicationComponent - Radio chatter, voice lines
-│   ├── TerrainSpeedModifierComponent - Speed multipliers by terrain
-│   ├── SkillCheckComponent    - Lockpicking, hacking, persuasion
-│   ├── AbilityComponent      - Special actions, cooldowns
-│   └── (more components...)
-├── ActorAIController         - Manages AI state machine
-├── FactionComponent           - Faction relationships
-└── AI States (in res://src/actors/ai/states/)
-	├── AIIdleState
-	├── AIChaseState
-	├── AIAttackState
-	└── (more states...)
+Actor (CharacterBody3D)
+├── _data: ActorData              - Per-actor stat resource (strength, dex, etc.)
+│   └── sourced from ActorTypeData registry at spawn time
+├── Components (res://Components/ActorComponents/)
+│   ├── HealthComponent           - HP, death events, damage routing
+│   ├── MovementComponent         - Move speed, acceleration
+│   ├── AbilityScoresComponent    - Strength, dex, con, int, wis, cha modifiers
+│   ├── ArmorClassComponent       - AC calculation, equipped armor
+│   ├── AbilityComponent          - Special actions and cooldowns
+│   ├── WeaponComponent           - Equipped weapon + attack dispatch
+│   ├── ManaComponent             - Mana pool
+│   ├── StunComponent             - Stun duration tracking
+│   ├── FactionComponent          - Faction relationships
+│   ├── DetectionComponent        - Actor perception / visibility
+│   ├── StatusEffectComponent     - Burning, poison, etc.
+│   ├── CommunicationComponent    - Voice lines, broadcast signals
+│   ├── TerrainSpeedModifierComponent - Speed multipliers by tile type
+│   ├── SkillCheckComponent       - Lockpicking, persuasion, etc.
+│   ├── ActorTileInteractionComponent - Hex tile tracking
+│   ├── ActorTileNavigationComponent  - Pathfinding
+│   ├── ActorVisualComponent      - Sprite direction, flash effects
+│   ├── ActorParticleComponent    - Mana/hit particles
+│   ├── BobComponent              - Idle float animation
+│   └── ProjectileComponent       - Projectile firing
+├── ActorAIController             - Manages AI state machine
+└── AI States (res://src/actors/ai/states/)
+    ├── AIIdleState
+    ├── AIChaseState
+    ├── AIAttackState
+    └── (more states...)
 ```
+
+---
+
+## Stats Data Layer
+
+This is the core of how actor stats work. Read this before touching any stat-related code.
+
+### Three-layer architecture
+
+```
+ActorTypeData (registry)
+    └── spawn-time defaults only — consulted once, never again
+ActorData subclass (resource, per-actor instance)
+    └── live stats — owned by the actor, mutated by breeding/levelling
+Actor._data (property on the node)
+    └── bridge — _on_data_changed() pushes resource stats → components
+```
+
+### ActorTypeData
+
+**File:** `res://Components/ActorComponents/ActorTypeData.gd`
+
+A static registry (`const ACTOR_TYPES: Dictionary`) of every species' default ability scores, gold value, and equipment pools. Used **only at spawn time** to initialize a fresh `ActorData` instance.
+
+```gdscript
+ActorTypeData.get_defaults("Goblin")   # -> Dictionary of stat defaults
+ActorTypeData.get_category("Goblin")   # -> "Humanoid"
+ActorTypeData.get_all_types()          # -> Array[String] of all registered names
+ActorTypeData.get_types_in_category("Dragon")  # -> ["Fire Dragon", "Ice Dragon", ...]
+```
+
+### ActorData and subclasses
+
+**File:** `res://Components/ActorComponents/ActorData.gd`
+**Subclasses:** `res://Components/BreedingComponents/`
+
+`ActorData` is a `Resource` subclass that stores the **live, per-actor** stat values. After spawn, these values are owned by the individual actor and evolve independently (via breeding crossover, levelling, etc.). `ActorTypeData` is never consulted again.
+
+Each species subclass calls `_apply_type_defaults("TypeName")` in `_init()` to seed from the registry:
+
+```gdscript
+# In GoatData._init():
+func _init() -> void:
+    _apply_type_defaults("Goat")   # reads ActorTypeData once
+    if render_seed == 0:
+        render_seed = randi()
+    goat_name = ActorData.generate_name_from_seed(render_seed)
+```
+
+**`_apply_type_defaults(type_name: String)`** — defined on `ActorData`. Applies `strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma` from the registry onto `self`. Only the six ability scores; component-level stats (`max_health`, `armor_class`, etc.) are set by the actor node, not the resource.
+
+### The _data bridge
+
+`Actor` exposes `@export var _data: ActorData`. When assigned, its setter connects `stats_changed` → `_on_data_changed()`, which pushes the resource stats into `ability_scores_component`:
+
+```gdscript
+func _on_data_changed() -> void:
+    ability_scores_component.strength     = _data.strength
+    ability_scores_component.dexterity    = _data.dexterity
+    ability_scores_component.constitution = _data.constitution
+    ability_scores_component.intelligence = _data.intelligence
+    ability_scores_component.wisdom       = _data.wisdom
+    ability_scores_component.charisma     = _data.charisma
+    move_speed = 3.0 * _data.dexterity    # dex scales move speed (see note below)
+    _on_data_changed_impl()               # override hook for subclasses
+```
+
+**Move speed note:** The dexterity scaling (`move_speed = 3.0 * dex`) is intentional for GoatActor — bred goats with higher dex move faster in the arena. Actor subclasses that need a fixed move speed must override `_on_data_changed_impl()` and reset it there (see GoblinMinion).
+
+### _on_data_changed_impl()
+
+Override hook called at the end of `_on_data_changed()`. Use this in Actor subclasses to react to stat changes — computing derived values, updating visuals, fixing move speed, etc. — without overriding the full sync logic.
+
+```gdscript
+# Example: GoatActor
+func _on_data_changed_impl() -> void:
+    charge_speed = 25.0 + (5.0 * ability_scores_component.strength)
+    charge_distance = 5.0 + (1.0 * ability_scores_component.strength)
+
+# Example: GoblinMinion (pins move speed regardless of dex)
+func _on_data_changed_impl() -> void:
+    move_speed = 3.0
+```
+
+### Wiring _data in a new actor type
+
+```gdscript
+func _ready() -> void:
+    _data = GoblinData.new()   # set BEFORE super._ready() so the bridge fires
+    super._ready()             # calls _setup_components() then _on_data_changed()
+```
+
+Set `_data` before `super._ready()`. `Actor._ready()` calls `_setup_components()` first, then checks if `_data` is set and calls `_on_data_changed()` — so the components exist when the stats are applied.
 
 ---
 
 ## Core: Actor.gd
 
-**Type:** `CharacterBody2D`  
+**Type:** `CharacterBody3D`
 **File:** `res://src/actors/base/Actor.gd`
 
-The base class for all game actors (players, enemies, NPCs).
+The base class for all game actors.
 
 ### Properties
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `current_health: float` | float | `max_health` | Current health pool |
-| `can_take_damage: bool` | bool | `true` | Damage gate |
-| `is_invincible: bool` | bool | `false` | Invincibility frames active |
-| `invincibility_duration: float` | float | `0.2` | Invincibility duration after hit |
-| `damage_cooldown: float` | float | `0.5` | Cooldown between damage instances |
+| `is_playable` | bool | `true` | Whether this actor is player-controlled |
+| `element_type` | String | `"none"` | Element tag used for damage type routing |
+| `actor_size` | Size | `MEDIUM` | `SMALL / MEDIUM / LARGE` enum |
+| `_data` | ActorData | `null` | Per-actor stat resource; assignment triggers component sync |
+| `move_speed` | float | `3.0` | Movement speed in world units; forwarded to MovementComponent |
+| `max_hp` | float | `10.0` | Max health; forwarded to HealthComponent |
+| `max_mana` | float | `100.0` | Max mana; forwarded to ManaComponent |
+| `armor_class` | int | `10` | Base AC; forwarded to HealthComponent |
+| `is_controlled` | bool | `false` | Whether a player is currently controlling this actor |
+| `is_dead` | bool | `false` | Set true by `die()`; gates physics and component processing |
 
 ### Signals
 
 | Signal | Parameters | Description |
 |--------|------------|-------------|
-| `died` | — | Emitted when health reaches 0 or below |
-| `health_changed` | `old_value: float, new_value: float` | Emitted when health is modified |
+| `died` | — | Emitted when health reaches 0 |
+| `resurrected` | — | Emitted when actor is brought back from dead |
+| `mana_changed` | `new_mana: float, max_mana: float` | Emitted by ManaComponent |
+| `tile_changed` | `new_tile: HexTileData` | Emitted when actor moves to a new hex tile |
 
 ### Key Methods
 
 ```gdscript
-func take_damage(amount: float, knockback_force: Vector2 = Vector2.ZERO) -> void
+func take_damage(amount: float, type: String = "normal", direction: Vector3 = Vector3.ZERO) -> void
 ```
-Applies damage with optional knockback. Respects invincibility frames.
-
-```gdscript
-func heal(amount: float) -> void
-```
-Restores health up to max_health. Emits `health_changed`.
+Routes damage through `AbilityComponent` (disengage check) then `HealthComponent`. Triggers `_on_damage_taken()` on abilities.
 
 ```gdscript
 func die() -> void
 ```
-Triggers death sequence and emits `died` signal.
+Sets `is_dead`, triggers fall-over visual, disables all living components, emits `died` and `GameEvents.actor_died`.
+
+```gdscript
+func resurrect() -> void
+```
+Reverses `die()` — re-enables components, resets health, emits `resurrected`.
+
+```gdscript
+func stun(duration: float) -> void
+```
+Delegates to `StunComponent`.
+
+```gdscript
+func register_tick(callback: Callable, interval: float = 0.1) -> int
+func unregister_tick(id: int) -> void
+```
+Register/unregister callbacks on the centralized `GameClockComponent` (falls back to local ticking if no clock is found).
+
+```gdscript
+func _on_data_changed_impl() -> void
+```
+Override hook — called at the end of `_on_data_changed()`. Subclasses use this to react to stat changes without disrupting the base sync.
 
 ---
 
 ## Components
 
-Components are located in `res://Components/ActorComponents/`. See individual component files for detailed documentation.
+Located in `res://Components/ActorComponents/`. Key components relevant to the stats layer:
+
+### AbilityScoresComponent
+
+**File:** `res://Components/ActorComponents/AbilityScoresComponent.gd`
+
+Stores the six D&D-style ability score modifiers as floats (0.0 = baseline). Populated by `Actor._on_data_changed()` from `_data`. Do not write to this directly in actor subclasses — set stats on `_data` and let the bridge sync.
+
+```gdscript
+ability_scores_component.get_strength_score()   # returns int: 10 + (modifier * 2)
+ability_scores_component.scores_changed         # signal
+```
+
+### ArmorClassComponent
+
+**File:** `res://Components/ActorComponents/ArmorClassComponent.gd`
+
+Manages AC calculation including equipped armor. Call `refresh()` after changing `equipped_armor`.
 
 ### HealthComponent
 
 **File:** `res://Components/ActorComponents/HealthComponent.gd`
 
-Manages actor health with invincibility frames.
-
-### MovementComponent
-
-**File:** `res://Components/ActorComponents/MovementComponent.gd`
-
-Handles movement speed, acceleration, and terrain modifications.
-
-### CommunicationComponent
-
-**File:** `res://Components/ActorComponents/CommunicationComponent.gd`
-
-Handles radio chatter and voice line playback.
-
-### TerrainSpeedModifierComponent
-
-**File:** `res://Components/ActorComponents/TerrainSpeedModifierComponent.gd`
-
-### Terrain Types
-
 ```gdscript
-enum TerrainType { GRASS, SAND, WATER, ROCK }
-```
-
-### Speed Modifiers Table
-
-| Terrain | Multiplier |
-|---------|------------|
-| GRASS | 1.0 |
-| SAND | 0.7 |
-| WATER | 0.5 |
-| ROCK | 0.8 |
-
-### SkillCheckComponent
-
-**File:** `res://Components/ActorComponents/SkillCheckComponent.gd`
-
-Handles contextual skill events (lockpicking, hacking, persuasion).
-
-```gdscript
-enum SkillType { LOCKPICKING, HACKING, PERSUASION }
+health_component.roll_max_health(dice_count: int, dice_size: int, rng: RandomNumberGenerator) -> float
+health_component.take_damage(amount: float, type: String, direction: Vector3) -> void
+health_component.health_depleted  # signal → connected to Actor.die()
 ```
 
 ### AbilityComponent
 
 **File:** `res://Components/ActorComponents/AbilityComponent.gd`
 
-Manages special abilities with cooldown management.
+Manages a list of `AbilityAction` instances with cooldown tracking.
+
+```gdscript
+ability_component.add_action(action: AbilityAction) -> void
+ability_component.actions.clear()
+ability_component.execute_ability(name: String, target_pos: Vector3) -> void
+ability_component.is_disengaged  # bool — gates take_damage in Actor
+```
 
 ### Ability Components
 
@@ -154,10 +280,13 @@ Located in `res://Components/ActorComponents/AbilityComponents/`:
 | File | Description |
 |------|-------------|
 | `AbilityComponent.gd` | Base ability management |
-| `AbilityAction.gd` | Action triggers |
-| `GoatCharge.gd` | Goat-specific charge ability |
-| `NimbleEscape.gd` | Quick escape ability |
-| `RedirectAttack.gd` | Attack redirection |
+| `AbilityAction.gd` | Base class for individual actions |
+| `GoatCharge.gd` | Goat charge ability |
+| `NimbleEscape.gd` | Hide / Disengage (Goblin) |
+| `RedirectAttack.gd` | Swap places with nearby ally (Goblin) |
+| `MimicShapechange.gd` | Mimic disguise ability |
+| `MimicAmbushBite.gd` | Mimic ambush bite |
+| `SporeBurst.gd` | Mushroom area spore attack |
 
 ---
 
@@ -174,23 +303,8 @@ Manages the AI state machine for an Actor.
 | Property | Type | Description |
 |----------|------|-------------|
 | `actor: Actor` | Actor | Owner actor reference |
-| `state_machine: StateMachine` | StateMachine | FSM for state management |
-| `target: Node2D` | Node2D | Current target actor |
 | `awareness_radius: float` | float | Detection radius |
 | `attack_range: float` | float | Melee attack range |
-| `chase_speed: float` | float | Speed while chasing |
-
-### Methods
-
-```gdscript
-func set_state(state_class: Variant) -> void
-```
-Transitions to a new AI state by class or script.
-
-```gdscript
-func set_target(new_target: Node2D) -> void
-```
-Updates the target reference.
 
 ### AI States
 
@@ -199,59 +313,36 @@ Located in `res://src/actors/ai/states/`:
 | File | Description |
 |------|-------------|
 | `AIState.gd` | Base class |
-| `AIIdleState.gd` | Default patrol/idle behavior |
+| `AIIdleState.gd` | Default patrol/idle |
 | `AIChaseState.gd` | Pursues target |
 | `AIAttackState.gd` | Attacks target |
 | `AIFleeState.gd` | Flees from threat |
 | `AIDeathState.gd` | Death handling |
 | `AIFlockinState.gd` | Flocking behavior |
 | `AIInvestigateState.gd` | Investigates detected activity |
-| `AIRoamState.gd` | Roaming/wandering |
-| `AIStunnedState.gd` | Stunned state |
-| `Dormant.gd` | Dormant/inactive state |
+| `AIRoamState.gd` | Wandering |
+| `AIStunnedState.gd` | Stunned |
+| `Dormant.gd` | Inactive |
 
 ### AI Behavior Overview
 
 ```
 AIIdleState
-	↓ (target detected)
+    ↓ (target detected)
 AIChaseState
-	↓ (in attack range)
+    ↓ (in attack range)
 AIAttackState
-	↓ (target escapes / low health)
+    ↓ (target escapes / low health)
 AIChaseState / AIFleeState
-	↓ (death)
+    ↓ (death)
 AIDeathState
-```
-
----
-
-### Base: AIState.gd
-
-**File:** `res://src/actors/ai/states/AIState.gd`
-
-Base class for all AI states. Must be extended.
-
-### Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `ai_controller: ActorAIController` | ActorAIController | Owner AI controller |
-
-### Required Override Methods
-
-```gdscript
-func enter() -> void      # Called when state starts
-func exit() -> void       # Called when state ends
-func process_state(delta: float) -> void   # _process callback
-func physics_process_state(delta: float) -> void  # _physics_process callback
 ```
 
 ---
 
 ## Actor Controllers
 
-Actor-specific AI controllers located in `res://src/actors/types/`:
+Located in `res://src/actors/types/`:
 
 | File | Description |
 |------|-------------|
@@ -263,174 +354,130 @@ Actor-specific AI controllers located in `res://src/actors/types/`:
 
 ## Derived Actors
 
-All actor types are located in `res://src/actors/types/`.
+All actor types in `res://src/actors/types/`.
 
 ### GoatActor
 
 **File:** `res://src/actors/types/GoatActor.gd`
 
-```gdscript
-class_name GoatActor
-extends Actor
-```
-
-### FireActor
-
-**File:** `res://src/actors/types/FireActor.gd`
+Uses `_data` (`GoatData`) set externally by the spawning system. Overrides `_on_data_changed_impl()` to compute `charge_speed` and `charge_distance` from strength, and update visuals. Move speed scales with dexterity via the base formula.
 
 ```gdscript
-class_name FireActor
-extends Actor
-```
-
-### FarmerActor
-
-**File:** `res://src/actors/types/FarmerActor.gd`
-
-```gdscript
-class_name FarmerActor
-extends Actor
-```
-
-### WaterActor
-
-**File:** `res://src/actors/types/WaterActor.gd`
-
-```gdscript
-class_name WaterActor
-extends Actor
+var goat_data: GoatData:
+    get: return _data as GoatData
+    set(v): _data = v
 ```
 
 ### GoblinMinion
 
 **File:** `res://src/actors/types/GoblinMinion.gd`
 
+Creates a fresh `GoblinData` instance in `_ready()` before calling `super._ready()`, so the data bridge fires during component initialization. Overrides `_on_data_changed_impl()` to pin `move_speed = 3.0` — goblins move at a fixed speed regardless of dexterity modifier.
+
 ```gdscript
-class_name GoblinMinion
-extends Actor
+func _ready() -> void:
+    _data = GoblinData.new()
+    super._ready()
+    ...
+
+func _on_data_changed_impl() -> void:
+    move_speed = 3.0
 ```
+
+### MimicActor
+
+**File:** `res://src/actors/types/MimicActor.gd`
+
+Does not use `_data` — carries a separate `mimic_data: MimicData` for the procedural genome system. Stats are applied via `_apply_mimic_stat_profile()` directly to `ability_scores_component`. Move speed, HP, and AC set in `_init()`.
+
+### MushroomActor
+
+**File:** `res://src/actors/types/MushroomActor.gd`
+
+Does not use `_data` — carries `mushroom_data: MushroomData`. Stats applied via `_apply_mushroom_stat_profile()` which reads directly from `mushroom_data`. Move speed, HP, and AC set in `_init()`.
+
+### FarmerActor
+
+**File:** `res://src/actors/types/FarmerActor.gd`
+
+### FireActor / WaterActor
+
+**Files:** `res://src/actors/types/FireActor.gd`, `WaterActor.gd`
+
+Elemental actors.
 
 ### ScarecrowDummy
 
 **File:** `res://src/actors/types/ScarecrowDummy.gd`
 
-```gdscript
-class_name ScarecrowDummy
-extends Actor
-```
-
----
-
-## Visual Components
-
-Located in `res://src/actors/types/`:
-
-| File | Description |
-|------|-------------|
-| `GoatVisuals.gd` | Goat visual management |
-| `DormantVisual3D.gd` | 3D dormant visual effect |
-| `StunVisual3D.gd` | 3D stun visual effect |
-| `GoblinModels/GoblinModel.gd` | Goblin model management |
-
 ---
 
 ## Usage Patterns
 
-### Creating a New Actor
+### Spawning an actor with data wiring
 
 ```gdscript
-var new_actor = Actor.new()
-add_child(new_actor)
+# Actors that use _data: assign before adding to the scene tree, or in _ready()
+# before super._ready(). The bridge fires automatically in Actor._ready().
+var goblin: GoblinMinion = GOBLIN_SCENE.instantiate()
+add_child(goblin)
+# GoblinMinion._ready() creates _data = GoblinData.new() internally
+
+# For GoatActor, _data is set externally by the spawning/herd system:
+var goat: GoatActor = GOAT_SCENE.instantiate()
+goat.goat_data = some_goat_data_resource
+add_child(goat)
 ```
 
-### Creating an Actor from Scene
+### Adding a new actor type
 
 ```gdscript
-const ACTOR_SCENE = preload("res://scenes/actors/FireActor.tscn")
-var actor = ACTOR_SCENE.instantiate()
-add_child(actor)
-actor.global_position = Vector2(100, 200)
+# 1. Create a Data subclass in Components/BreedingComponents/
+class_name NewData
+extends ActorData
+
+func _init() -> void:
+    _apply_type_defaults("NewTypeName")  # reads ActorTypeData registry
+    if render_seed == 0:
+        render_seed = randi()
+
+# 2. Add "NewTypeName" to ActorTypeData.ACTOR_TYPES and CATEGORY_MAP
+
+# 3. In the Actor subclass, wire _data:
+class_name NewActor
+extends Actor
+
+func _ready() -> void:
+    _data = NewData.new()
+    super._ready()
+
+# 4. Override _on_data_changed_impl() for any derived stats:
+func _on_data_changed_impl() -> void:
+    move_speed = 2.5  # if you need a fixed speed
 ```
 
-### Adding Components
+### Handling damage
 
 ```gdscript
-# Via Scene
-var component_scene = preload("res://path/to/Component.tscn")
-var component = component_scene.instantiate()
-actor.add_child(component)
-
-# Programmatically (if component is a script)
-var component = ComponentClass.new()
-actor.add_child(component)
-```
-
-### Setting Up AI
-
-```gdscript
-# Configure AI Controller
-ai_controller.awareness_radius = 300.0
-ai_controller.attack_range = 50.0
-ai_controller.chase_speed = 150.0
-
-# Set initial state
-ai_controller.set_state(AIIdleState)
-
-# Set target
-ai_controller.set_target(player_actor)
-```
-
-### Handling Damage
-
-```gdscript
-# Subscribe to damage
-actor.health_changed.connect(_on_health_changed)
-
-func _on_health_changed(old_val: float, new_val: float):
-	var damage = old_val - new_val
-	print("Took %s damage, health: %s" % [damage, new_val])
-
-# Subscribe to death
 actor.died.connect(_on_death)
 
 func _on_death():
-	queue_free()
-	# Spawn death effects, drop loot, etc.
+    queue_free()
 ```
 
-### Using Voice Lines
+### Terrain speed modifier
 
 ```gdscript
-comm_component.set_voice_line("chase", audio_stream)
-comm_component.play_voice_line("chase")
+terrain_speed_modifier_component.configure_multipliers({
+    TileConstants.Type.MUD: 0.5,
+    TileConstants.Type.GRASS: 1.2,
+})
 ```
 
-### Terrain Speed Modifier
-
-```gdscript
-terrain_mod_component.update_terrain(TerrainSpeedModifierComponent.TerrainType.SAND)
-var speed = terrain_mod_component.get_modified_speed()
-```
-
-### Ability Activation
-
-```gdscript
-ability_component.ability_scene = preload("res://scenes/Fireball.tscn")
-if ability_component.try_activate_ability():
-	print("Ability activated!")
-```
-
-### Skill Check
+### Skill check
 
 ```gdscript
 skill_check_component.skill_check_completed.connect(_on_skill_done)
-
-func _on_skill_done(skill_type, success):
-	if success:
-		print("Skill check passed!")
-	else:
-		print("Skill check failed!")
-
 skill_check_component.start_skill_check(SkillCheckComponent.SkillType.LOCKPICKING)
 ```
 
@@ -438,12 +485,12 @@ skill_check_component.start_skill_check(SkillCheckComponent.SkillType.LOCKPICKIN
 
 ## Best Practices
 
-1. **Component Communication** — Components should communicate via signals, not direct references
-2. **AI States** — Keep state logic minimal; delegate complex behavior to dedicated systems
-3. **Damage** — Always route damage through `take_damage()` to respect invincibility
-4. **Health** — Use `heal()` instead of directly modifying `current_health`
-5. **Speed** — Use `get_modified_speed()` instead of reading `base_speed` directly
-6. **Abilities** — Check `ability_ready` signal before UI updates
+1. **Stats** — Never write ability scores directly to `ability_scores_component` in a new actor type. Set stats on `_data` and let `_on_data_changed()` sync them.
+2. **Move speed** — If your actor needs a fixed move speed, override `_on_data_changed_impl()` and reset `move_speed` there; do not fight the dex formula in `_init()`.
+3. **Component communication** — Components should communicate via signals, not direct references.
+4. **AI states** — Keep state logic minimal; delegate complex behavior to dedicated systems.
+5. **Damage** — Always route through `take_damage()` to respect disengage and invincibility logic.
+6. **_data timing** — Assign `_data` before `super._ready()` so components exist when the bridge fires.
 
 ---
 
@@ -467,6 +514,8 @@ res://src/actors/
 │   ├── GoblinController.gd
 │   ├── GoblinModels/
 │   │   └── GoblinModel.gd
+│   ├── MimicActor.gd
+│   ├── MushroomActor.gd
 │   ├── ScarecrowDummy.gd
 │   ├── DormantVisual3D.gd
 │   └── StunVisual3D.gd
@@ -489,81 +538,55 @@ res://src/actors/
 │       ├── AIStunnedState.gd
 │       └── Dormant.gd
 └── projectiles/
-	├── BaseProjectile.gd
-	├── WaveProjectile.gd
-	├── LobProjectile.gd
-	├── FireProjectile.gd
-	├── FireLobProjectile.gd
-	├── WaterProjectile.gd
-	├── WaterLobProjectile.gd
-	└── HandaxeProjectile.gd
+    ├── BaseProjectile.gd
+    ├── WaveProjectile.gd
+    ├── LobProjectile.gd
+    ├── FireProjectile.gd
+    ├── FireLobProjectile.gd
+    ├── WaterProjectile.gd
+    ├── WaterLobProjectile.gd
+    └── HandaxeProjectile.gd
 
 res://Components/ActorComponents/
+├── ActorData.gd               ← per-actor stat resource base class
+├── ActorTypeData.gd           ← spawn-time registry (ACTOR_TYPES, CATEGORY_MAP)
+├── AbilityScoresComponent.gd
+├── ArmorClassComponent.gd
 ├── HealthComponent.gd
 ├── MovementComponent.gd
+├── ManaComponent.gd
+├── StunComponent.gd
+├── StatusEffectComponent.gd
 ├── CommunicationComponent.gd
 ├── TerrainSpeedModifierComponent.gd
 ├── SkillCheckComponent.gd
-├── AbilityScoresComponent.gd
-├── ActorData.gd
-├── ActorParticleComponent.gd
+├── DetectionComponent.gd
 ├── ActorTileInteractionComponent.gd
 ├── ActorVisualComponent.gd
-├── ArmorClassComponent.gd
+├── ActorParticleComponent.gd
 ├── BobComponent.gd
 ├── ChargeVisualComponent.gd
 ├── DamageComponent.gd
-├── DetectionComponent.gd
 ├── GoatScreamComponent.gd
 ├── HealthBarPool.gd
-├── ManaComponent.gd
-├── StatusEffectComponent.gd
-├── StunComponent.gd
+├── CreatureMorphComponent.gd
+├── SkillCopyComponent.gd
 └── AbilityComponents/
-	├── AbilityComponent.gd
-	├── AbilityAction.gd
-	├── GoatCharge.gd
-	├── NimbleEscape.gd
-	└── RedirectAttack.gd
+    ├── AbilityComponent.gd
+    ├── AbilityAction.gd
+    ├── GoatCharge.gd
+    ├── NimbleEscape.gd
+    ├── RedirectAttack.gd
+    ├── MimicShapechange.gd
+    ├── MimicAmbushBite.gd
+    └── SporeBurst.gd
+
+res://Components/BreedingComponents/
+├── GoatData.gd                ← ActorData subclass for Goat
+├── GoblinData.gd              ← ActorData subclass for Goblin
+├── MimicData.gd               ← ActorData subclass for Mimic (+ genome)
+└── MushroomData.gd            ← ActorData subclass for Mushroom (+ genome)
 ```
-
-### Scenes
-
-```
-res://scenes/
-├── actors/
-│   ├── GoatActor.tscn
-│   ├── FireActor.tscn
-│   ├── FarmerActor.tscn
-│   ├── WaterActor.tscn
-│   ├── GoblinMinion.tscn
-│   ├── ScarecrowDummy.tscn
-│   └── models/
-│       ├── GoatModel.tscn
-│       └── GoblinModel.tscn
-├── projectiles/
-│   ├── FireProjectile.tscn
-│   ├── FireLobProjectile.tscn
-│   ├── WaterProjectile.tscn
-│   ├── WaterLobProjectile.tscn
-│   ├── ArrowProjectile.tscn
-│   ├── ClubProjectile.tscn
-│   ├── DaggerProjectile.tscn
-│   ├── HandaxeProjectile.tscn
-│   ├── JavelinProjectile.tscn
-│   ├── ScimitarProjectile.tscn
-│   └── ShortbowProjectile.tscn
-└── weapons/
-	├── ClubModel.tscn
-	├── HandaxeModel.tscn
-	├── JavelinModel.tscn
-	├── ScimitarModel.tscn
-	└── ShortbowModel.tscn
-```
-
----
-
-*Generated from codebase on 2025-01-10*
 
 ---
 
@@ -573,6 +596,7 @@ res://scenes/
 |---------|------|---------|
 | 1.0 | 2025-01-09 | Initial documentation |
 | 1.1 | 2025-01-10 | Updated file paths to reflect directory restructuring |
+| 1.2 | 2026-05-23 | Corrected base type; rewrote properties/signals/methods; added Stats Data Layer section; added MimicActor, MushroomActor; updated GoblinMinion; updated file structure |
 
 ---
 
