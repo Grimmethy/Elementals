@@ -343,7 +343,63 @@ res://Components/Arena/
 
 ---
 
-## 7. Migration Strategy
+## 7. Code Reuse Analysis (Over-the-Shoulder First)
+
+### Reusable as-is
+
+| Component | What's reusable | Notes |
+|-----------|----------------|-------|
+| `MovementComponent` | `move()`, `apply_gravity()`, `jump()` | Fully mode-agnostic — takes a direction vector, handles all physics internally |
+| WASD direction math | `ActorController._handle_controlled_input()` lines 38–64 | Camera-relative movement already works for third-person when the camera is behind the character. `cam_basis.z` projected onto XZ becomes character forward automatically |
+| `PlayerInputComponent` action bindings | Attack keys, ability keys, Q/E/T/R/C, shift hold/tap | All mode-agnostic — they just need to call a different aim-target method |
+
+### Needs small refactors (~40 lines total, low risk)
+
+**1. Extract `_handle_controlled_input()` into `TwinStickMode`**
+
+The controller body becomes a thin delegator:
+```gdscript
+func _handle_controlled_input(delta: float) -> void:
+    if current_mode:
+        current_mode.process_input(actor, get_viewport().get_camera_3d(), delta)
+```
+The existing WASD + jump + `C`-key polling logic moves verbatim into `TwinStickMode.process_input()`. Zero behavior change. The `C`-key fallback polling (lines 72–78 of the current `ActorController`) stays in `TwinStickMode` since it's arena-specific.
+
+**2. `PlayerInputComponent._get_mouse_3d_position()` → `_get_aim_target()` passthrough**
+
+The internal ground-plane raycast stays identical. The call site becomes:
+```gdscript
+func _get_aim_target() -> Vector3:
+    if current_controlled_actor and current_controlled_actor.controller:
+        return current_controlled_actor.controller.get_aim_target()
+    return _get_mouse_3d_position()  # fallback
+```
+All attack/ability dispatch (`launch_projectile_at`, `secondary_attack_at`, etc.) calls `_get_aim_target()` instead of `_get_mouse_3d_position()`. For twin-stick the result is identical. For third-person, `get_aim_target()` returns a screen-center raycast instead.
+
+### Needs new code (the actual third-person work)
+
+**`CameraFollower.gd`** is the biggest gap. It uses a fixed offset vector (`Vector3(0, 30, 30)`) and `look_at()` — no concept of yaw/pitch angles or mouse orbit. Third-person requires:
+- `_yaw` and `_pitch` floats that mouse motion accumulates into each frame
+- Pitch clamped (e.g. −60° to +70°)
+- Camera position computed from spherical coords: `target_pos + Basis.from_euler(Vector3(pitch, yaw, 0)) * Vector3(0, 0, arm_length)`
+- `MOUSE_MODE_CAPTURED` while active
+
+**Recommendation**: don't modify `CameraFollower`. Create a separate **`ThirdPersonCamera.gd`** node that `ThirdPersonMode.on_mode_entered()` activates (and `on_mode_exited()` deactivates). `CameraFollower` stays simple for twin-stick/RTS; third-person camera is self-contained. This also means steps 3 and 4 of the migration below can be built and tested independently before the full mode-switching infrastructure is wired up.
+
+**`ControllerModeBase.gd`** and **`ThirdPersonMode.gd`** — new files, nothing to extract.
+
+### Recommended implementation order
+
+1. Extract `TwinStickMode` + wire `current_mode` into `ActorController` *(refactor, validate no regressions)*
+2. Add `_get_aim_target()` passthrough in `PlayerInputComponent` *(confirm attacks still land on cursor)*
+3. Build `ThirdPersonCamera.gd` as a standalone node *(can test in isolation)*
+4. Implement `ThirdPersonMode.gd` using the extracted WASD math + new camera
+
+Steps 1 and 2 are the only blockers. Steps 3 and 4 are independent once the base resource interface exists.
+
+---
+
+## 8. Migration Strategy
 
 ### Phase 1 — Extract Twin-Stick (no behavior change)
 1. Create `ControllerModeBase.gd`
@@ -374,7 +430,19 @@ res://Components/Arena/
 
 ---
 
-## 8. Open Questions
+## 8. Main Menu Integration
+
+> **TODO**: Add a **Control Mode** selector to the main menu before entering the arena.
+
+The selected mode should be saved to `GameSettings` and read by `ActorController` during setup to set the initial `current_mode`. A simple `OptionButton` or radio group is sufficient — no need for a full settings screen at first.
+
+Suggested placement: alongside the existing character/actor selection flow, as a secondary option below the actor designer. Label it **"Control Style"** with options: Top-Down, Over-the-Shoulder, First Person, RTS.
+
+The selected value maps directly to the `ControlMode` enum and should persist between sessions.
+
+---
+
+## 9. Open Questions
 
 1. **Mode persistence**: Should selected mode be saved to `GameSettings` and restored between sessions?
 2. **Per-actor defaults**: Should actor types (e.g. `GoatActor`) override the default mode? A goat in first-person is unusual.
