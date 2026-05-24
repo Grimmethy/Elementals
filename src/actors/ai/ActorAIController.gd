@@ -9,6 +9,7 @@ const _BEHAVIOR_REGISTRY: Dictionary = {
 	"rowdy":          preload("res://src/actors/ai/behaviors/RowdyBehavior.gd"),
 	"flock":          preload("res://src/actors/ai/behaviors/FlockBehavior.gd"),
 	"charge_on_sight":preload("res://src/actors/ai/behaviors/ChargeOnSightBehavior.gd"),
+	"nimble_escape":  preload("res://src/actors/ai/behaviors/NimbleEscapeBehavior.gd"),
 }
 
 ## Behaviors instantiated from ActorTypeData for this actor type.

@@ -100,6 +100,7 @@ var ability_scores_component: AbilityScoresComponent
 var armor_class_component: ArmorClassComponent
 var skill_check_component: SkillCheckComponent
 var detection_component: DetectionComponent
+var character_build_component: CharacterBuildComponent
 
 var is_controlled: bool = false:
 	set(value):
@@ -201,6 +202,7 @@ func _ready() -> void:
 
 	_setup_components()
 	_apply_type_config()
+	character_build_component.build()
 	if _data:
 		_on_data_changed()
 
@@ -366,6 +368,10 @@ func _setup_components() -> void:
 	status_effect_component.setup(self)
 	_add_comp(status_effect_component)
 
+	# 11. Character Build (equipment/ability pools from ActorTypeData)
+	character_build_component = _add_comp(CharacterBuildComponent.new())
+	character_build_component.setup(self, _rng)
+
 	communication_component = CommunicationComponent.new()
 	communication_component.setup(self)
 	_add_comp(communication_component)
@@ -408,6 +414,11 @@ func _add_comp(comp: Node) -> Node:
 
 func _create_controller() -> ActorAIController:
 	return ActorAIController.new()
+
+## Called by CharacterBuildComponent after armor is applied.
+## Override in actor subclasses to sync model visuals to the selected armor key.
+func on_equipment_built(_armor_key: String) -> void:
+	pass
 
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint(): return

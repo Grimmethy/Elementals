@@ -25,18 +25,6 @@ var is_disengaged: bool:
 
 func setup(p_actor: Actor) -> void:
 	actor = p_actor
-	# For now, default to adding NimbleEscape or RedirectAttack if it's a goblin-related actor
-	if actor.element_type == "goblin":
-		var rng = RandomNumberGenerator.new()
-		rng.randomize()
-		if rng.randf() > 0.5:
-			add_action(preload("res://Components/ActorComponents/AbilityComponents/NimbleEscape.gd").new(actor, self))
-		else:
-			add_action(preload("res://Components/ActorComponents/AbilityComponents/RedirectAttack.gd").new(actor, self))
-	elif actor.element_type == "goat":
-		var GoatChargeClass = load("res://Components/ActorComponents/AbilityComponents/GoatCharge.gd")
-		if GoatChargeClass:
-			add_action(GoatChargeClass.new(actor, self))
 
 func get_attack_target(attacker: Actor) -> Actor:
 	var current_target: Actor = actor
