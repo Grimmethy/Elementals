@@ -11,9 +11,12 @@ const _CelestialData   = preload("res://Components/ActorComponents/ActorTypes/Ce
 const _ConstructData   = preload("res://Components/ActorComponents/ActorTypes/ConstructData.gd")
 const _DragonData      = preload("res://Components/ActorComponents/ActorTypes/DragonData.gd")
 const _ElementalData   = preload("res://Components/ActorComponents/ActorTypes/ElementalData.gd")
+const _FeyData         = preload("res://Components/ActorComponents/ActorTypes/FeyData.gd")
+const _FiendData       = preload("res://Components/ActorComponents/ActorTypes/FiendData.gd")
 const _GiantData       = preload("res://Components/ActorComponents/ActorTypes/GiantData.gd")
 const _HumanoidData    = preload("res://Components/ActorComponents/ActorTypes/HumanoidData.gd")
 const _MonstrosityData = preload("res://Components/ActorComponents/ActorTypes/MonstrosityData.gd")
+const _OozeData        = preload("res://Components/ActorComponents/ActorTypes/OozeData.gd")
 const _PlantData       = preload("res://Components/ActorComponents/ActorTypes/PlantData.gd")
 const _UndeadData      = preload("res://Components/ActorComponents/ActorTypes/UndeadData.gd")
 
@@ -29,9 +32,12 @@ static func _ensure_init() -> void:
 	_types.merge(_ConstructData.DATA)
 	_types.merge(_DragonData.DATA)
 	_types.merge(_ElementalData.DATA)
+	_types.merge(_FeyData.DATA)
+	_types.merge(_FiendData.DATA)
 	_types.merge(_GiantData.DATA)
 	_types.merge(_HumanoidData.DATA)
 	_types.merge(_MonstrosityData.DATA)
+	_types.merge(_OozeData.DATA)
 	_types.merge(_PlantData.DATA)
 	_types.merge(_UndeadData.DATA)
 	_initialized = true
@@ -124,16 +130,148 @@ const CATEGORY_MAP: Dictionary = {
 		"Walking Statue of Waterdeep",
 		"Marut", "Stone Colossus",
 	],
-	"Dragon":      ["Fire Dragon", "Ice Dragon", "Storm Dragon", "Shadow Dragon"],
-	"Elemental":   ["Fireworm", "Iceworm"],
-	"Fey":         [],
-	"Fiend":       [],
-	"Giant":       ["Ogre", "Troll"],
-	"Humanoid":    ["Farmer", "Knight", "Mage", "Ranger", "Goblin", "Kobold", "Orc", "Gnoll", "Bugbear"],
-	"Monstrosity": ["Mimic", "Minotaur", "Basilisk", "Medusa", "Werewolf", "Sandworm"],
-	"Ooze":        [],
-	"Plant":       ["Mushroom"],
-	"Undead":      ["Skeleton", "Zombie", "Ghoul"],
+	"Dragon":      [
+		"Fire Dragon", "Ice Dragon", "Storm Dragon", "Shadow Dragon",
+		"Pseudodragon", "Faerie Dragon", "Ambush Drake", "Guard Drake", "Wyvern", "Jabberwock", "Dragon Turtle",
+		"White Dragon Wyrmling", "Black Dragon Wyrmling", "Green Dragon Wyrmling", "Blue Dragon Wyrmling", "Red Dragon Wyrmling",
+		"Brass Dragon Wyrmling", "Copper Dragon Wyrmling", "Bronze Dragon Wyrmling", "Silver Dragon Wyrmling", "Gold Dragon Wyrmling",
+		"White Dragon Young", "Black Dragon Young", "Green Dragon Young", "Blue Dragon Young", "Red Dragon Young",
+		"Brass Dragon Young", "Copper Dragon Young", "Bronze Dragon Young", "Silver Dragon Young", "Gold Dragon Young",
+		"White Dragon Adult", "Black Dragon Adult", "Green Dragon Adult", "Blue Dragon Adult", "Red Dragon Adult",
+		"Brass Dragon Adult", "Copper Dragon Adult", "Bronze Dragon Adult", "Silver Dragon Adult", "Gold Dragon Adult",
+		"White Dragon Ancient", "Black Dragon Ancient", "Green Dragon Ancient", "Blue Dragon Ancient", "Red Dragon Ancient",
+		"Brass Dragon Ancient", "Copper Dragon Ancient", "Bronze Dragon Ancient", "Silver Dragon Ancient", "Gold Dragon Ancient",
+		"Tiamat",
+	],
+	"Elemental":   [
+		"Fireworm", "Iceworm",
+		"Dust Mephit", "Ice Mephit", "Magma Mephit", "Mud Mephit", "Smoke Mephit", "Steam Mephit", "Magmin",
+		"Fire Snake", "Thoqqua",
+		"Azer", "Gargoyle",
+		"Water Weird",
+		"Air Elemental", "Earth Elemental", "Fire Elemental", "Water Elemental", "Salamander", "Xorn",
+		"Galeb Duhr", "Invisible Stalker",
+		"Air Elemental Myrmidon", "Earth Elemental Myrmidon", "Fire Elemental Myrmidon", "Water Elemental Myrmidon",
+		"Dao", "Djinni", "Efreeti", "Marid",
+		"Phoenix",
+		"Leviathan",
+		"Zaratan",
+		"Elder Tempest",
+	],
+	"Fey":         [
+		"Boggle", "Blink Dog", "Pixie", "Sprite",
+		"Satyr", "Darkling",
+		"Dryad", "Quickling",
+		"Centaur", "Darkling Elder", "Meenlock", "Sea Hag",
+		"Green Hag", "Redcap",
+		"Yeth Hound",
+		"Annis Hag",
+		"Korred", "Bheur Hag",
+		"Autumn Eladrin", "Spring Eladrin", "Summer Eladrin",
+		"Winter Eladrin",
+	],
+	"Fiend":       [
+		"Lemure", "Manes", "Dretch",
+		"Imp", "Quasit",
+		"Spined Devil",
+		"Bearded Devil", "Hell Hound",
+		"Barghest", "Shadow Demon", "Succubus", "Babau",
+		"Barbed Devil", "Barlgura", "Cambion", "Mezzoloth", "Night Hag",
+		"Chasme", "Vrock",
+		"Chain Devil", "Hezrou",
+		"Bone Devil", "Glabrezu", "Nycaloth",
+		"Horned Devil",
+		"Erinyes", "Arcanaloth",
+		"Ice Devil",
+		"Nalfeshnee", "Rakshasa", "Ultroloth",
+		"Marilith",
+		"Goristro",
+		"Balor",
+		"Pit Fiend",
+	],
+	"Giant":       [
+		"Firbolg",
+		"Ettin", "Verbeeg",
+		"Ogre", "Hill Giant",
+		"Cyclops", "Mouth of Grolantor",
+		"Stone Giant", "Oni", "Venom Troll",
+		"Fomorian", "Frost Giant",
+		"Fire Giant", "Cloud Giant", "Rot Troll", "Troll",
+		"Stone Giant Dreamwalker",
+		"Spirit Troll", "Cloud Giant Smiling One",
+		"Storm Giant",
+		"Storm Giant Quintessent",
+	],
+	"Humanoid":    [
+		"Merfolk", "Bandit", "Guard", "Cultist",
+		"Troglodyte", "Bullywug", "Kenku", "Drow", "Kobold",
+		"Thug", "Scout", "Hobgoblin", "Lizardfolk", "Sahuagin", "Deep Gnome", "Orc", "Gnoll",
+		"Goblin Boss", "Spy", "Kobold Dragonshield", "Yuan-ti Pureblood", "Goblin", "Bugbear",
+		"Bandit Captain", "Gnoll Pack Lord", "Orc Eye of Gruumsh", "Priest", "Sahuagin Priestess", "Lizardfolk Shaman",
+		"Hobgoblin Captain", "Bugbear Chief", "Veteran", "Farmer", "Ranger",
+		"Gnoll Fang of Yeenoghu", "Lizardfolk King", "Orc War Chief",
+		"Drow Elite Warrior", "Sahuagin Baron", "Gladiator",
+		"Hobgoblin Warlord",
+		"Drow Mage", "Knight",
+		"Drow Priestess of Lolth", "Assassin",
+		"Mage", "Archmage",
+	],
+	"Monstrosity": [
+		"Sandworm",
+		"Cockatrice", "Darkmantle", "Rust Monster",
+		"Harpy", "Hippogriff", "Death Dog",
+		"Ankheg", "Carrion Crawler", "Ettercap", "Griffin", "Merrow", "Peryton", "Grick", "Wererat",
+		"Displacer Beast", "Hook Horror", "Manticore", "Owlbear", "Phase Spider", "Yuan-ti Malison", "Yeti", "Minotaur",
+		"Lamia", "Wereboar", "Weretiger",
+		"Basilisk", "Bulette", "Catoblepas", "Umber Hulk", "Werebear", "Werewolf",
+		"Mimic", "Medusa",
+		"Chimera", "Grick Alpha", "Yuan-ti Abomination",
+		"Hydra", "Abominable Yeti",
+		"Froghemoth", "Guardian Naga",
+		"Behir", "Remorhaz", "Roc", "Gynosphinx",
+		"Spirit Naga",
+		"Androsphinx",
+		"Kraken",
+		"Tarrasque",
+	],
+	"Ooze":        [
+		"Oblex Spawn",
+		"Gray Ooze",
+		"Ochre Jelly", "Gelatinous Cube",
+		"Slithering Tracker",
+		"Black Pudding",
+		"Adult Oblex",
+		"Elder Oblex",
+		"Juiblex",
+	],
+	"Plant":       [
+		"Mushroom",
+		"Shrieker", "Myconid Sprout", "Awakened Shrub",
+		"Twig Blight",
+		"Needle Blight", "Violet Fungus", "Vegepygmy",
+		"Gas Spore", "Vine Blight", "Myconid Adult",
+		"Thorny",
+		"Awakened Tree", "Vegepygmy Chief", "Myconid Sovereign",
+		"Wood Woad",
+		"Corpse Flower",
+		"Treant",
+	],
+	"Undead":      [
+		"Crawling Claw",
+		"Skeleton", "Zombie", "Warhorse Skeleton",
+		"Ghoul", "Shadow", "Specter",
+		"Ghast", "Minotaur Skeleton", "Ogre Zombie", "Will-o'-Wisp", "Poltergeist",
+		"Mummy", "Wight", "Sword Wraith Warrior", "Vampiric Mist",
+		"Banshee", "Bone Naga", "Deathlock", "Flameskull", "Ghost",
+		"Allip", "Revenant", "Vampire Spawn", "Wraith",
+		"Bodak",
+		"Deathlock Mastermind", "Sword Wraith Commander",
+		"Vampire",
+		"Mummy Lord", "Skull Lord",
+		"Death Knight",
+		"Demilich",
+		"Lich",
+	],
 }
 
 

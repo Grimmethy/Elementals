@@ -1,6 +1,6 @@
 # ActorTypeData — Actor Registry & Equipment Compatibility
 
-Central reference for `res://UI/actor_data/ActorTypeData.gd`. All actor default stats, equipment pools, and category mappings live here. See [CharacterSelectController.md](CharacterSelectController.md) for the UI/UX spec that consumes this data.
+Central reference for `res://Components/ActorComponents/ActorTypeData.gd`. All actor default stats, equipment pools, and category mappings live here. See [CharacterSelectController.md](CharacterSelectController.md) for the UI/UX spec that consumes this data.
 
 ---
 
@@ -27,268 +27,136 @@ When an actor type is selected in the Actor Designer, available equipment dropdo
 
 ---
 
-## 2. Schema
+## 2. Architecture
 
-Each entry maps an actor type name to its defaults. Stat values use modifier notation: `0.0` = baseline, positive = bonus, negative = penalty.
+Data is split across per-category files under `ActorTypes/`. `ActorTypeData.gd` preloads each file and merges all `DATA` dicts into a single `_types` dictionary on first access via `_ensure_init()`.
 
 ```gdscript
-# res://UI/actor_data/ActorTypeData.gd
+# ActorTypeData.gd (simplified)
 class_name ActorTypeData
 extends Resource
 
-const ACTOR_TYPES: Dictionary = {
-	"ActorName": {
-		# Combat
-		"max_health":    float,   # HealthComponent.max_health
-		"armor_class":   int,     # ArmorClassComponent.armor_value
-		"damage_amount": float,   # DamageComponent.damage_amount
-		"element_type":  String,  # DamageComponent.element_type ("none","fire","ice","shadow","storm")
-		# Ability scores (AbilityScoresComponent / ActorData)
-		"strength":      float,
-		"dexterity":     float,
-		"constitution":  float,
-		"intelligence":  float,
-		"wisdom":        float,
-		"charisma":      float,
-		# Economy
-		"gold_value":    int,
-		# Equipment pools (filtered by ActorDesigner dropdowns)
-		"weapons":       Array[String],
-		"abilities":     Array[String],
-		"armor":         Array[String],
-	},
-}
+const _DragonData = preload("res://Components/ActorComponents/ActorTypes/DragonData.gd")
+# ... one const per category file ...
+
+static var _types: Dictionary = {}
+static var _initialized: bool = false
+
+static func _ensure_init() -> void:
+    if _initialized:
+        return
+    _types.merge(_DragonData.DATA)
+    # ... one merge per category ...
+    _initialized = true
+```
+
+### Entry Schema
+
+Each entry in a category `DATA` dict maps an actor type name to its defaults. Stat values use **modifier notation**: `0.0` = baseline (ability score 10), `+1.0` per 2 points above 10, negative below.
+
+```gdscript
+"ActorName": {
+    # Combat
+    "max_health":    float,   # HealthComponent.max_health
+    "armor_class":   int,     # ArmorClassComponent.armor_value
+    "damage_amount": float,   # DamageComponent.damage_amount
+    "element_type":  String,  # "none" | "fire" | "ice" | "storm" | "shadow"
+    # Ability scores
+    "strength":      float,
+    "dexterity":     float,
+    "constitution":  float,
+    "intelligence":  float,
+    "wisdom":        float,
+    "charisma":      float,
+    # Economy
+    "gold_value":    int,
+    # Equipment pools
+    "weapons":       Array[String],
+    "abilities":     Array[String],
+    "armor":         Array[String],
+},
 ```
 
 ---
 
-## 3. Populated Dictionary
+## 3. Category Files
 
-#### Aberration
+All data files live at `res://Components/ActorComponents/ActorTypes/`.
 
-```gdscript
-"Beholder":    { "max_health": 180, "armor_class": 18, "damage_amount": 4.0, "element_type": "none",
-				 "strength": 2.0, "dexterity": 2.0, "constitution": 4.0, "intelligence": 5.0, "wisdom": 2.0, "charisma": 3.0,
-				 "gold_value": 500, "weapons": ["Eye Rays","Bite"],          "abilities": ["Eye Rays","Antimagic Cone"],    "armor": ["Natural Armor"] },
-```
+| Category | File | Entries | CR Range | Notes |
+|----------|------|---------|----------|-------|
+| Aberration | `AberrationData.gd` | — | — | |
+| Beast | `BeastData.gd` | — | — | |
+| Celestial | `CelestialData.gd` | — | — | |
+| Construct | `ConstructData.gd` | — | — | |
+| Dragon | `DragonData.gd` | 52 | ¼–30 | 4 game-specific + 48 5e; full chromatic/metallic set; Tiamat |
+| Elemental | `ElementalData.gd` | 34 | ¼–23 | 2 game-specific + 32 5e; includes Myrmidons, Genies, Elder Elementals |
+| Fey | `FeyData.gd` | 22 | ⅛–12 | Blights, Hags, Eladrin, Redcap, Korred |
+| Fiend | `FiendData.gd` | 35 | ¼–20 | 11 Devils, 13 Demons, 4 Yugoloths, 7 other |
+| Giant | `GiantData.gd` | 21 | 2–19 | Full troll variants; all giant types through Storm Giant Quintessent |
+| Humanoid | `HumanoidData.gd` | 47 | ⅛–12 | 9 game-specific + 38 5e; includes extended Goblin fields |
+| Monstrosity | `MonstrosityData.gd` | 50 | ½–30 | 6 game-specific + 44 5e; through Tarrasque |
+| Ooze | `OozeData.gd` | 9 | ¼–23 | Oblex line, core oozes, Juiblex |
+| Plant | `PlantData.gd` | 18 | 0–9 | 1 game-specific + 17 5e; Myconids, Blights, Treant |
+| Undead | `UndeadData.gd` | 34 | 0–21 | 3 game-specific + 31 5e; shadow-typed incorporeals, Lich |
 
-#### Beast
-
-```gdscript
-"Goat":      { "max_health": 10, "armor_class": 10, "damage_amount": 1.0, "element_type": "none",
-			   "strength": 1.0, "dexterity": 1.0, "constitution": 0.0, "intelligence": -4.0, "wisdom": 0.0, "charisma": -3.0,
-			   "gold_value": 50, "weapons": ["Headbutt","Horn Attack","Hoof Strike"], "abilities": ["Charge","Buck"],        "armor": ["Fur","Hide"] },
-
-"Chicken":   { "max_health": 4,  "armor_class": 8,  "damage_amount": 0.5, "element_type": "none",
-			   "strength": -3.0, "dexterity": 2.0, "constitution": -1.0, "intelligence": -4.0, "wisdom": 0.0, "charisma": -2.0,
-			   "gold_value": 10, "weapons": ["Peck","Talon Scratch"],         "abilities": ["Flee","Cluck Aura"],          "armor": ["Feathers"] },
-
-"Cow":       { "max_health": 15, "armor_class": 10, "damage_amount": 1.5, "element_type": "none",
-			   "strength": 2.0, "dexterity": -1.0, "constitution": 2.0, "intelligence": -4.0, "wisdom": 0.0, "charisma": -2.0,
-			   "gold_value": 40, "weapons": ["Headbutt","Gore"],              "abilities": ["Stampede","Moo"],             "armor": ["Hide"] },
-
-"Pig":       { "max_health": 11, "armor_class": 9,  "damage_amount": 1.0, "element_type": "none",
-			   "strength": 1.0, "dexterity": 0.0, "constitution": 1.0, "intelligence": -2.0, "wisdom": -1.0, "charisma": -2.0,
-			   "gold_value": 30, "weapons": ["Bite","Tusk Slam"],             "abilities": ["Root","Mudroll"],             "armor": ["Hide"] },
-
-"Sheep":     { "max_health": 8,  "armor_class": 9,  "damage_amount": 0.5, "element_type": "none",
-			   "strength": 0.0, "dexterity": 1.0, "constitution": 0.0, "intelligence": -4.0, "wisdom": -1.0, "charisma": -1.0,
-			   "gold_value": 20, "weapons": ["Headbutt","Hoof Strike"],       "abilities": ["Herd Mentality"],            "armor": ["Wool","Fleece"] },
-
-"Wolf":      { "max_health": 11, "armor_class": 13, "damage_amount": 2.0, "element_type": "none",
-			   "strength": 2.0, "dexterity": 2.0, "constitution": 1.0, "intelligence": -2.0, "wisdom": 1.0, "charisma": -1.0,
-			   "gold_value": 60, "weapons": ["Bite","Claw"],                  "abilities": ["Pack Tactics","Howl"],       "armor": ["Fur"] },
-
-"Earthworm": { "max_health": 8,  "armor_class": 9,  "damage_amount": 0.5, "element_type": "none",
-			   "strength": 0.0, "dexterity": -1.0, "constitution": 1.0, "intelligence": -5.0, "wisdom": -3.0, "charisma": -4.0,
-			   "gold_value": 5,  "weapons": ["Constrict"],                    "abilities": ["Burrow"],                    "armor": ["Slime Coat"] },
-```
-
-#### Construct
-
-```gdscript
-"Scarecrow": { "max_health": 36, "armor_class": 11, "damage_amount": 2.0, "element_type": "none",
-			   "strength": 1.0, "dexterity": 1.0, "constitution": 0.0, "intelligence": -3.0, "wisdom": -2.0, "charisma": -3.0,
-			   "gold_value": 45, "weapons": ["Claw","Slam"],                  "abilities": ["Horrifying Visage","Scare"], "armor": ["Natural Armor"] },
-```
-
-#### Dragon
-
-```gdscript
-"Fire Dragon":   { "max_health": 256, "armor_class": 19, "damage_amount": 6.0, "element_type": "fire",
-				   "strength": 9.0, "dexterity": 0.0, "constitution": 5.0, "intelligence": 4.0, "wisdom": 1.0, "charisma": 4.0,
-				   "gold_value": 600, "weapons": ["Claw","Bite","Tail Swipe"], "abilities": ["Fire Breath","Fly","Roar"],            "armor": ["Dragon Scales"] },
-
-"Ice Dragon":    { "max_health": 225, "armor_class": 18, "damage_amount": 5.5, "element_type": "ice",
-				   "strength": 8.0, "dexterity": 0.0, "constitution": 4.0, "intelligence": 4.0, "wisdom": 1.0, "charisma": 3.0,
-				   "gold_value": 580, "weapons": ["Claw","Bite","Tail Swipe"], "abilities": ["Frost Breath","Fly","Roar"],           "armor": ["Dragon Scales"] },
-
-"Storm Dragon":  { "max_health": 243, "armor_class": 19, "damage_amount": 6.0, "element_type": "storm",
-				   "strength": 8.0, "dexterity": 1.0, "constitution": 5.0, "intelligence": 4.0, "wisdom": 2.0, "charisma": 4.0,
-				   "gold_value": 620, "weapons": ["Claw","Bite","Tail Swipe"], "abilities": ["Lightning Breath","Fly","Roar"],       "armor": ["Dragon Scales"] },
-
-"Shadow Dragon": { "max_health": 189, "armor_class": 19, "damage_amount": 5.0, "element_type": "shadow",
-				   "strength": 7.0, "dexterity": 2.0, "constitution": 4.0, "intelligence": 4.0, "wisdom": 1.0, "charisma": 5.0,
-				   "gold_value": 650, "weapons": ["Claw","Bite","Tail Swipe"], "abilities": ["Shadow Breath","Fly","Living Shadow"], "armor": ["Dragon Scales"] },
-```
-
-#### Elemental
-
-```gdscript
-"Fireworm": { "max_health": 22, "armor_class": 12, "damage_amount": 2.5, "element_type": "fire",
-			  "strength": 1.0, "dexterity": 0.0, "constitution": 2.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-			  "gold_value": 55, "weapons": ["Flame Bite","Constrict"],   "abilities": ["Acid Spit","Burrow"],   "armor": ["Fire Scales"] },
-
-"Iceworm":  { "max_health": 22, "armor_class": 12, "damage_amount": 2.5, "element_type": "ice",
-			  "strength": 1.0, "dexterity": 0.0, "constitution": 2.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-			  "gold_value": 55, "weapons": ["Frost Bite","Constrict"],   "abilities": ["Freeze Spit","Burrow"], "armor": ["Ice Scales"] },
-```
-
-#### Giant
-
-```gdscript
-"Ogre":  { "max_health": 59, "armor_class": 11, "damage_amount": 4.0, "element_type": "none",
-		   "strength": 5.0, "dexterity": -1.0, "constitution": 3.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-		   "gold_value": 90,  "weapons": ["Greatclub","Javelin"], "abilities": ["Siege Monster"],             "armor": ["Natural Armor"] },
-
-"Troll": { "max_health": 84, "armor_class": 15, "damage_amount": 3.5, "element_type": "none",
-		   "strength": 4.0, "dexterity": 1.0,  "constitution": 5.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -4.0,
-		   "gold_value": 130, "weapons": ["Claw","Bite"],          "abilities": ["Regeneration","Keen Smell"], "armor": ["Natural Armor"] },
-```
-
-#### Humanoid
-
-```gdscript
-"Farmer":  { "max_health": 8,  "armor_class": 10, "damage_amount": 1.0, "element_type": "none",
-			 "strength": 0.0, "dexterity": 0.0, "constitution": 0.0, "intelligence": 0.0, "wisdom": 0.0, "charisma": 0.0,
-			 "gold_value": 15,  "weapons": ["Pitchfork","Scythe"],    "abilities": ["Hard Work"],                         "armor": ["Cloth"] },
-
-"Knight":  { "max_health": 52, "armor_class": 18, "damage_amount": 3.0, "element_type": "none",
-			 "strength": 3.0, "dexterity": 0.0, "constitution": 2.0, "intelligence": 0.0, "wisdom": 0.0, "charisma": 1.0,
-			 "gold_value": 120, "weapons": ["Longsword","Lance"],      "abilities": ["Parry","Rally"],                    "armor": ["Plate","Shield"] },
-
-"Mage":    { "max_health": 18, "armor_class": 12, "damage_amount": 4.0, "element_type": "none",
-			 "strength": -1.0, "dexterity": 2.0, "constitution": 0.0, "intelligence": 5.0, "wisdom": 1.0, "charisma": 0.0,
-			 "gold_value": 100, "weapons": ["Staff","Dagger"],         "abilities": ["Fireball","Shield","Magic Missile"], "armor": ["Robes"] },
-
-"Ranger":  { "max_health": 33, "armor_class": 15, "damage_amount": 2.5, "element_type": "none",
-			 "strength": 1.0, "dexterity": 3.0, "constitution": 1.0, "intelligence": 0.0, "wisdom": 1.0, "charisma": 0.0,
-			 "gold_value": 80,  "weapons": ["Longbow","Shortsword"],   "abilities": ["Hunter's Mark","Favored Enemy"],    "armor": ["Leather","Scale Mail"] },
-
-"Goblin":  { "max_health": 7,  "armor_class": 15, "damage_amount": 1.5, "element_type": "none",
-			 "strength": -1.0, "dexterity": 2.5, "constitution": 0.0, "intelligence": 0.0, "wisdom": -1.0, "charisma": -1.0,
-			 "gold_value": 65,  "weapons": ["Scimitar","Shortbow"],    "abilities": ["Nimble Escape"],                    "armor": ["Leather","Shield"] },
-
-"Kobold":  { "max_health": 5,  "armor_class": 12, "damage_amount": 1.0, "element_type": "none",
-			 "strength": -3.0, "dexterity": 2.0, "constitution": -1.0, "intelligence": -1.0, "wisdom": -2.0, "charisma": -2.0,
-			 "gold_value": 25,  "weapons": ["Dagger","Sling"],         "abilities": ["Pack Tactics","Sunlight Sensitivity"], "armor": ["Leather"] },
-
-"Orc":     { "max_health": 15, "armor_class": 13, "damage_amount": 2.5, "element_type": "none",
-			 "strength": 3.0, "dexterity": 1.0, "constitution": 3.0, "intelligence": -2.0, "wisdom": -1.0, "charisma": -1.0,
-			 "gold_value": 55,  "weapons": ["Greataxe","Javelin"],     "abilities": ["Aggressive","Relentless"],          "armor": ["Hide","Shield"] },
-
-"Gnoll":   { "max_health": 22, "armor_class": 15, "damage_amount": 2.0, "element_type": "none",
-			 "strength": 2.0, "dexterity": 1.0, "constitution": 0.0, "intelligence": -2.0, "wisdom": 0.0, "charisma": -2.0,
-			 "gold_value": 50,  "weapons": ["Bite","Spear"],           "abilities": ["Rampage"],                          "armor": ["Hide","Shield"] },
-
-"Bugbear": { "max_health": 27, "armor_class": 16, "damage_amount": 3.0, "element_type": "none",
-			 "strength": 3.0, "dexterity": 2.0, "constitution": 1.0, "intelligence": -1.0, "wisdom": 0.0, "charisma": -1.0,
-			 "gold_value": 70,  "weapons": ["Morningstar","Javelin"],  "abilities": ["Brute","Surprise Attack"],          "armor": ["Hide","Shield"] },
-```
-
-#### Monstrosity
-
-```gdscript
-"Mimic":    { "max_health": 58,  "armor_class": 12, "damage_amount": 3.0, "element_type": "none",
-			  "strength": 3.0, "dexterity": 1.0, "constitution": 2.0, "intelligence": -3.0, "wisdom": 1.0, "charisma": -1.0,
-			  "gold_value": 80,  "weapons": ["Pseudopod","Bite"],      "abilities": ["False Appearance","Adhesive"],     "armor": ["Natural Armor"] },
-
-"Minotaur": { "max_health": 76,  "armor_class": 14, "damage_amount": 4.0, "element_type": "none",
-			  "strength": 5.0, "dexterity": 0.0, "constitution": 3.0, "intelligence": -3.0, "wisdom": 0.0, "charisma": -2.0,
-			  "gold_value": 120, "weapons": ["Greataxe","Gore"],       "abilities": ["Charge","Labyrinthine Recall"],    "armor": ["Natural Armor"] },
-
-"Basilisk": { "max_health": 52,  "armor_class": 15, "damage_amount": 2.5, "element_type": "none",
-			  "strength": 2.0, "dexterity": -1.0, "constitution": 3.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-			  "gold_value": 100, "weapons": ["Bite"],                  "abilities": ["Petrifying Gaze"],                 "armor": ["Natural Armor"] },
-
-"Medusa":   { "max_health": 127, "armor_class": 15, "damage_amount": 3.0, "element_type": "none",
-			  "strength": 0.0, "dexterity": 2.0, "constitution": 3.0, "intelligence": 2.0, "wisdom": -1.0, "charisma": 1.0,
-			  "gold_value": 200, "weapons": ["Shortsword","Longbow"],  "abilities": ["Petrifying Gaze","Snake Hair"],    "armor": ["Natural Armor"] },
-
-"Werewolf": { "max_health": 58,  "armor_class": 12, "damage_amount": 2.5, "element_type": "none",
-			  "strength": 3.0, "dexterity": 1.0, "constitution": 2.0, "intelligence": 0.0, "wisdom": 1.0, "charisma": 0.0,
-			  "gold_value": 110, "weapons": ["Claw","Bite"],           "abilities": ["Lycanthropy","Pack Tactics"],      "armor": ["Natural Armor"] },
-
-"Sandworm": { "max_health": 247, "armor_class": 18, "damage_amount": 6.0, "element_type": "none",
-			  "strength": 8.0, "dexterity": -1.0, "constitution": 5.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-			  "gold_value": 400, "weapons": ["Bite","Swallow"],        "abilities": ["Tunneler","Tremorsense"],          "armor": ["Hardened Hide"] },
-```
-
-#### Plant
-
-```gdscript
-"Mushroom": { "max_health": 15, "armor_class": 10, "damage_amount": 1.0, "element_type": "none",
-			  "strength": 1.0, "dexterity": -1.0, "constitution": 2.0, "intelligence": -4.0, "wisdom": 0.0, "charisma": -3.0,
-			  "gold_value": 35, "weapons": ["Spore Burst","Root Slam"], "abilities": ["Poison Spores","Regrowth"],       "armor": ["Natural Armor"] },
-```
-
-#### Undead
-
-```gdscript
-"Skeleton": { "max_health": 13, "armor_class": 13, "damage_amount": 1.5, "element_type": "none",
-			  "strength": 0.0, "dexterity": 2.0, "constitution": -1.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-			  "gold_value": 30, "weapons": ["Shortsword","Shortbow"],  "abilities": ["Undead Fortitude"],                "armor": ["Armor Scraps"] },
-
-"Zombie":   { "max_health": 22, "armor_class": 8,  "damage_amount": 2.0, "element_type": "none",
-			  "strength": 1.0, "dexterity": -2.0, "constitution": 3.0, "intelligence": -5.0, "wisdom": -4.0, "charisma": -4.0,
-			  "gold_value": 25, "weapons": ["Slam"],                   "abilities": ["Undead Fortitude"],                "armor": ["Tattered Cloth"] },
-
-"Ghoul":    { "max_health": 22, "armor_class": 12, "damage_amount": 2.0, "element_type": "none",
-			  "strength": 1.0, "dexterity": 2.0, "constitution": 0.0, "intelligence": -2.0, "wisdom": 0.0, "charisma": -3.0,
-			  "gold_value": 60, "weapons": ["Claws","Bite"],           "abilities": ["Paralyzing Touch","Undead Fortitude"], "armor": ["Natural Armor"] },
-```
+> **Game-specific entries** (e.g. Fireworm, Sandworm, Goblin with extended AI fields) may carry additional keys beyond the standard schema. Do not overwrite these entries when batch-adding 5e creatures.
 
 ---
 
 ## 4. Static Lookup Methods
 
 ```gdscript
-static func get_defaults(actor_type: String) -> Dictionary:
-	return ACTOR_TYPES.get(actor_type, {})
+# Returns the full defaults dict for an actor type, or {} if not found.
+static func get_defaults(actor_type: String) -> Dictionary
 
-static func get_all_types() -> Array[String]:
-	return ACTOR_TYPES.keys()
+# Returns all registered actor type names across all categories.
+static func get_all_types() -> Array[String]
 
-static func get_category(actor_type: String) -> String:
-	for category in CATEGORY_MAP:
-		if actor_type in CATEGORY_MAP[category]:
-			return category
-	return "Unknown"
+# Returns the category string for a given actor type ("Unknown" if not in CATEGORY_MAP).
+static func get_category(actor_type: String) -> String
 
-const CATEGORY_MAP: Dictionary = {
-	"Aberration": ["Beholder"],
-	"Beast":      ["Goat","Chicken","Cow","Pig","Sheep","Wolf","Earthworm"],
-	"Celestial":  [],
-	"Construct":  ["Scarecrow"],
-	"Dragon":     ["Fire Dragon","Ice Dragon","Storm Dragon","Shadow Dragon"],
-	"Elemental":  ["Fireworm","Iceworm"],
-	"Fey":        [],
-	"Fiend":      [],
-	"Giant":      ["Ogre","Troll"],
-	"Humanoid":   ["Farmer","Knight","Mage","Ranger","Goblin","Kobold","Orc","Gnoll","Bugbear"],
-	"Monstrosity":["Mimic","Minotaur","Basilisk","Medusa","Werewolf","Sandworm"],
-	"Ooze":       [],
-	"Plant":      ["Mushroom"],
-	"Undead":     ["Skeleton","Zombie","Ghoul"],
-}
+# Returns the list of actor type names in a given category.
+static func get_types_in_category(category: String) -> Array
+
+# Returns all category names from CATEGORY_MAP.
+static func get_all_categories() -> Array[String]
 ```
+
+### CATEGORY_MAP
+
+`CATEGORY_MAP` is a `const Dictionary` keyed by category name. It drives `get_category()` and designer dropdowns. The full list lives in `ActorTypeData.gd`; categories with large populations are summarised here.
+
+| Category | Count | Notable members |
+|----------|-------|-----------------|
+| Aberration | large | Beholder, Aboleth, Mind Flayer, Elder Brain, Slaads, Star Spawn… |
+| Beast | large | Goat, Wolf, Dinosaurs, Giant animals, mundane creatures… |
+| Celestial | medium | Couatl, Deva, Planetar, Solar, Unicorn, Ki-rin, Empyrean… |
+| Construct | large | Golems (Clay→Iron), Modrons, Shield Guardian, Marut, Nimblewright… |
+| Dragon | 52 | Pseudodragon → Tiamat; all chromatic & metallic wyrmling/young/adult/ancient |
+| Elemental | 34 | Mephits, Core Elementals, Myrmidons, Genies, Phoenix, Leviathan, Elder Tempest |
+| Fey | 22 | Pixie → Winter Eladrin; Blights, Hags, Redcap, Korred |
+| Fiend | 35 | Lemure → Pit Fiend; Balor, Marilith, Rakshasa, Night Hag |
+| Giant | 21 | Firbolg → Storm Giant Quintessent; all troll variants |
+| Humanoid | 47 | Goblin → Archmage; Drow line, Yuan-ti, full caster/martial/monster humanoids |
+| Monstrosity | 50 | Cockatrice → Tarrasque; Sphinxes, Kraken, Hydra, lycanthropes |
+| Ooze | 9 | Oblex Spawn → Juiblex; Gray Ooze, Black Pudding, Gelatinous Cube |
+| Plant | 18 | Shrieker → Treant; Myconids, Blights, Vegepygmies, Corpse Flower |
+| Undead | 34 | Crawling Claw → Lich; Vampire line, Mummy Lord, Death Knight, Demilich |
 
 ---
 
-## 5. Migration Path
+## 5. Adding New Entries
 
-To replace an existing per-actor script with a dictionary lookup:
+To add creatures to an existing category:
+1. Open the relevant `ActorTypes/XxxData.gd` file.
+2. Append new entries inside `const DATA: Dictionary = { … }` before the closing `}`.
+3. Add the new names to `CATEGORY_MAP["Category"]` in `ActorTypeData.gd`.
 
-1. Delete the stat assignments from `_init()` in `GoatData.gd`, `GoblinData.gd`, etc.
-2. In `ActorData.gd` base `_init()`, call `ActorTypeData.get_defaults(type_name)` and apply the values.
-3. Keep per-actor scripts only for properties unique to that type (genome, `mimic_blood`, `horn_type`, etc.) — anything that isn't a shared stat.
+To add a **new category**:
+1. Create `ActorTypes/XxxData.gd` with `const DATA: Dictionary = { … }`.
+2. Add `const _XxxData = preload("res://Components/ActorComponents/ActorTypes/XxxData.gd")` to `ActorTypeData.gd`.
+3. Add `_types.merge(_XxxData.DATA)` inside `_ensure_init()`.
+4. Add the new key to `CATEGORY_MAP`.
+
+> **Note on extended fields:** The Goblin entry in `HumanoidData.gd` carries game-specific keys (`should_bob`, `fixed_move_speed`, `ai_behaviors`, `faction`, `hp_dice_count`, etc.). Any code consuming `get_defaults()` for Goblin must handle these extra keys gracefully.
