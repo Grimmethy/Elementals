@@ -3,261 +3,39 @@ extends Resource
 
 ## Central registry of actor default stats, equipment pools, and category mappings.
 ## Stat values use modifier notation: 0.0 = baseline, positive = bonus, negative = penalty.
-## See Markdowns/Reference/ActorTypeData.md for the full spec and migration path.
+## Data is split into per-category files under ActorTypes/ and merged on first access.
 
-const ACTOR_TYPES: Dictionary = {
-	# ── Aberration ──────────────────────────────────────────────────────────
-	
-	# ── Beast ────────────────────────────────────────────────────────────────
+const _AberrationData  = preload("res://Components/ActorComponents/ActorTypes/AberrationData.gd")
+const _BeastData       = preload("res://Components/ActorComponents/ActorTypes/BeastData.gd")
+const _CelestialData   = preload("res://Components/ActorComponents/ActorTypes/CelestialData.gd")
+const _ConstructData   = preload("res://Components/ActorComponents/ActorTypes/ConstructData.gd")
+const _DragonData      = preload("res://Components/ActorComponents/ActorTypes/DragonData.gd")
+const _ElementalData   = preload("res://Components/ActorComponents/ActorTypes/ElementalData.gd")
+const _GiantData       = preload("res://Components/ActorComponents/ActorTypes/GiantData.gd")
+const _HumanoidData    = preload("res://Components/ActorComponents/ActorTypes/HumanoidData.gd")
+const _MonstrosityData = preload("res://Components/ActorComponents/ActorTypes/MonstrosityData.gd")
+const _PlantData       = preload("res://Components/ActorComponents/ActorTypes/PlantData.gd")
+const _UndeadData      = preload("res://Components/ActorComponents/ActorTypes/UndeadData.gd")
 
-	# ── Celestial ───────────────────────────────────────────────────────────
+static var _types: Dictionary = {}
+static var _initialized: bool = false
 
-	# ── Construct ────────────────────────────────────────────────────────────
-	"Scarecrow": {
-		"max_health": 36, "armor_class": 11, "damage_amount": 2.0, "element_type": "none",
-		"strength": 1.0, "dexterity": 1.0, "constitution": 0.0, "intelligence": -3.0, "wisdom": -2.0, "charisma": -3.0,
-		"gold_value": 45,
-		"weapons": ["Claw", "Slam"],
-		"abilities": ["Horrifying Visage", "Scare"],
-		"armor": ["Natural Armor"],
-	},
-	# ── Dragon ───────────────────────────────────────────────────────────────
-	"Fire Dragon": {
-		"max_health": 256, "armor_class": 19, "damage_amount": 6.0, "element_type": "fire",
-		"strength": 9.0, "dexterity": 0.0, "constitution": 5.0, "intelligence": 4.0, "wisdom": 1.0, "charisma": 4.0,
-		"gold_value": 600,
-		"weapons": ["Claw", "Bite", "Tail Swipe"],
-		"abilities": ["Fire Breath", "Fly", "Roar"],
-		"armor": ["Dragon Scales"],
-	},
-	"Ice Dragon": {
-		"max_health": 225, "armor_class": 18, "damage_amount": 5.5, "element_type": "ice",
-		"strength": 8.0, "dexterity": 0.0, "constitution": 4.0, "intelligence": 4.0, "wisdom": 1.0, "charisma": 3.0,
-		"gold_value": 580,
-		"weapons": ["Claw", "Bite", "Tail Swipe"],
-		"abilities": ["Frost Breath", "Fly", "Roar"],
-		"armor": ["Dragon Scales"],
-	},
-	"Storm Dragon": {
-		"max_health": 243, "armor_class": 19, "damage_amount": 6.0, "element_type": "storm",
-		"strength": 8.0, "dexterity": 1.0, "constitution": 5.0, "intelligence": 4.0, "wisdom": 2.0, "charisma": 4.0,
-		"gold_value": 620,
-		"weapons": ["Claw", "Bite", "Tail Swipe"],
-		"abilities": ["Lightning Breath", "Fly", "Roar"],
-		"armor": ["Dragon Scales"],
-	},
-	"Shadow Dragon": {
-		"max_health": 189, "armor_class": 19, "damage_amount": 5.0, "element_type": "shadow",
-		"strength": 7.0, "dexterity": 2.0, "constitution": 4.0, "intelligence": 4.0, "wisdom": 1.0, "charisma": 5.0,
-		"gold_value": 650,
-		"weapons": ["Claw", "Bite", "Tail Swipe"],
-		"abilities": ["Shadow Breath", "Fly", "Living Shadow"],
-		"armor": ["Dragon Scales"],
-	},
-	# ── Elemental ────────────────────────────────────────────────────────────
-	"Fireworm": {
-		"max_health": 22, "armor_class": 12, "damage_amount": 2.5, "element_type": "fire",
-		"strength": 1.0, "dexterity": 0.0, "constitution": 2.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-		"gold_value": 55,
-		"weapons": ["Flame Bite", "Constrict"],
-		"abilities": ["Fire Spit", "Burrow"],
-		"armor": ["Fire Scales"],
-	},
-	"Iceworm": {
-		"max_health": 22, "armor_class": 12, "damage_amount": 2.5, "element_type": "ice",
-		"strength": 1.0, "dexterity": 0.0, "constitution": 2.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-		"gold_value": 55,
-		"weapons": ["Frost Bite", "Constrict"],
-		"abilities": ["Freeze Spit", "Burrow"],
-		"armor": ["Ice Scales"],
-	},
-	# ── Giant ─────────────────────────────────────────────────────────────────
-	"Ogre": {
-		"max_health": 59, "armor_class": 11, "damage_amount": 4.0, "element_type": "none",
-		"strength": 5.0, "dexterity": -1.0, "constitution": 3.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-		"gold_value": 90,
-		"weapons": ["Greatclub", "Javelin"],
-		"abilities": ["Siege Monster"],
-		"armor": ["Natural Armor"],
-	},
-	"Troll": {
-		"max_health": 84, "armor_class": 15, "damage_amount": 3.5, "element_type": "none",
-		"strength": 4.0, "dexterity": 1.0, "constitution": 5.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -4.0,
-		"gold_value": 130,
-		"weapons": ["Claw", "Bite"],
-		"abilities": ["Regeneration", "Keen Smell"],
-		"armor": ["Natural Armor"],
-	},
-	# ── Humanoid ─────────────────────────────────────────────────────────────
-	"Farmer": {
-		"max_health": 8, "armor_class": 10, "damage_amount": 1.0, "element_type": "none",
-		"strength": 0.0, "dexterity": 0.0, "constitution": 0.0, "intelligence": 0.0, "wisdom": 0.0, "charisma": 0.0,
-		"gold_value": 15,
-		"weapons": ["Pitchfork", "Scythe"],
-		"abilities": ["Hard Work"],
-		"armor": ["Cloth"],
-	},
-	"Knight": {
-		"max_health": 52, "armor_class": 18, "damage_amount": 3.0, "element_type": "none",
-		"strength": 3.0, "dexterity": 0.0, "constitution": 2.0, "intelligence": 0.0, "wisdom": 0.0, "charisma": 1.0,
-		"gold_value": 120,
-		"weapons": ["Longsword", "Lance"],
-		"abilities": ["Parry", "Rally"],
-		"armor": ["Plate", "Shield"],
-	},
-	"Mage": {
-		"max_health": 18, "armor_class": 12, "damage_amount": 4.0, "element_type": "none",
-		"strength": -1.0, "dexterity": 2.0, "constitution": 0.0, "intelligence": 5.0, "wisdom": 1.0, "charisma": 0.0,
-		"gold_value": 100,
-		"weapons": ["Staff", "Dagger"],
-		"abilities": ["Fireball", "Shield", "Magic Missile"],
-		"armor": ["Robes"],
-	},
-	"Ranger": {
-		"max_health": 33, "armor_class": 15, "damage_amount": 2.5, "element_type": "none",
-		"strength": 1.0, "dexterity": 3.0, "constitution": 1.0, "intelligence": 0.0, "wisdom": 1.0, "charisma": 0.0,
-		"gold_value": 80,
-		"weapons": ["Longbow", "Shortsword"],
-		"abilities": ["Hunter's Mark", "Favored Enemy"],
-		"armor": ["Leather", "Scale Mail"],
-	},
-	"Goblin": {
-		"max_health": 7, "armor_class": 15, "damage_amount": 1.5, "element_type": "none",
-		"strength": -1.0, "dexterity": 2.5, "constitution": 0.0, "intelligence": 0.0, "wisdom": -1.0, "charisma": -1.0,
-		"gold_value": 65,
-		"weapons": ["Scimitar", "Shortbow"],
-		"abilities": ["Nimble Escape"],
-		"armor": ["Leather", "Shield"],
-		"should_bob": false,
-		"fixed_move_speed": 3.0,
-		"ai_behaviors": ["nimble_escape"],
-		"nimble_escape_disengage_range": 4.0,
-		"nimble_escape_hide_range": 8.0,
-		"faction": "GOBLINS",
-		"hp_dice_count": 2,
-		"hp_dice_sides": 6,
-		"armor_pool": ["none", "leather", "chain shirt"],
-		"weapon_pool": ["Dagger", "Scimitar", "Shortbow"],
-		"ability_pool": ["nimble_escape", "redirect_attack"],
-		"ammo_dice_count": 2,
-		"ammo_dice_sides": 10,
-	},
-	"Kobold": {
-		"max_health": 5, "armor_class": 12, "damage_amount": 1.0, "element_type": "none",
-		"strength": -3.0, "dexterity": 2.0, "constitution": -1.0, "intelligence": -1.0, "wisdom": -2.0, "charisma": -2.0,
-		"gold_value": 25,
-		"weapons": ["Dagger", "Sling"],
-		"abilities": ["Pack Tactics", "Sunlight Sensitivity"],
-		"armor": ["Leather"],
-	},
-	"Orc": {
-		"max_health": 15, "armor_class": 13, "damage_amount": 2.5, "element_type": "none",
-		"strength": 3.0, "dexterity": 1.0, "constitution": 3.0, "intelligence": -2.0, "wisdom": -1.0, "charisma": -1.0,
-		"gold_value": 55,
-		"weapons": ["Greataxe", "Javelin"],
-		"abilities": ["Aggressive", "Relentless"],
-		"armor": ["Hide", "Shield"],
-	},
-	"Gnoll": {
-		"max_health": 22, "armor_class": 15, "damage_amount": 2.0, "element_type": "none",
-		"strength": 2.0, "dexterity": 1.0, "constitution": 0.0, "intelligence": -2.0, "wisdom": 0.0, "charisma": -2.0,
-		"gold_value": 50,
-		"weapons": ["Bite", "Spear"],
-		"abilities": ["Rampage"],
-		"armor": ["Hide", "Shield"],
-	},
-	"Bugbear": {
-		"max_health": 27, "armor_class": 16, "damage_amount": 3.0, "element_type": "none",
-		"strength": 3.0, "dexterity": 2.0, "constitution": 1.0, "intelligence": -1.0, "wisdom": 0.0, "charisma": -1.0,
-		"gold_value": 70,
-		"weapons": ["Morningstar", "Javelin"],
-		"abilities": ["Brute", "Surprise Attack"],
-		"armor": ["Hide", "Shield"],
-	},
-	# ── Monstrosity ──────────────────────────────────────────────────────────
-	"Mimic": {
-		"max_health": 58, "armor_class": 12, "damage_amount": 3.0, "element_type": "none",
-		"strength": 3.0, "dexterity": 1.0, "constitution": 2.0, "intelligence": -3.0, "wisdom": 1.0, "charisma": -1.0,
-		"gold_value": 80,
-		"weapons": ["Pseudopod", "Bite"],
-		"abilities": ["False Appearance", "Adhesive"],
-		"armor": ["Natural Armor"],
-	},
-	"Minotaur": {
-		"max_health": 76, "armor_class": 14, "damage_amount": 4.0, "element_type": "none",
-		"strength": 5.0, "dexterity": 0.0, "constitution": 3.0, "intelligence": -3.0, "wisdom": 0.0, "charisma": -2.0,
-		"gold_value": 120,
-		"weapons": ["Greataxe", "Gore"],
-		"abilities": ["Charge", "Labyrinthine Recall"],
-		"armor": ["Natural Armor"],
-	},
-	"Basilisk": {
-		"max_health": 52, "armor_class": 15, "damage_amount": 2.5, "element_type": "none",
-		"strength": 2.0, "dexterity": -1.0, "constitution": 3.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-		"gold_value": 100,
-		"weapons": ["Bite"],
-		"abilities": ["Petrifying Gaze"],
-		"armor": ["Natural Armor"],
-	},
-	"Medusa": {
-		"max_health": 127, "armor_class": 15, "damage_amount": 3.0, "element_type": "none",
-		"strength": 0.0, "dexterity": 2.0, "constitution": 3.0, "intelligence": 2.0, "wisdom": -1.0, "charisma": 1.0,
-		"gold_value": 200,
-		"weapons": ["Shortsword", "Longbow"],
-		"abilities": ["Petrifying Gaze", "Snake Hair"],
-		"armor": ["Natural Armor"],
-	},
-	"Werewolf": {
-		"max_health": 58, "armor_class": 12, "damage_amount": 2.5, "element_type": "none",
-		"strength": 3.0, "dexterity": 1.0, "constitution": 2.0, "intelligence": 0.0, "wisdom": 1.0, "charisma": 0.0,
-		"gold_value": 110,
-		"weapons": ["Claw", "Bite"],
-		"abilities": ["Lycanthropy", "Pack Tactics"],
-		"armor": ["Natural Armor"],
-	},
-	"Sandworm": {
-		"max_health": 247, "armor_class": 18, "damage_amount": 6.0, "element_type": "none",
-		"strength": 8.0, "dexterity": -1.0, "constitution": 5.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-		"gold_value": 400,
-		"weapons": ["Bite", "Swallow"],
-		"abilities": ["Tunneler", "Tremorsense"],
-		"armor": ["Hardened Hide"],
-	},
-	# ── Plant ─────────────────────────────────────────────────────────────────
-	"Mushroom": {
-		"max_health": 15, "armor_class": 10, "damage_amount": 1.0, "element_type": "none",
-		"strength": 1.0, "dexterity": -1.0, "constitution": 2.0, "intelligence": -4.0, "wisdom": 0.0, "charisma": -3.0,
-		"gold_value": 35,
-		"weapons": ["Spore Burst", "Root Slam"],
-		"abilities": ["Poison Spores", "Regrowth"],
-		"armor": ["Natural Armor"],
-	},
-	# ── Undead ────────────────────────────────────────────────────────────────
-	"Skeleton": {
-		"max_health": 13, "armor_class": 13, "damage_amount": 1.5, "element_type": "none",
-		"strength": 0.0, "dexterity": 2.0, "constitution": -1.0, "intelligence": -4.0, "wisdom": -2.0, "charisma": -3.0,
-		"gold_value": 30,
-		"weapons": ["Shortsword", "Shortbow"],
-		"abilities": ["Undead Fortitude"],
-		"armor": ["Armor Scraps"],
-	},
-	"Zombie": {
-		"max_health": 22, "armor_class": 8, "damage_amount": 2.0, "element_type": "none",
-		"strength": 1.0, "dexterity": -2.0, "constitution": 3.0, "intelligence": -5.0, "wisdom": -4.0, "charisma": -4.0,
-		"gold_value": 25,
-		"weapons": ["Slam"],
-		"abilities": ["Undead Fortitude"],
-		"armor": ["Tattered Cloth"],
-	},
-	"Ghoul": {
-		"max_health": 22, "armor_class": 12, "damage_amount": 2.0, "element_type": "none",
-		"strength": 1.0, "dexterity": 2.0, "constitution": 0.0, "intelligence": -2.0, "wisdom": 0.0, "charisma": -3.0,
-		"gold_value": 60,
-		"weapons": ["Claws", "Bite"],
-		"abilities": ["Paralyzing Touch", "Undead Fortitude"],
-		"armor": ["Natural Armor"],
-	},
-}
+static func _ensure_init() -> void:
+	if _initialized:
+		return
+	_types.merge(_AberrationData.DATA)
+	_types.merge(_BeastData.DATA)
+	_types.merge(_CelestialData.DATA)
+	_types.merge(_ConstructData.DATA)
+	_types.merge(_DragonData.DATA)
+	_types.merge(_ElementalData.DATA)
+	_types.merge(_GiantData.DATA)
+	_types.merge(_HumanoidData.DATA)
+	_types.merge(_MonstrosityData.DATA)
+	_types.merge(_PlantData.DATA)
+	_types.merge(_UndeadData.DATA)
+	_initialized = true
+
 
 const CATEGORY_MAP: Dictionary = {
 	"Aberration":  [
@@ -325,7 +103,27 @@ const CATEGORY_MAP: Dictionary = {
 		"Giant Owl", "Pegasus", "Petitioner", "Planetar", "Reigar", "Rilmani", "Solar",
 		"Sphinx", "Sphinx of Wonder", "Unicorn", "Warden Archon",
 	],
-	"Construct":   ["Scarecrow"],
+	"Construct":   [
+		"Living Unseen Servant", "Homunculus",
+		"Metallic Warbler", "Monodrone", "Flying Sword", "Duodrone",
+		"Skull Flier", "Tridrone",
+		"Animated Armor", "Carrionette", "Fiendish Icon", "Guardian Portrait",
+		"Hypnos Magen", "Quadrone", "Scarecrow", "Stone Cursed",
+		"Clockwork Horror", "Demos Magen", "Pentadrone", "Rug of Smothering", "Stained Glass Golem",
+		"Galvan Magen", "Snow Golem",
+		"Helmed Horror", "Iron Cobra", "Living Bigby's Hand", "Metallic Peacekeeper", "Nimblewright", "Stone Defender",
+		"Flesh Golem", "Gorgon",
+		"Shield Guardian",
+		"Clay Golem",
+		"Crystal Golem", "Stone Golem", "Tomb Tapper",
+		"Chardalyn Dragon", "Dragonbone Golem", "Octon",
+		"Septon", "Stone Juggernaut",
+		"Canopic Golem", "Hexton", "Kolyarut",
+		"Cadaver Collector", "Retriever",
+		"Decaton", "Fiendish Flesh Golem", "Hellfire Engine", "Iron Golem", "Nonaton", "Scaladar", "Steel Predator",
+		"Walking Statue of Waterdeep",
+		"Marut", "Stone Colossus",
+	],
 	"Dragon":      ["Fire Dragon", "Ice Dragon", "Storm Dragon", "Shadow Dragon"],
 	"Elemental":   ["Fireworm", "Iceworm"],
 	"Fey":         [],
@@ -340,11 +138,13 @@ const CATEGORY_MAP: Dictionary = {
 
 
 static func get_defaults(actor_type: String) -> Dictionary:
-	return ACTOR_TYPES.get(actor_type, {})
+	_ensure_init()
+	return _types.get(actor_type, {})
 
 static func get_all_types() -> Array[String]:
+	_ensure_init()
 	var result: Array[String] = []
-	for key in ACTOR_TYPES.keys():
+	for key in _types.keys():
 		result.append(str(key))
 	return result
 
