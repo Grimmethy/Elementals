@@ -36,6 +36,10 @@ QuestState="*res://QuestSystem/QuestState.gd"
 
 project/assembly_name="Elementals"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/procedural_creature/plugin.cfg")
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

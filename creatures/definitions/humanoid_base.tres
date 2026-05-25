@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CreatureDefinition" format=3 uid="uid://c85kidciwx4n7"]
+
+[ext_resource type="Script" uid="uid://bv764mmp7ay3i" path="res://addons/procedural_creature/core/creature_definition.gd" id="1_cdef"]
+
+[resource]
+script = ExtResource("1_cdef")
+torso_depth = 0.55
+body_color = Color(0.78, 0.62, 0.51, 1)
+accent_color = Color(0.55, 0.42, 0.35, 1)
+eye_color = Color(0.22, 0.16, 0.1, 1)
+bounce_amount = 0.05

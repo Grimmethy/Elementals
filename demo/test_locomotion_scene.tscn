@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://demo/test_locomotion.gd" id="1_locotest"]
+[ext_resource type="Script" path="res://addons/procedural_creature/core/creature_generator.gd" id="2_cgen"]
+[ext_resource type="Resource" path="res://creatures/definitions/humanoid_base.tres" id="3_humbase"]
+[ext_resource type="Script" path="res://addons/procedural_creature/core/locomotion_controller.gd" id="4_loco"]
+[ext_resource type="Script" path="res://addons/procedural_creature/core/secondary_motion_controller.gd" id="5_secondary"]
+
+[node name="TestLocomotionScene" type="Node3D"]
+script = ExtResource("1_locotest")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.966, -0.259, 0, 0.259, 0.966, 0.5, 1.25, 5)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707, -0.5, 0.5, 0, 0.707, 0.707, -0.707, -0.5, 0.5, 0, 0, 0)
+shadow_enabled = true
+
+[node name="CreatureGenerator" type="Node3D" parent="."]
+script = ExtResource("2_cgen")
+definition = ExtResource("3_humbase")
+
+[node name="LocomotionController" type="Node" parent="CreatureGenerator"]
+script = ExtResource("4_loco")
+
+[node name="SecondaryMotionController" type="Node" parent="CreatureGenerator"]
+script = ExtResource("5_secondary")
