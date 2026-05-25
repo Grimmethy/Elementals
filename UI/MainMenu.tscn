@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://byhg7qswondpy" path="res://UI/MainMenu.gd" id="1_xxx"]
 [ext_resource type="PackedScene" path="res://UI/ControlsPanel.tscn" id="2_xxx"]
 
+[sub_resource type="ButtonGroup" id="ButtonGroup_modes"]
+
 [node name="MainMenu" type="Control" unique_id=731885243]
 layout_mode = 3
 anchors_preset = 15
@@ -70,6 +72,65 @@ custom_minimum_size = Vector2(0, 320)
 layout_mode = 2
 theme_override_constants/separation = 16
 alignment = 1
+
+[node name="ControllerSelectButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=100000001]
+layout_mode = 2
+text = "Controller Select"
+
+[node name="ControllerSelectContainer" type="VBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=100000002]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ModeLabel" type="Label" parent="CenterContainer/VBoxContainer/ControllerSelectContainer" unique_id=100000003]
+layout_mode = 2
+text = "Select Control Style:"
+horizontal_alignment = 1
+
+[node name="ModeButtonsContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer/ControllerSelectContainer" unique_id=100000004]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="TopDownButton" type="Button" parent="CenterContainer/VBoxContainer/ControllerSelectContainer/ModeButtonsContainer" unique_id=100000005]
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Top-Down"
+button_group = SubResource("ButtonGroup_modes")
+
+[node name="OverShoulderButton" type="Button" parent="CenterContainer/VBoxContainer/ControllerSelectContainer/ModeButtonsContainer" unique_id=100000006]
+layout_mode = 2
+toggle_mode = true
+text = "Over-the-Shoulder"
+button_group = SubResource("ButtonGroup_modes")
+
+[node name="FirstPersonButton" type="Button" parent="CenterContainer/VBoxContainer/ControllerSelectContainer/ModeButtonsContainer" unique_id=100000007]
+layout_mode = 2
+toggle_mode = true
+disabled = true
+text = "First Person"
+button_group = SubResource("ButtonGroup_modes")
+
+[node name="RTSButton" type="Button" parent="CenterContainer/VBoxContainer/ControllerSelectContainer/ModeButtonsContainer" unique_id=100000008]
+layout_mode = 2
+toggle_mode = true
+disabled = true
+text = "RTS"
+button_group = SubResource("ButtonGroup_modes")
+
+[node name="InvertContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer/ControllerSelectContainer" unique_id=100000009]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="InvertXCheck" type="CheckBox" parent="CenterContainer/VBoxContainer/ControllerSelectContainer/InvertContainer" unique_id=100000010]
+layout_mode = 2
+text = "Invert Look X"
+
+[node name="InvertYCheck" type="CheckBox" parent="CenterContainer/VBoxContainer/ControllerSelectContainer/InvertContainer" unique_id=100000011]
+layout_mode = 2
+text = "Invert Look Y"
 
 [node name="WeaponTabButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1201077958]
 layout_mode = 2
@@ -219,6 +280,7 @@ theme_override_constants/margin_bottom = 20
 [node name="ControlsPanel" parent="ControlsPanel" unique_id=107747815 instance=ExtResource("2_xxx")]
 layout_mode = 2
 
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ControllerSelectButton" to="." method="_on_controller_select_button_pressed"]
 [connection signal="pressed" from="CenterContainer/VBoxContainer/CharacterTabButton" to="." method="_on_character_tab_button_pressed"]
 [connection signal="pressed" from="CenterContainer/VBoxContainer/WeaponTabButton" to="." method="_on_weapon_tab_button_pressed"]
 [connection signal="pressed" from="CenterContainer/VBoxContainer/MapSettingsButton" to="." method="_on_map_settings_button_pressed"]

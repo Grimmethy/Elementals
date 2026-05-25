@@ -370,9 +370,9 @@ The existing WASD + jump + `C`-key polling logic moves verbatim into `TwinStickM
 The internal ground-plane raycast stays identical. The call site becomes:
 ```gdscript
 func _get_aim_target() -> Vector3:
-    if current_controlled_actor and current_controlled_actor.controller:
-        return current_controlled_actor.controller.get_aim_target()
-    return _get_mouse_3d_position()  # fallback
+	if current_controlled_actor and current_controlled_actor.controller:
+		return current_controlled_actor.controller.get_aim_target()
+	return _get_mouse_3d_position()  # fallback
 ```
 All attack/ability dispatch (`launch_projectile_at`, `secondary_attack_at`, etc.) calls `_get_aim_target()` instead of `_get_mouse_3d_position()`. For twin-stick the result is identical. For third-person, `get_aim_target()` returns a screen-center raycast instead.
 

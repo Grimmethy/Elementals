@@ -8,6 +8,9 @@ extends Node3D
 
 var last_dir: StringName = &"down"
 var last_attack_dir: Vector3 = Vector3.FORWARD
+## Set by a controller mode to override the default mouse-facing logic.
+## Vector3.ZERO means disabled (falls back to _get_mouse_direction).
+var facing_dir_override: Vector3 = Vector3.ZERO
 var body_sprite: SpriteBase3D
 var body_model: Node3D
 
@@ -177,16 +180,19 @@ func _update_model_rotation(delta: float, p_camera: Camera3D) -> void:
 	if actor.weapon_component and actor.weapon_component.is_on_cooldown():
 		target_dir = last_attack_dir
 	else:
-		# If player controlled, face mouse
+		# If player controlled, use the mode's override (e.g. third-person camera forward)
+		# or fall back to mouse direction (twin-stick).
 		if actor.is_controlled:
-			target_dir = _get_mouse_direction(p_camera)
-		
-		# If still no direction (not player or no mouse hit), or if we prefer movement dir when moving
-		var velocity = actor.velocity
-		var horizontal_velocity = Vector3(velocity.x, 0, velocity.z)
-		if horizontal_velocity.length() > 0.1:
-			if target_dir.length() < 0.1:
-				target_dir = horizontal_velocity.normalized()
+			if facing_dir_override.length() > 0.1:
+				target_dir = facing_dir_override
+			else:
+				target_dir = _get_mouse_direction(p_camera)
+
+		# If still no direction, use horizontal velocity as fallback.
+		var velocity := actor.velocity
+		var horizontal_velocity := Vector3(velocity.x, 0.0, velocity.z)
+		if horizontal_velocity.length() > 0.1 and target_dir.length() < 0.1:
+			target_dir = horizontal_velocity.normalized()
 
 	if target_dir.length() > 0.1:
 		var target_basis = Basis.looking_at(target_dir, Vector3.UP).rotated(Vector3.UP, PI)

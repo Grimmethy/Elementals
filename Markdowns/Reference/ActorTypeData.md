@@ -43,11 +43,11 @@ static var _types: Dictionary = {}
 static var _initialized: bool = false
 
 static func _ensure_init() -> void:
-    if _initialized:
-        return
-    _types.merge(_DragonData.DATA)
-    # ... one merge per category ...
-    _initialized = true
+	if _initialized:
+		return
+	_types.merge(_DragonData.DATA)
+	# ... one merge per category ...
+	_initialized = true
 ```
 
 ### Entry Schema
@@ -56,24 +56,24 @@ Each entry in a category `DATA` dict maps an actor type name to its defaults. St
 
 ```gdscript
 "ActorName": {
-    # Combat
-    "max_health":    float,   # HealthComponent.max_health
-    "armor_class":   int,     # ArmorClassComponent.armor_value
-    "damage_amount": float,   # DamageComponent.damage_amount
-    "element_type":  String,  # "none" | "fire" | "ice" | "storm" | "shadow"
-    # Ability scores
-    "strength":      float,
-    "dexterity":     float,
-    "constitution":  float,
-    "intelligence":  float,
-    "wisdom":        float,
-    "charisma":      float,
-    # Economy
-    "gold_value":    int,
-    # Equipment pools
-    "weapons":       Array[String],
-    "abilities":     Array[String],
-    "armor":         Array[String],
+	# Combat
+	"max_health":    float,   # HealthComponent.max_health
+	"armor_class":   int,     # ArmorClassComponent.armor_value
+	"damage_amount": float,   # DamageComponent.damage_amount
+	"element_type":  String,  # "none" | "fire" | "ice" | "storm" | "shadow"
+	# Ability scores
+	"strength":      float,
+	"dexterity":     float,
+	"constitution":  float,
+	"intelligence":  float,
+	"wisdom":        float,
+	"charisma":      float,
+	# Economy
+	"gold_value":    int,
+	# Equipment pools
+	"weapons":       Array[String],
+	"abilities":     Array[String],
+	"armor":         Array[String],
 },
 ```
 

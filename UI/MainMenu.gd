@@ -4,6 +4,11 @@ extends Control
 @onready var weapon_tab_container: VBoxContainer = $CenterContainer/VBoxContainer/WeaponTabContainer
 @onready var character_cards_container: HBoxContainer = %CharacterCards
 @onready var map_settings_container: VBoxContainer = $CenterContainer/VBoxContainer/MapSettingsContainer
+@onready var controller_select_container: VBoxContainer = $CenterContainer/VBoxContainer/ControllerSelectContainer
+@onready var top_down_button: Button = $CenterContainer/VBoxContainer/ControllerSelectContainer/ModeButtonsContainer/TopDownButton
+@onready var over_shoulder_button: Button = $CenterContainer/VBoxContainer/ControllerSelectContainer/ModeButtonsContainer/OverShoulderButton
+@onready var invert_x_check: CheckBox = $CenterContainer/VBoxContainer/ControllerSelectContainer/InvertContainer/InvertXCheck
+@onready var invert_y_check: CheckBox = $CenterContainer/VBoxContainer/ControllerSelectContainer/InvertContainer/InvertYCheck
 @onready var controls_panel: MarginContainer = $ControlsPanel
 @onready var size_input: SpinBox = $CenterContainer/VBoxContainer/MapSettingsContainer/ArenaSize/SizeInput
 @onready var seed_input: SpinBox = $CenterContainer/VBoxContainer/MapSettingsContainer/WorldGen/NoiseSeed/SeedInput
@@ -161,10 +166,19 @@ func _ready() -> void:
 		_on_scale_changed(scale_slider.value)
 		_on_height_changed(height_slider.value)
 		_on_dirt_changed(dirt_slider.value)
-	
+		# Restore the saved controller mode selection onto the button group.
+		_apply_mode_button_state(gs.selected_control_mode)
+		invert_x_check.set_pressed_no_signal(gs.invert_look_x)
+		invert_y_check.set_pressed_no_signal(gs.invert_look_y)
+
+	top_down_button.pressed.connect(func(): _on_mode_selected(0))
+	over_shoulder_button.pressed.connect(func(): _on_mode_selected(1))
+	invert_x_check.toggled.connect(func(on: bool): _on_invert_changed("x", on))
+	invert_y_check.toggled.connect(func(on: bool): _on_invert_changed("y", on))
+
 	# Ensure mouse is visible for the menu
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	
+
 	_style_all_buttons()
 
 func _style_all_buttons() -> void:
@@ -262,11 +276,41 @@ func _on_dirt_changed(value: float) -> void:
 	if dirt_value_label:
 		dirt_value_label.text = "%.2f" % MapSettingsHelper.normalize_dirt_value(value)
 
+func _on_controller_select_button_pressed() -> void:
+	controller_select_container.visible = !controller_select_container.visible
+	if controller_select_container.visible:
+		character_tab_container.visible = false
+		weapon_tab_container.visible = false
+		map_settings_container.visible = false
+		controls_panel.visible = false
+	else:
+		_update_controls_panel_visibility()
+
+func _on_mode_selected(mode_index: int) -> void:
+	var gs := get_node_or_null("/root/GameSettings")
+	if gs:
+		gs.selected_control_mode = mode_index
+
+func _on_invert_changed(axis: String, on: bool) -> void:
+	var gs := get_node_or_null("/root/GameSettings")
+	if not gs:
+		return
+	if axis == "x":
+		gs.invert_look_x = on
+	else:
+		gs.invert_look_y = on
+
+func _apply_mode_button_state(mode_index: int) -> void:
+	# Ensure the correct button appears pressed on open without firing the signal.
+	top_down_button.set_pressed_no_signal(mode_index == 0)
+	over_shoulder_button.set_pressed_no_signal(mode_index == 1)
+
 func _on_character_tab_button_pressed() -> void:
 	character_tab_container.visible = !character_tab_container.visible
 	if character_tab_container.visible:
 		weapon_tab_container.visible = false
 		map_settings_container.visible = false
+		controller_select_container.visible = false
 		controls_panel.visible = false
 	else:
 		_update_controls_panel_visibility()
@@ -276,6 +320,7 @@ func _on_weapon_tab_button_pressed() -> void:
 	if weapon_tab_container.visible:
 		character_tab_container.visible = false
 		map_settings_container.visible = false
+		controller_select_container.visible = false
 		controls_panel.visible = false
 	else:
 		_update_controls_panel_visibility()
@@ -285,6 +330,7 @@ func _on_map_settings_button_pressed() -> void:
 	if map_settings_container.visible:
 		character_tab_container.visible = false
 		weapon_tab_container.visible = false
+		controller_select_container.visible = false
 		controls_panel.visible = false
 	else:
 		_update_controls_panel_visibility()
@@ -297,7 +343,10 @@ func _on_random_seed_toggled(button_pressed: bool) -> void:
 
 func _update_controls_panel_visibility() -> void:
 	# Only show the controls panel when no other panels are visible
-	var no_panels_open = !character_tab_container.visible and !weapon_tab_container.visible and !map_settings_container.visible
+	var no_panels_open := not character_tab_container.visible \
+		and not weapon_tab_container.visible \
+		and not map_settings_container.visible \
+		and not controller_select_container.visible
 	controls_panel.visible = no_panels_open
 
 func _on_play_button_pressed() -> void:

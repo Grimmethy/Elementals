@@ -3,6 +3,7 @@ extends Resource
 
 @export var sensitivity_x: float = 0.3
 @export var sensitivity_y: float = 0.3
+@export var invert_x: bool = false
 @export var invert_y: bool = false
 
 func process_input(_actor: Node3D, _camera: Camera3D, _delta: float) -> void:

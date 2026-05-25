@@ -15,6 +15,7 @@ extends Camera3D
 
 var sensitivity_x: float = 0.3
 var sensitivity_y: float = 0.3
+var invert_x: bool = false
 var invert_y: bool = false
 
 var _target: Node3D
@@ -58,9 +59,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion:
-		_yaw += event.relative.x * sensitivity_x
+		var yaw_input: float = -event.relative.x if invert_x else event.relative.x
+		_yaw += yaw_input * sensitivity_x
 		# Mouse up (negative relative.y) increases pitch so camera orbits higher.
-		var pitch_input := -event.relative.y if invert_y else event.relative.y
+		var pitch_input: float = -event.relative.y if invert_y else event.relative.y
 		_pitch = clamp(_pitch - pitch_input * sensitivity_y, pitch_min, pitch_max)
 
 	elif event is InputEventMouseButton:

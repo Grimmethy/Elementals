@@ -23,11 +23,17 @@ func on_mode_entered(actor: Node3D, current_cam: Camera3D) -> void:
 
 	_tp_camera.sensitivity_x = sensitivity_x
 	_tp_camera.sensitivity_y = sensitivity_y
+	_tp_camera.invert_x = invert_x
 	_tp_camera.invert_y = invert_y
 	_tp_camera.process_mode = Node.PROCESS_MODE_INHERIT
 	_tp_camera.activate(actor)
 
-func on_mode_exited(_actor: Node3D, _camera: Camera3D) -> void:
+func on_mode_exited(actor: Node3D, _camera: Camera3D) -> void:
+	# Clear the facing override so twin-stick mouse-facing restores correctly.
+	var vc := actor.get("visual_component") as ActorVisualComponent
+	if vc:
+		vc.facing_dir_override = Vector3.ZERO
+
 	if is_instance_valid(_tp_camera):
 		_tp_camera.deactivate()
 		_tp_camera.process_mode = Node.PROCESS_MODE_DISABLED
@@ -73,6 +79,14 @@ func process_input(actor: Node3D, camera: Camera3D, delta: float) -> void:
 
 	if Input.is_key_pressed(KEY_SPACE) and mc:
 		mc.jump()
+
+	# Tell the visual component to face the camera's horizontal forward direction.
+	var vc := actor.get("visual_component") as ActorVisualComponent
+	if vc:
+		var cam_forward := -tp_cam.global_transform.basis.z
+		cam_forward.y = 0.0
+		if cam_forward.length() > 0.01:
+			vc.facing_dir_override = cam_forward.normalized()
 
 func get_aim_target(actor: Node3D, camera: Camera3D) -> Vector3:
 	var tp_cam := camera as ThirdPersonCamera

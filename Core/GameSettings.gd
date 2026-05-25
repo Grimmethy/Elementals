@@ -6,6 +6,10 @@ var selected_actor_type: String = "fire" # "fire", "water", "goat", "goblin", or
 var selected_weapon_index: int = 0
 var selected_ability_index: int = 0
 var selected_armor_index: int = 0
+## 0 = Top-Down (Twin-Stick), 1 = Over-the-Shoulder, 2 = First Person, 3 = RTS
+var selected_control_mode: int = 0
+var invert_look_x: bool = false
+var invert_look_y: bool = false
 var grid_width: int = 20
 var grid_height: int = 20
 var fire_count: int = 1
@@ -174,6 +178,9 @@ func save_settings() -> void:
 	config.set_value("General", "selected_weapon_index", selected_weapon_index)
 	config.set_value("General", "selected_ability_index", selected_ability_index)
 	config.set_value("General", "selected_armor_index", selected_armor_index)
+	config.set_value("General", "selected_control_mode", selected_control_mode)
+	config.set_value("General", "invert_look_x", invert_look_x)
+	config.set_value("General", "invert_look_y", invert_look_y)
 	config.set_value("General", "grid_width", grid_width)
 	config.set_value("General", "grid_height", grid_height)
 	
@@ -202,6 +209,9 @@ func load_settings() -> void:
 	selected_weapon_index = config.get_value("General", "selected_weapon_index", selected_weapon_index)
 	selected_ability_index = config.get_value("General", "selected_ability_index", selected_ability_index)
 	selected_armor_index = config.get_value("General", "selected_armor_index", selected_armor_index)
+	selected_control_mode = config.get_value("General", "selected_control_mode", selected_control_mode)
+	invert_look_x = config.get_value("General", "invert_look_x", invert_look_x)
+	invert_look_y = config.get_value("General", "invert_look_y", invert_look_y)
 	grid_width = config.get_value("General", "grid_width", grid_width)
 	grid_height = config.get_value("General", "grid_height", grid_height)
 	
