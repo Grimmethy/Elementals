@@ -27,6 +27,17 @@ func _ready() -> void:
 	ability_scores_component.wisdom = 0
 	ability_scores_component.charisma = 0
 
+	# ── Apply player customization ────────────────────────────────────────────
+	# GameSettings.selected_creature_definition is set when the player confirms
+	# a change in CharacterCustomizerPanel and is saved to
+	# user://creature_customization.tres between sessions.
+	# Only apply when this actor type is actually selected (guards against
+	# loading a farmer definition while spawning a different actor type).
+	if GameSettings.selected_actor_type == "farmer" and _generator != null:
+		var custom_def := GameSettings.selected_creature_definition
+		if custom_def != null:
+			_generator.definition = custom_def   # triggers rebuild()
+
 func _physics_process(delta: float) -> void:
 	# ── Ragdoll gravity pass ───────────────────────────────────────────────────
 	# Actor._physics_process returns immediately when is_dead, so gravity and

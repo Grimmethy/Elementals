@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://cx8j2k3m4p5qr"]
+[gd_scene load_steps=3 format=3 uid="uid://cx8j2k3m4p5qr"]
 
 [ext_resource type="Script" uid="uid://lesusbktv3cx" path="res://UI/CharacterSelectCard.gd" id="1_card"]
-[ext_resource type="Texture2D" uid="uid://dcwmg6g1qyccw" path="res://assets/BigImages/NastyGobbo.png" id="2_sd85x"]
+[ext_resource type="PackedScene" path="res://UI/CreaturePreview.tscn" id="2_preview"]
 
 [node name="CharacterSelectCard" type="Control" unique_id=644442579]
 custom_minimum_size = Vector2(180, 320)
@@ -30,17 +30,11 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 10
 
-[node name="ModelContainer" type="Control" parent="VBoxContainer" unique_id=288061053]
-custom_minimum_size = Vector2(100, 100)
+[node name="ModelContainer" parent="VBoxContainer" instance=ExtResource("2_preview")]
 layout_mode = 2
 size_flags_horizontal = 4
-size_flags_vertical = 4
-
-[node name="Sprite2D" type="Sprite2D" parent="VBoxContainer/ModelContainer" unique_id=695551357]
-position = Vector2(-22, 7.000014)
-scale = Vector2(0.14257811, 0.14257811)
-texture = ExtResource("2_sd85x")
-centered = false
+size_flags_vertical = 3
+mouse_filter = 2
 
 [node name="NameLabel" type="Label" parent="VBoxContainer" unique_id=763927867]
 layout_mode = 2

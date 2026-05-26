@@ -5,7 +5,7 @@ signal character_selected(actor_name: String)
 signal equipment_changed(actor_name: String, weapon_index: int, ability_index: int, armor_index: int)
 
 @onready var name_label: Label = $VBoxContainer/NameLabel
-@onready var model_container: Control = $VBoxContainer/ModelContainer
+@onready var model_container: CreaturePreview = $VBoxContainer/ModelContainer
 @onready var weapon_button: Button = $VBoxContainer/WeaponButton
 @onready var ability_button: Button = $VBoxContainer/AbilityButton
 @onready var armor_button: Button = $VBoxContainer/ArmorButton
@@ -27,6 +27,13 @@ var current_ability_index: int:
 	get: return _ability_cycler.current_index
 var current_armor_index: int:
 	get: return _armor_cycler.current_index
+
+## Actor types that use the PCF and can be visually customized.
+## Extend this array as more actors get a CreatureGenerator.
+const PCF_ACTOR_TYPES : Array[String] = ["farmer"]
+
+var _customize_button : Button = null
+var _customizer_panel : CharacterCustomizerPanel = null
 
 var is_selected_card: bool = false:
 	set(v):
@@ -82,52 +89,54 @@ func setup(p_actor_name: String, p_weapons, p_abilities, p_armor, p_selected: bo
 	_armor_cycler.set_items(p_armor)
 	_armor_cycler.set_index(clampi(p_armor_index, 0, max(0, _armor_cycler.items.size() - 1)))
 	
-	_set_character_sprite()
+	_setup_model_preview()
 	_update_display()
+	_setup_customize_button()
 
-func _set_character_sprite() -> void:
-	var sprite = model_container.get_node_or_null("Sprite2D") as Sprite2D
-	if not sprite:
+## Populate the 3D model preview for this card's actor type.
+##
+## PCF actors (farmer, and future additions listed in PCF_ACTOR_TYPES) get a
+## live CreatureGenerator body driven by their CreatureDefinition — or the
+## player's saved customization if they've visited the customizer.
+##
+## All other actors get a coloured humanoid-silhouette placeholder so the
+## preview slot is never empty, matching the breeding-UI convention.
+func _setup_model_preview() -> void:
+	if model_container == null:
 		return
-	
-	# Map actor names to their image resources
-	var clean_name = actor_name.strip_edges().to_lower()
+
+	var clean_name := actor_name.strip_edges().to_lower()
+
 	match clean_name:
 		"farmer":
-			sprite.texture = preload("res://assets/BigImages/Farmer.png")
+			# Use the player's custom definition if one is saved and matches
+			# the currently selected actor; otherwise fall back to humanoid_base.
+			var def: CreatureDefinition
+			if (GameSettings.selected_creature_definition != null
+					and GameSettings.selected_actor_type == "farmer"):
+				def = GameSettings.selected_creature_definition
+			else:
+				def = load("res://creatures/definitions/humanoid_base.tres") as CreatureDefinition
+			model_container.set_definition(def)
+
+		# Non-PCF actors: coloured silhouette placeholder.
+		# Colours are chosen to evoke each character's visual identity.
 		"goat":
-			sprite.texture = preload("res://assets/BigImages/Screaming Goat.png")
+			model_container.spawn_placeholder(Color(0.72, 0.60, 0.42))
 		"goblin":
-			sprite.texture = preload("res://assets/BigImages/NastyGobbo.png")
+			model_container.spawn_placeholder(Color(0.32, 0.52, 0.22))
 		"fire":
-			sprite.texture = preload("res://assets/generated/Fire Elemental_frame_0.png")
+			model_container.spawn_placeholder(Color(0.95, 0.42, 0.12))
 		"water":
-			sprite.texture = preload("res://assets/generated/Water Elemental_frame_0.png")
+			model_container.spawn_placeholder(Color(0.22, 0.52, 0.88))
 		"mimic":
-			sprite.texture = preload("res://assets/BigImages/MimicChest.png")
+			model_container.spawn_placeholder(Color(0.62, 0.42, 0.22))
 		"mushroom":
-			# No dedicated mushroom portrait yet — reuse the mimic image as a
-			# neutral monster placeholder so the menu doesn't fall through
-			# to the warning path. Replace with a real mushroom asset later.
-			sprite.texture = preload("res://assets/BigImages/MimicChest.png")
+			model_container.spawn_placeholder(Color(0.48, 0.68, 0.30))
 		"scarecrow":
-			sprite.texture = preload("res://assets/generated/Scarecrow Character_frame_0.png")
+			model_container.spawn_placeholder(Color(0.80, 0.70, 0.40))
 		_:
-			print("CharacterSelectCard: No specific image mapping for: '", clean_name, "'")
-			# Try to load a generic one or keep default
-			pass
-	
-	if sprite.texture:
-		# Center the sprite in the ModelContainer (100x100)
-		sprite.centered = true
-		sprite.position = Vector2(50, 50)
-		
-		# Scale to fit (target ~90px)
-		var tex_size = sprite.texture.get_size()
-		var max_dim = max(tex_size.x, tex_size.y)
-		if max_dim > 0:
-			var target_size = 90.0
-			sprite.scale = Vector2(target_size / max_dim, target_size / max_dim)
+			model_container.spawn_placeholder(Color(0.55, 0.55, 0.55))
 
 func _update_display() -> void:
 	_update_weapon_button()
@@ -293,3 +302,68 @@ func get_selected_equipment() -> Dictionary:
 		"ability_index": current_ability_index,
 		"armor_index": current_armor_index
 	}
+
+
+# ==============================================================================
+# PCF Appearance Customizer
+# ==============================================================================
+
+## Show the Customize button only for actor types that have a PCF body.
+## The button is created dynamically so non-PCF cards are completely unaffected.
+func _setup_customize_button() -> void:
+	var is_pcf := PCF_ACTOR_TYPES.has(actor_name.strip_edges().to_lower())
+	if not is_pcf:
+		if is_instance_valid(_customize_button):
+			_customize_button.hide()
+		return
+
+	if not is_instance_valid(_customize_button):
+		_customize_button = Button.new()
+		_customize_button.name = "CustomizeButton"
+		_customize_button.text = "Customize"
+		_customize_button.pressed.connect(_on_customize_pressed)
+		var vbox := get_node_or_null("VBoxContainer") as VBoxContainer
+		if vbox and is_instance_valid(info_button):
+			vbox.add_child(_customize_button)
+			# Place directly after the info button so it flows naturally
+			vbox.move_child(_customize_button, info_button.get_index() + 1)
+
+	_customize_button.show()
+
+
+func _on_customize_pressed() -> void:
+	# Find the panel already in the tree, or instantiate it fresh.
+	_customizer_panel = get_tree().root.get_node_or_null(
+		"CharacterCustomizerPanel"
+	) as CharacterCustomizerPanel
+
+	if not is_instance_valid(_customizer_panel):
+		_customizer_panel = (preload("res://UI/CharacterCustomizerPanel.tscn")
+				as PackedScene).instantiate() as CharacterCustomizerPanel
+		_customizer_panel.name = "CharacterCustomizerPanel"
+		get_tree().root.add_child(_customizer_panel)
+
+	# Always reconnect confirmed with one-shot to avoid stacking handlers
+	# when the same card is opened multiple times.
+	if _customizer_panel.confirmed.is_connected(_on_customizer_confirmed):
+		_customizer_panel.confirmed.disconnect(_on_customizer_confirmed)
+	_customizer_panel.confirmed.connect(_on_customizer_confirmed, CONNECT_ONE_SHOT)
+
+	# Start from the player's saved customization if it exists and matches
+	# the currently selected actor; otherwise fall back to the default .tres.
+	var base_def : CreatureDefinition
+	if (GameSettings.selected_creature_definition != null
+			and GameSettings.selected_actor_type == actor_name.strip_edges().to_lower()):
+		base_def = GameSettings.selected_creature_definition
+	else:
+		base_def = load("res://creatures/definitions/humanoid_base.tres") as CreatureDefinition
+
+	_customizer_panel.open(base_def)
+
+
+func _on_customizer_confirmed(def: CreatureDefinition) -> void:
+	GameSettings.selected_actor_type = actor_name.strip_edges().to_lower()
+	GameSettings.selected_creature_definition = def
+	GameSettings.save_creature_customization()
+	# Refresh the card preview so the new look is visible immediately.
+	_setup_model_preview()

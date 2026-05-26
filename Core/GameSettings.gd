@@ -1,8 +1,15 @@
 extends Node
 
-const SAVE_PATH = "user://settings.cfg"
+const SAVE_PATH            = "user://settings.cfg"
+const CREATURE_DEF_SAVE_PATH = "user://creature_customization.tres"
 
 var selected_actor_type: String = "fire" # "fire", "water", "goat", "goblin", or "mimic"
+
+## Stores the player's customized CreatureDefinition for PCF actors.
+## null = use the actor's default .tres definition.
+## Persisted separately from settings.cfg via ResourceSaver
+## (ConfigFile can't store Resource objects).
+var selected_creature_definition: CreatureDefinition = null
 var selected_weapon_index: int = 0
 var selected_ability_index: int = 0
 var selected_armor_index: int = 0
@@ -69,6 +76,7 @@ const CHARACTER_EQUIPMENT: Dictionary = {
 
 func _ready() -> void:
 	load_settings()
+	_load_creature_customization()
 	_apply_volume(master_volume)
 	# Defer the overlays/env install to the next frame so the root viewport
 	# is ready before we add a global CanvasLayer / set world_3d.environment.
@@ -170,6 +178,29 @@ func apply_brightness(value: float) -> void:
 		var mat := CanvasItemMaterial.new()
 		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 		_brightness_rect.material = mat
+
+## Save the player's customized CreatureDefinition to disk.
+## Called by CharacterCustomizerPanel when the player confirms their changes.
+func save_creature_customization() -> void:
+	if selected_creature_definition == null:
+		return
+	var err := ResourceSaver.save(selected_creature_definition, CREATURE_DEF_SAVE_PATH)
+	if err != OK:
+		push_error("GameSettings: failed to save creature customization — error %d" % err)
+
+
+## Load a previously saved CreatureDefinition from disk.
+## Called once in _ready().  Silently does nothing if no file exists yet.
+func _load_creature_customization() -> void:
+	if not ResourceLoader.exists(CREATURE_DEF_SAVE_PATH):
+		return
+	# CACHE_MODE_IGNORE so edits in-session don't leak back through the cache.
+	var res := ResourceLoader.load(CREATURE_DEF_SAVE_PATH, "Resource", ResourceLoader.CACHE_MODE_IGNORE)
+	if res is CreatureDefinition:
+		selected_creature_definition = res as CreatureDefinition
+	else:
+		push_warning("GameSettings: creature customization file exists but is not a CreatureDefinition — ignoring.")
+
 
 func save_settings() -> void:
 	var config = ConfigFile.new()
