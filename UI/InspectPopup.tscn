@@ -1,0 +1,99 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://UI/InspectPopup.gd" id="1_script"]
+[ext_resource type="Script" path="res://UI/OrbitPreviewContainer.gd" id="2_orbit"]
+
+[node name="InspectPopup" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 1
+script = ExtResource("1_script")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.7)
+mouse_filter = 1
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchor_left = 0.08
+anchor_top = 0.06
+anchor_right = 0.92
+anchor_bottom = 0.94
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="Panel/MarginContainer/VBox"]
+layout_mode = 2
+text = "Inspect"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+
+[node name="ControlsHint" type="Label" parent="Panel/MarginContainer/VBox"]
+layout_mode = 2
+text = "[Left-drag] orbit  ·  [Wheel] zoom  ·  [Right-drag] pan  ·  [Middle-click] reset  ·  [Esc] close"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.65, 0.78, 0.95, 1)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+
+[node name="PreviewBox" type="SubViewportContainer" parent="Panel/MarginContainer/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+stretch = true
+mouse_filter = 0
+script = ExtResource("2_orbit")
+min_distance = 0.15
+max_distance = 30.0
+zoom_speed = 0.35
+
+[node name="SubViewport" type="SubViewport" parent="Panel/MarginContainer/VBox/PreviewBox"]
+disable_3d = false
+transparent_bg = false
+handle_input_locally = false
+own_world_3d = true
+size = Vector2i(1024, 720)
+render_target_update_mode = 4
+
+[node name="Camera3D" type="Camera3D" parent="Panel/MarginContainer/VBox/PreviewBox/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.342020, 0, -0.342020, 0.939693, 0, 1.0, 2.6)
+fov = 38.0
+
+[node name="KeyLight" type="DirectionalLight3D" parent="Panel/MarginContainer/VBox/PreviewBox/SubViewport"]
+transform = Transform3D(0.866025, 0, 0.5, 0.354, 0.707, -0.612, -0.354, 0.707, 0.612, 0, 1.5, 0.5)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 1.5
+
+[node name="FillLight" type="DirectionalLight3D" parent="Panel/MarginContainer/VBox/PreviewBox/SubViewport"]
+transform = Transform3D(-0.5, 0.354, 0.79, 0.866, 0.204, 0.456, -0.001, 0.913, -0.408, 0, 0.5, -0.5)
+light_color = Color(0.7, 0.78, 1, 1)
+light_energy = 0.5
+
+[node name="GroundPlane" type="MeshInstance3D" parent="Panel/MarginContainer/VBox/PreviewBox/SubViewport"]
+transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 2, 0, -0.2, 0)
+
+[node name="CreatureContainer" type="Node3D" parent="Panel/MarginContainer/VBox/PreviewBox/SubViewport"]
+
+[node name="CornerCloseBtn" type="Button" parent="."]
+anchor_left = 0.92
+anchor_top = 0.06
+anchor_right = 0.92
+anchor_bottom = 0.06
+offset_left = -44.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = 44.0
+text = "✕"
+tooltip_text = "Close (Esc)"
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.7, 0.7, 1)

@@ -56,6 +56,15 @@ func _on_data_changed_impl() -> void:
 	if visual_component:
 		visual_component.update_goat_visuals(goat_data)
 
+	# FOREIGN-SPECIES VISUAL SWAP — when this "goat" carries a wild-captured
+	# or dev-summoned body plan (shared_body_plan.meta.species stamped, e.g.,
+	# a kept Camel or a bred Camel-kid), hide the baked-in GoatModel and spawn
+	# a ProceduralCreatureBody so the player sees the actual species they bred
+	# in the arena instead of a goat. The data wrapper is still GoatData
+	# because of breeding-compat (see GoatData.create_offspring foreign-plan
+	# inheritance), but the visual must follow the plan.
+	_apply_foreign_species_body_if_present()
+
 	# Hybrid-breeding consumer: a goat whose data carries the inherit_mimic_skills
 	# flag (rolled during breeding via ActorData.apply_mimic_lineage) gains the
 	# Mimic CreatureMorphComponent + SkillCopyComponent + MimicShapechange ability.
@@ -66,6 +75,49 @@ func _on_data_changed_impl() -> void:
 	# behavior, capture-tool resistance) can read it without holding an
 	# ActorData reference.
 	set_meta("mimic_blood", goat_data.mimic_blood)
+
+## If this goat's data is actually a foreign-species wrapper, hide the goat
+## model and spawn a universal ProceduralCreatureBody driven by the captured
+## shared_body_plan. Called once per data-change so re-binding the actor to
+## fresh data (e.g., on revive) re-applies cleanly.
+##
+## Detection: same rule the herd-card uses — shared_body_plan.meta.species is
+## non-empty. The default plan from ActorData.default_shared_body_plan() has
+## no meta key, so pure goats stay on the original GoatModel.
+func _apply_foreign_species_body_if_present() -> void:
+	if goat_data == null:
+		return
+	var plan_var: Variant = goat_data.shared_body_plan
+	if not (plan_var is Dictionary):
+		return
+	var plan: Dictionary = plan_var
+	if not plan.has("meta"):
+		return
+	var meta_var: Variant = plan["meta"]
+	if not (meta_var is Dictionary):
+		return
+	if String((meta_var as Dictionary).get("species", "")) == "":
+		return
+	# Idempotent — only swap once per actor instance even if data changes
+	# trigger _on_data_changed_impl multiple times.
+	if has_meta("foreign_body_swapped"):
+		return
+	set_meta("foreign_body_swapped", true)
+	# Hide the default GoatModel so we don't see a goat AND a creature.
+	# The model node is named "Body" in GoatActor.tscn.
+	var goat_body: Node = get_node_or_null("Body")
+	if goat_body and goat_body is Node3D:
+		(goat_body as Node3D).visible = false
+	# Spawn the universal procedural body — same renderer the arena uses for
+	# every other type, and the same code path DevMonsterPreview shows.
+	const ProceduralBodyScript = preload("res://src/actors/body/ProceduralCreatureBody.gd")
+	var body: Node = ProceduralBodyScript.new()
+	body.name = "ForeignProceduralBody"
+	body.set("actor_data", goat_data)
+	body.set("override_plan", plan)
+	add_child(body)
+	if body.has_method("rebuild_from_genome"):
+		body.call("rebuild_from_genome", plan)
 
 ## Add the Mimic ability suite to this goat. AbilityAction instances are
 ## per-actor (must not be shared across actors), so we new() them fresh.

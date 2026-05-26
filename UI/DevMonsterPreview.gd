@@ -11,23 +11,38 @@ extends Control
 
 @onready var viewport: SubViewport = $Panel/HBox/PreviewBox/SubViewport
 @onready var creature_container: Node3D = $Panel/HBox/PreviewBox/SubViewport/CreatureContainer
-@onready var category_filter: OptionButton = $Panel/HBox/Controls/CategoryFilter
+@onready var category_filter: OptionButton = $Panel/HBox/ControlsScroll/Controls/CategoryFilter
 ## Species dropdown — jump straight to any creature in the current category
 ## without having to spam Random / Next. Auto-rebuilt when CategoryFilter
 ## changes. Selecting a species re-renders immediately.
-@onready var species_filter: OptionButton = $Panel/HBox/Controls/SpeciesFilter
-@onready var species_label: Label = $Panel/HBox/Controls/SpeciesLabel
-@onready var category_label: Label = $Panel/HBox/Controls/CategoryLabel
-@onready var seed_label: Label = $Panel/HBox/Controls/SeedLabel
-@onready var stats_label: Label = $Panel/HBox/Controls/StatsLabel
-@onready var random_btn: Button = $Panel/HBox/Controls/RandomBtn
-@onready var next_btn: Button = $Panel/HBox/Controls/NextBtn
-@onready var reroll_btn: Button = $Panel/HBox/Controls/RerollBtn
-## Stamps the currently-previewed species + body plan into a GoatData and
-## drops it in the herd so the player can breed-test the variant they liked.
-@onready var keep_btn: Button = $Panel/HBox/Controls/KeepBtn
-@onready var keep_feedback: Label = $Panel/HBox/Controls/KeepFeedback
-@onready var close_btn: Button = $Panel/HBox/Controls/CloseBtn
+@onready var species_filter: OptionButton = $Panel/HBox/ControlsScroll/Controls/SpeciesFilter
+@onready var species_label: Label = $Panel/HBox/ControlsScroll/Controls/SpeciesLabel
+@onready var category_label: Label = $Panel/HBox/ControlsScroll/Controls/CategoryLabel
+@onready var seed_label: Label = $Panel/HBox/ControlsScroll/Controls/SeedLabel
+@onready var stats_label: Label = $Panel/HBox/ControlsScroll/Controls/StatsLabel
+@onready var random_btn: Button = $Panel/HBox/ControlsScroll/Controls/RandomBtn
+@onready var next_btn: Button = $Panel/HBox/ControlsScroll/Controls/NextBtn
+@onready var reroll_btn: Button = $Panel/HBox/ControlsScroll/Controls/RerollBtn
+## "[I] Inspect" — opens a big fullscreen popup with the same orbit
+## controls so the player can spin/zoom freely. The in-panel preview is
+## sized for the dev menu; this is for actually looking at the model.
+@onready var inspect_btn: Button = $Panel/HBox/ControlsScroll/Controls/InspectBtn
+## Explicit gender Keep buttons — coin-flip gender meant a player could Keep
+## five exotics and roll five females, with no way to breed them. Splitting
+## into ♀/♂/Pair guarantees the player can populate both halves of the breeding
+## UI deterministically.
+@onready var keep_female_btn: Button = $Panel/HBox/ControlsScroll/Controls/KeepFemaleBtn
+@onready var keep_male_btn: Button = $Panel/HBox/ControlsScroll/Controls/KeepMaleBtn
+## One-click pair drop — spawns BOTH a male and a female of the current
+## species with the same body plan + a fresh seed each, so a breeding pair
+## is ready immediately. Saves the "Keep, reroll seed, Keep again" loop.
+@onready var keep_pair_btn: Button = $Panel/HBox/ControlsScroll/Controls/KeepPairBtn
+@onready var keep_feedback: Label = $Panel/HBox/ControlsScroll/Controls/KeepFeedback
+@onready var close_btn: Button = $Panel/HBox/ControlsScroll/Controls/CloseBtn
+## Always-visible X in the top-right corner of the screen. The bottom Close
+## button can get pushed offscreen by a long Controls VBox; this is the
+## belt-and-suspenders fallback so dev can always escape.
+@onready var corner_close_btn: Button = $CornerCloseBtn
 
 var _all_species: Array[String] = []
 var _filtered_species: Array[String] = []
@@ -47,10 +62,22 @@ func _ready() -> void:
 		next_btn.pressed.connect(_on_next)
 	if reroll_btn:
 		reroll_btn.pressed.connect(_on_reroll)
-	if keep_btn:
-		keep_btn.pressed.connect(_on_keep_for_breeding)
+	if inspect_btn:
+		inspect_btn.pressed.connect(_on_inspect)
+	if keep_female_btn:
+		keep_female_btn.pressed.connect(_on_keep_female)
+	if keep_male_btn:
+		keep_male_btn.pressed.connect(_on_keep_male)
+	if keep_pair_btn:
+		keep_pair_btn.pressed.connect(_on_keep_pair)
 	if close_btn:
 		close_btn.pressed.connect(_on_close)
+	if corner_close_btn:
+		corner_close_btn.pressed.connect(_on_close)
+	# Make sure the dev panel can be dismissed with Esc — players (and devs
+	# in a fullscreen editor run) instinctively reach for Escape and shouldn't
+	# need to hunt for either of the two Close buttons.
+	set_process_input(true)
 	if category_filter:
 		category_filter.item_selected.connect(_on_category_changed)
 	if species_filter:
@@ -166,28 +193,18 @@ func _render_current() -> void:
 			ActorTypeData.get_capture_archetype(species),
 		]
 
-## "Keep for Breeding" — stamp the current previewed species (its plan + seed
-## + stat block) into a GoatData and drop it in the herd so the player can
-## bring two of them together in the Ranch to test breeding. We use GoatData
-## (rather than the species' own subclass) because the captured-from-wild
-## path in HerdManager._build_captured_data established the convention that
-## non-goat species ride into the herd as a GoatData with the species' visual
-## config stamped on — so this lines up cleanly with breeding/UI code that
-## already handles "GoatData carrying foreign-species body plans."
-func _on_keep_for_breeding() -> void:
-	if _filtered_species.is_empty():
-		return
+## Build a GoatData wrapper around the currently-previewed species/plan.
+## Returns the data resource (not yet added to herd) so callers can choose
+## to use a passed-in seed (so a Pair drop can share a plan across genders).
+## See HerdManager._build_captured_data — same convention as wild captures.
+func _build_kept_data(forced_gender: int, seed_override: int) -> GoatData:
 	var species: String = _filtered_species[_current_index]
 	var defaults: Dictionary = ActorTypeData.get_defaults(species)
 	var data := GoatData.new()
 	data.goat_name = "(Dev) " + species
-	# Genders alternate by call-count would be confusing; coin-flip per spawn
-	# so a player who hits Keep twice has a chance at a breeding pair.
-	data.gender = ActorData.Gender.MALE if randf() < 0.5 else ActorData.Gender.FEMALE
+	data.gender = forced_gender
 	data.is_selected = false
 	data.is_exhausted = false
-	# Stamp stats from the species' ActorTypeData entry so the kept creature
-	# matches the stat block shown in the preview's StatsLabel.
 	if not defaults.is_empty():
 		data.strength = float(defaults.get("strength", data.strength))
 		data.dexterity = float(defaults.get("dexterity", data.dexterity))
@@ -198,21 +215,82 @@ func _on_keep_for_breeding() -> void:
 		var hp_val: Variant = defaults.get("max_health", null)
 		if hp_val != null and "max_health" in data:
 			data.set("max_health", float(hp_val))
-	# Render config — the herd-card / Ranch / arena previews all rebuild from
-	# shared_body_plan + render_seed, so copying both makes the kept creature
-	# visually identical to what's on screen right now.
-	data.render_seed = _current_seed
+	data.render_seed = seed_override
+	# Generate a fresh plan for THIS seed instead of cloning override_plan —
+	# this lets the Pair button hand each half its own seed and still get a
+	# species-correct body plan. (For the single Keep buttons it reuses
+	# _current_seed, so the visual matches what's on screen.)
+	var plan: Dictionary = ActorBodyPlanGenerator.generate(species, seed_override)
+	data.shared_body_plan = plan
+	return data
+
+func _on_keep_female() -> void:
+	if _filtered_species.is_empty():
+		return
+	var data: GoatData = _build_kept_data(ActorData.Gender.FEMALE, _current_seed)
+	HerdManager.add_goat(data)
+	if keep_feedback:
+		keep_feedback.text = "Added ♀ %s to herd" % data.goat_name
+	print("[DevMonsterPreview] Kept ♀ %s (seed %d)." % [data.goat_name, _current_seed])
+
+func _on_keep_male() -> void:
+	if _filtered_species.is_empty():
+		return
+	var data: GoatData = _build_kept_data(ActorData.Gender.MALE, _current_seed)
+	HerdManager.add_goat(data)
+	if keep_feedback:
+		keep_feedback.text = "Added ♂ %s to herd" % data.goat_name
+	print("[DevMonsterPreview] Kept ♂ %s (seed %d)." % [data.goat_name, _current_seed])
+
+## One-shot breeding-pair drop — populates the herd with both a female AND
+## a male of the current species at once. Each gets its own render_seed so
+## they're visually distinct individuals of the same species, ready to breed.
+func _on_keep_pair() -> void:
+	if _filtered_species.is_empty():
+		return
+	var seed_f: int = _current_seed
+	var seed_m: int = randi()
+	if seed_m == seed_f:
+		seed_m = seed_f + 1
+	var female: GoatData = _build_kept_data(ActorData.Gender.FEMALE, seed_f)
+	var male: GoatData = _build_kept_data(ActorData.Gender.MALE, seed_m)
+	HerdManager.add_goat(female)
+	HerdManager.add_goat(male)
+	if keep_feedback:
+		keep_feedback.text = "Added ♀+♂ %s pair to herd" % female.goat_name.trim_prefix("(Dev) ")
+	print("[DevMonsterPreview] Kept BREEDING PAIR %s (♀ seed %d, ♂ seed %d)." % [
+		female.goat_name, seed_f, seed_m
+	])
+
+func _input(event: InputEvent) -> void:
+	# Esc dismisses the panel regardless of which button has focus.
+	if event is InputEventKey \
+			and (event as InputEventKey).pressed \
+			and (event as InputEventKey).keycode == KEY_ESCAPE:
+		_on_close()
+
+## Open a big fullscreen Inspect popup for the currently-previewed creature.
+## Routes through preview_plan rather than actor_data because we don't have
+## an ActorData yet (the user hasn't kept this creature) — the popup spawns
+## a ProceduralCreatureBody directly off the plan.
+func _on_inspect() -> void:
+	if _filtered_species.is_empty():
+		return
+	var species: String = _filtered_species[_current_index]
+	var plan: Dictionary = ActorBodyPlanGenerator.generate(species, _current_seed)
 	if _current_body and _current_body.override_plan is Dictionary \
 			and not (_current_body.override_plan as Dictionary).is_empty():
-		data.shared_body_plan = (_current_body.override_plan as Dictionary).duplicate(true)
-	# Hand it to the herd via the singleton — same path the cheat panel uses.
-	HerdManager.add_goat(data)
-	# UI feedback — a tiny line under the button so the dev knows it landed
-	# (we don't tear down the preview; the user may want to keep several).
-	if keep_feedback:
-		var gender_marker: String = "♂" if data.gender == ActorData.Gender.MALE else "♀"
-		keep_feedback.text = "Added %s %s to herd" % [gender_marker, data.goat_name]
-	print("[DevMonsterPreview] Kept %s (seed %d) for breeding." % [species, _current_seed])
+		# Prefer the live plan currently rendering — guarantees the inspect
+		# view matches exactly what's on screen even if generate() ever
+		# diverges from what was used to spawn the in-card body.
+		plan = (_current_body.override_plan as Dictionary).duplicate(true)
+	var popup_scene: PackedScene = load("res://UI/InspectPopup.tscn") as PackedScene
+	if popup_scene == null:
+		return
+	var popup: Node = popup_scene.instantiate()
+	popup.set("preview_plan", plan)
+	popup.set("title", "%s   (seed %d)" % [species, _current_seed])
+	get_tree().root.add_child(popup)
 
 func _on_close() -> void:
 	queue_free()

@@ -20,6 +20,20 @@ anchor_top = 0.08
 anchor_right = 0.9
 anchor_bottom = 0.92
 
+[node name="CornerCloseBtn" type="Button" parent="."]
+anchor_left = 0.9
+anchor_top = 0.08
+anchor_right = 0.9
+anchor_bottom = 0.08
+offset_left = -44.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = 44.0
+text = "✕"
+tooltip_text = "Close (Esc)"
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.7, 0.7, 1)
+
 [node name="HBox" type="HBoxContainer" parent="Panel"]
 layout_mode = 2
 theme_override_constants/separation = 16
@@ -57,89 +71,113 @@ transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 2, 0, -0.2, 0)
 
 [node name="CreatureContainer" type="Node3D" parent="Panel/HBox/PreviewBox/SubViewport"]
 
-[node name="Controls" type="VBoxContainer" parent="Panel/HBox"]
+[node name="ControlsScroll" type="ScrollContainer" parent="Panel/HBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(360, 0)
+custom_minimum_size = Vector2(380, 0)
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Controls" type="VBoxContainer" parent="Panel/HBox/ControlsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="Title" type="Label" parent="Panel/HBox/Controls"]
+[node name="Title" type="Label" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "DEV: MONSTER SUMMONER"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 20
 
-[node name="Description" type="Label" parent="Panel/HBox/Controls"]
+[node name="Description" type="Label" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "Render every monster in ActorTypeData via ProceduralCreatureBody. Cycle to verify each species produces a sensible visual."
 autowrap_mode = 3
 
-[node name="CameraHelp" type="Label" parent="Panel/HBox/Controls"]
+[node name="CameraHelp" type="Label" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "[Left-drag] orbit · [Wheel] zoom · [Right-drag] pan · [Middle-click] reset"
 theme_override_colors/font_color = Color(0.65, 0.78, 0.95, 1)
 theme_override_font_sizes/font_size = 11
 autowrap_mode = 3
 
-[node name="CategoryFilter" type="OptionButton" parent="Panel/HBox/Controls"]
+[node name="CategoryFilter" type="OptionButton" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 
-[node name="SpeciesFilter" type="OptionButton" parent="Panel/HBox/Controls"]
+[node name="SpeciesFilter" type="OptionButton" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 fit_to_longest_item = false
 allow_reselect = true
 
-[node name="Spacer1" type="HSeparator" parent="Panel/HBox/Controls"]
+[node name="Spacer1" type="HSeparator" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 
-[node name="SpeciesLabel" type="Label" parent="Panel/HBox/Controls"]
+[node name="SpeciesLabel" type="Label" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "Species: (loading)"
 theme_override_font_sizes/font_size = 16
 
-[node name="CategoryLabel" type="Label" parent="Panel/HBox/Controls"]
+[node name="CategoryLabel" type="Label" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "Category: -"
 
-[node name="SeedLabel" type="Label" parent="Panel/HBox/Controls"]
+[node name="SeedLabel" type="Label" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "Seed: -"
 
-[node name="StatsLabel" type="Label" parent="Panel/HBox/Controls"]
+[node name="StatsLabel" type="Label" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "-"
 autowrap_mode = 3
 
-[node name="Spacer2" type="HSeparator" parent="Panel/HBox/Controls"]
+[node name="Spacer2" type="HSeparator" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 
-[node name="RandomBtn" type="Button" parent="Panel/HBox/Controls"]
+[node name="RandomBtn" type="Button" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "🎲 Random Species"
 
-[node name="NextBtn" type="Button" parent="Panel/HBox/Controls"]
+[node name="NextBtn" type="Button" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "→ Next in List"
 
-[node name="RerollBtn" type="Button" parent="Panel/HBox/Controls"]
+[node name="RerollBtn" type="Button" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "↻ Re-roll Seed (same species)"
 
-[node name="KeepBtn" type="Button" parent="Panel/HBox/Controls"]
+[node name="InspectBtn" type="Button" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
-text = "♥ Keep for Breeding"
-theme_override_colors/font_color = Color(0.6, 1, 0.7, 1)
+text = "[I] Inspect Full-Size"
+tooltip_text = "Open a big inspect window with full orbit / zoom / pan"
+theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
 
-[node name="KeepFeedback" type="Label" parent="Panel/HBox/Controls"]
+[node name="KeepFemaleBtn" type="Button" parent="Panel/HBox/ControlsScroll/Controls"]
+layout_mode = 2
+text = "♀ Keep as Female"
+theme_override_colors/font_color = Color(1, 0.7, 0.85, 1)
+
+[node name="KeepMaleBtn" type="Button" parent="Panel/HBox/ControlsScroll/Controls"]
+layout_mode = 2
+text = "♂ Keep as Male"
+theme_override_colors/font_color = Color(0.65, 0.85, 1, 1)
+
+[node name="KeepPairBtn" type="Button" parent="Panel/HBox/ControlsScroll/Controls"]
+layout_mode = 2
+text = "♥ Keep Breeding Pair"
+theme_override_colors/font_color = Color(0.7, 1, 0.7, 1)
+
+[node name="KeepFeedback" type="Label" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.6, 0.95, 0.7, 1)
 theme_override_font_sizes/font_size = 12
 autowrap_mode = 3
 
-[node name="Spacer3" type="Control" parent="Panel/HBox/Controls"]
+[node name="Spacer3" type="Control" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CloseBtn" type="Button" parent="Panel/HBox/Controls"]
+[node name="CloseBtn" type="Button" parent="Panel/HBox/ControlsScroll/Controls"]
 layout_mode = 2
 text = "Close"
