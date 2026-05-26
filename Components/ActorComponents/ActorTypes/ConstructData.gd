@@ -70,6 +70,17 @@ const DATA: Dictionary = {
 		"weapons": ["Slam"],
 		"abilities": ["Antimagic Susceptibility", "False Appearance"],
 		"armor": ["Plate Armor"],
+		# Hornbound — empty steel suit: tarnished plate, brass accents, orange glow inside the helm.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 1.05,
+			"palette.primary": Color(0.55, 0.55, 0.60),    # steel plate
+			"palette.secondary": Color(0.30, 0.30, 0.35),  # shadow joints
+			"palette.accent": Color(0.78, 0.55, 0.20),     # brass trim
+			"palette.eye": Color(0.95, 0.55, 0.10),        # glowing void inside helm
+			"face.eye_glow": true,
+			"ornaments.tags": ["metallic_plate"],
+		},
 	},
 	"Quadrone": {
 		"max_health": 22, "armor_class": 16, "damage_amount": 2.0, "element_type": "none",
@@ -166,6 +177,18 @@ const DATA: Dictionary = {
 		"weapons": ["Slam"],
 		"abilities": ["Immutable Form", "Magic Resistance", "Magic Weapons", "Slow"],
 		"armor": ["Natural Armor"],
+		# Hornbound — Large statue-warrior: weathered grey granite, carved runes glowing softly,
+		# blocky angular limbs, glowing rune-eyes.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 1.65,
+			"palette.primary": Color(0.55, 0.55, 0.58),    # granite grey
+			"palette.secondary": Color(0.38, 0.38, 0.42),
+			"palette.accent": Color(0.30, 0.78, 0.92),     # rune cyan
+			"palette.eye": Color(0.55, 0.92, 1.0),
+			"face.eye_glow": true,
+			"ornaments.tags": ["metallic_plate", "crystal_growth"],
+		},
 	},
 	"Kolyarut": {
 		"max_health": 143, "armor_class": 19, "damage_amount": 7.0, "element_type": "none",
@@ -198,6 +221,14 @@ const DATA: Dictionary = {
 		"weapons": ["Slam", "Sword"],
 		"abilities": ["Fire Absorption", "Immutable Form", "Magic Resistance", "Magic Weapons", "Poison Breath"],
 		"armor": ["Natural Armor"],
+		# Hornbound
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 1.6,
+			"palette.primary": Color(0.50, 0.50, 0.55),  # Dark iron
+			"palette.secondary": Color(0.35, 0.35, 0.40),
+			"palette.accent": Color(0.85, 0.40, 0.10),  # Hot ember
+		},
 	},
 	"Steel Predator": {
 		"max_health": 207, "armor_class": 20, "damage_amount": 9.0, "element_type": "none",

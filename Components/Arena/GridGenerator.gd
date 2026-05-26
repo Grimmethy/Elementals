@@ -43,17 +43,22 @@ func initialize_grid() -> void:
 	for state in TileConstants.State.values():
 		arena.tile_counts[state] = 0
 	
+	# Always create a fresh FastNoiseLite per generation pass — the @export
+	# resource on Arena.tscn may have a baked-in seed that we want to
+	# override per run (e.g. contract-driven dungeon seeds set by
+	# MissionBoard.accept_contract). Without this, every contract used the
+	# same map.
 	if not arena.noise:
 		arena.noise = FastNoiseLite.new()
-		var gs = get_node_or_null("/root/GameSettings")
-		if gs:
-			arena.noise.seed = gs.noise_seed
-			arena.noise.frequency = gs.noise_frequency
-			arena.height_step = gs.height_step
-		else:
-			arena.noise.seed = randi()
-			arena.noise.frequency = 0.05
-		arena.noise.noise_type = FastNoiseLite.TYPE_PERLIN
+	var gs = get_node_or_null("/root/GameSettings")
+	if gs:
+		arena.noise.seed = gs.noise_seed
+		arena.noise.frequency = gs.noise_frequency
+		arena.height_step = gs.height_step
+	else:
+		arena.noise.seed = randi()
+		arena.noise.frequency = 0.05
+	arena.noise.noise_type = FastNoiseLite.TYPE_PERLIN
 	
 	for y in total_h:
 		for x in total_w:

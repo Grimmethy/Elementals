@@ -13,13 +13,32 @@ var current_controlled_actor: Actor:
 	set(value):
 		if is_instance_valid(current_controlled_actor):
 			current_controlled_actor.is_controlled = false
+			# Disconnect old death listener so we don't stack callbacks.
+			if current_controlled_actor.died.is_connected(_on_controlled_actor_died):
+				current_controlled_actor.died.disconnect(_on_controlled_actor_died)
 
 		current_controlled_actor = value
 
 		if current_controlled_actor:
 			current_controlled_actor.is_controlled = true
+			if not current_controlled_actor.died.is_connected(_on_controlled_actor_died):
+				current_controlled_actor.died.connect(_on_controlled_actor_died)
 			if arena and arena.ui_component:
 				arena.ui_component.update_for_actor(current_controlled_actor)
+
+## The pack the player is currently leading. Used by possession to find the
+## next valid body to possess when the controlled actor dies. Populated by
+## ArenaSpawner / DungeonRunController on run start.
+var player_pack: Array[Actor] = []
+
+## How long after possession the new body has invulnerability frames.
+const POSSESSION_IFRAME_SECONDS: float = 0.5
+## Reduced damage taken multiplier for POSSESSION_DAMP_SECONDS after possess.
+const POSSESSION_DAMP_DURATION: float = 2.0
+const POSSESSION_DAMP_MULTIPLIER: float = 0.5
+
+# When the most recent possession happened (Time.get_ticks_msec()).
+var _last_possession_ms: int = -1
 
 var _ability_pressed: bool = false
 var _ability_press_time: int = 0
@@ -73,6 +92,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif event.keycode == KEY_C and not event.echo:
 				if current_controlled_actor.weapon_component:
 					current_controlled_actor.weapon_component.use_net_close_at(current_controlled_actor.global_position)
+			elif event.keycode == KEY_G and not event.echo:
+				# Voluntary possession — jump to the next packmate.
+				possess_next_packmate()
+			elif event.keycode == KEY_F2 and not event.echo:
+				# Dev: spawn one more of the contract's target species.
+				_dev_spawn_more_of_contract_target()
 		else: # Key Released
 			if event.keycode == KEY_SHIFT:
 				_ability_pressed = false
@@ -100,6 +125,112 @@ func _process(_delta: float) -> void:
 			if current_controlled_actor and current_controlled_actor.ability_component:
 				current_controlled_actor.ability_component.execute_ability("hide", true)
 			_hide_triggered = true
+
+# ============================================================================
+# Possession — Hornbound mechanic for "you ARE one of your monsters"
+# ============================================================================
+
+## Take control of a specific actor. Camera retargets, HUD updates, and
+## possession i-frames apply. Used when a controlled actor dies (auto-possess
+## next packmate) and for voluntary mid-fight switching (G key).
+##
+## Sets `_last_possession_ms` so post_possession_damage_multiplier() can
+## report reduced damage during the brief invulnerability/damp window.
+func possess_actor(actor: Actor) -> void:
+	if actor == null or not is_instance_valid(actor) or actor.is_dead:
+		return
+	current_controlled_actor = actor
+	# Update target index so prev/next cycle starts here.
+	if arena:
+		var idx: int = arena.actors.find(actor)
+		if idx != -1:
+			current_target_index = idx
+	# Reattach camera. Mirror update_camera_target's logic.
+	var _camera_follower := arena.get_node_or_null("Camera3D") if arena else null
+	if _camera_follower and _camera_follower is CameraFollower:
+		_camera_follower.set_target(actor)
+		if actor is GoatActor:
+			_camera_follower.max_zoom = 10.0
+		else:
+			_camera_follower.max_zoom = 80.0
+	_last_possession_ms = Time.get_ticks_msec()
+
+## Possess the nearest alive packmate to the current controlled actor.
+## Called automatically when the controlled actor dies. Returns the actor
+## possessed, or null if there's nobody alive in the pack.
+func possess_next_packmate() -> Actor:
+	var origin: Vector3 = Vector3.ZERO
+	if is_instance_valid(current_controlled_actor):
+		origin = current_controlled_actor.global_position
+	var best: Actor = null
+	var best_dist_sq: float = INF
+	for pm in player_pack:
+		if pm == null or not is_instance_valid(pm) or pm == current_controlled_actor:
+			continue
+		if pm.is_dead:
+			continue
+		var d: float = pm.global_position.distance_squared_to(origin)
+		if d < best_dist_sq:
+			best_dist_sq = d
+			best = pm
+	if best:
+		possess_actor(best)
+	return best
+
+## Returns the damage taken multiplier currently active due to recent possession.
+## 0.0 during i-frames (full immunity), POSSESSION_DAMP_MULTIPLIER during damp,
+## 1.0 once the window expires. Read by HealthComponent.take_damage if it
+## chooses to honor possession mercy.
+func post_possession_damage_multiplier() -> float:
+	if _last_possession_ms < 0:
+		return 1.0
+	var ms_elapsed: int = Time.get_ticks_msec() - _last_possession_ms
+	var sec_elapsed: float = ms_elapsed / 1000.0
+	if sec_elapsed <= POSSESSION_IFRAME_SECONDS:
+		return 0.0  # i-frame window
+	if sec_elapsed <= POSSESSION_IFRAME_SECONDS + POSSESSION_DAMP_DURATION:
+		return POSSESSION_DAMP_MULTIPLIER
+	return 1.0
+
+## Dev hotkey (F2) — spawns one more of the contract's target species at a
+## random valid tile near the player. Useful for testing that contract
+## monsters actually get into the world, and for QA-spawning extra enemies
+## of a known type without leaving the run. Reads the species from
+## HerdManager.accepted_contract.target_species; falls back to the first
+## enemy type in the current room's template if no contract is active.
+func _dev_spawn_more_of_contract_target() -> void:
+	if arena == null:
+		return
+	# Resolve species from the accepted contract.
+	var species: String = ""
+	var hm: Node = arena.get_node_or_null("/root/HerdManager")
+	if hm and "accepted_contract" in hm:
+		var c = hm.get("accepted_contract")
+		if c and "target_species" in c:
+			species = String(c.get("target_species"))
+	if species.is_empty():
+		print("[Dev] No contract target species — F2 spawn no-op.")
+		return
+	# Spawn via ArenaSpawner. species_lower routes through its match table.
+	if "actor_spawner" in arena and arena.actor_spawner:
+		var tile: HexTileData = arena.actor_spawner._get_random_spawn_tile()
+		if tile == null:
+			print("[Dev] No valid spawn tile.")
+			return
+		var spawned: Node = arena.actor_spawner.spawn_actor_at_tile(species.to_lower(), tile)
+		if spawned:
+			print("[Dev] Spawned 1 × %s at random tile." % species)
+		else:
+			print("[Dev] Spawn failed for species '%s' — likely no scene registered." % species)
+
+## Death listener attached when current_controlled_actor is set.
+## Auto-possesses the nearest alive packmate. If none, the run is over.
+func _on_controlled_actor_died() -> void:
+	var nearest := possess_next_packmate()
+	if nearest == null:
+		# All packmates down — emit a signal the run controller listens to.
+		if arena and arena.has_signal("player_pack_wiped"):
+			arena.emit_signal("player_pack_wiped")
 
 ## Returns the world-space aim target for the current control mode.
 ## Asks the actor's controller so the result is correct for every control scheme

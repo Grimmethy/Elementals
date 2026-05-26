@@ -273,6 +273,153 @@ static func default_shared_body_plan() -> Dictionary:
 		}
 	}
 
+## === Moveset inheritance (Hornbound) =======================================
+##
+## The kid's combat verbs. Stored as `moveset: Array[String]` on the genome's
+## "moves" slot. Same-species kids get 2 moves (one from each parent). Hybrid
+## (cross-species) kids get 3, with slot 3 rolled on a special table that
+## includes graft-keyed moves, library-sampled moves, and rare new mutation
+## moves.
+##
+## See GameLoopIdea.md §5 for the design rationale.
+@export var moveset: Array[String] = []:
+	set(v):
+		moveset = v
+		stats_changed.emit()
+
+## Mutation move pool. Authored content — these are the "remember that goat?"
+## moments. Rolled at 3% on hybrid kids' slot-3.
+const MUTATION_MOVES: Array[String] = [
+	"Pulse Burst",
+	"Shadow Step",
+	"Earthquake Stomp",
+	"Soul Drain",
+	"Mirror Self",
+	"Time Slip",
+	"Berserker Rage",
+	"Crystallize",
+	"Static Field",
+	"Phase Shift",
+	"Voidlash",
+	"Echo Strike",
+]
+
+## Map of graft body parts to the move they grant when present. Looked up by
+## checking the kid's genome["grafted"] slot for has_* flags.
+const GRAFT_MOVES: Dictionary = {
+	"has_cap_graft":          "Spore Cloud",
+	"has_mushroom_cap":       "Spore Cloud",
+	"has_tooth_graft":        "Vicious Bite",
+	"has_band_graft":         "Iron Wrap",
+	"has_extra_eyes_on_cap":  "Piercing Gaze",
+	"has_lid_crown":          "Mimic Snap",
+	"has_gem_scatter":        "Crystal Volley",
+	"has_stem_antenna":       "Static Field",
+	"has_spots_on_body":      "Toxic Drip",
+}
+
+## Determine a kid's moveset given its parents. Called from
+## universal_crossover_breed for hybrids, and from same-species create_offspring
+## overrides for pure-breeds.
+##
+## [parent_a / parent_b] The two parents.
+## [is_hybrid] If true, kid is cross-species — gets 3 moves with mutation
+##             chance on slot 3. If false, kid gets 2 reliable moves.
+## [Returns] Array of up to 3 move name strings.
+static func roll_moveset(parent_a: ActorData, parent_b: ActorData, is_hybrid: bool, kid: ActorData) -> Array[String]:
+	var moves: Array[String] = []
+	# Slot 1: from parent A.
+	var pool_a: Array[String] = _move_pool_for(parent_a)
+	if not pool_a.is_empty():
+		moves.append(pool_a[randi() % pool_a.size()])
+	# Slot 2: from parent B.
+	var pool_b: Array[String] = _move_pool_for(parent_b)
+	if not pool_b.is_empty():
+		var attempts: int = 0
+		var pick: String = ""
+		while attempts < 8:
+			pick = pool_b[randi() % pool_b.size()]
+			if not pick in moves or attempts > 4:
+				break
+			attempts += 1
+		if not pick.is_empty():
+			moves.append(pick)
+	# Slot 3: hybrid only — roll the 60 / 25 / 12 / 3 table.
+	if is_hybrid:
+		var slot3: String = _roll_slot3_move(parent_a, parent_b, kid)
+		if not slot3.is_empty() and not slot3 in moves:
+			moves.append(slot3)
+	return moves
+
+## Read a parent's move pool from ActorTypeData. Falls back to the parent's
+## ActorData abilities array if it has one.
+static func _move_pool_for(parent: ActorData) -> Array[String]:
+	if parent == null:
+		return []
+	var species: String = parent.get_actor_type().trim_suffix("Data")
+	var defaults: Dictionary = ActorTypeData.get_defaults(species)
+	var moves: Variant = defaults.get("abilities", defaults.get("weapons", []))
+	if moves is Array:
+		var result: Array[String] = []
+		for m in moves:
+			result.append(String(m))
+		return result
+	return []
+
+## Roll the slot-3 move for a hybrid kid:
+##   60% — another move from either parent's pool
+##   25% — a graft move keyed off the kid's grafted body parts
+##   12% — a library move (any species the player has captured)
+##    3% — a mutation move from MUTATION_MOVES
+static func _roll_slot3_move(parent_a: ActorData, parent_b: ActorData, kid: ActorData) -> String:
+	var roll: float = randf()
+	# 3% mutation
+	if roll < 0.03:
+		return MUTATION_MOVES[randi() % MUTATION_MOVES.size()]
+	# 12% library — query the TraitLibrary autoload via the SceneTree (cast
+	# because Engine.get_main_loop() returns MainLoop, not SceneTree).
+	if roll < 0.15:
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree:
+			var lib := tree.root.get_node_or_null("/root/TraitLibrary")
+			if lib:
+				var trait_name: String = String(lib.call("get_random_known_trait"))
+				if not trait_name.is_empty():
+					return trait_name
+		# Fallthrough to graft if library was empty or unavailable.
+	# 25% graft
+	if roll < 0.40:
+		var graft_move: String = _graft_move_for_kid(kid)
+		if not graft_move.is_empty():
+			return graft_move
+		# Fallthrough to parent pool if no graft applies.
+	# 60% parent pool (or any of the above fallthrough)
+	var pool: Array[String] = _move_pool_for(parent_a) + _move_pool_for(parent_b)
+	if pool.is_empty():
+		return ""
+	return pool[randi() % pool.size()]
+
+## Inspect the kid's genome["grafted"] slot for has_* flags and return the
+## first matching move from GRAFT_MOVES. Returns "" if no grafts present.
+static func _graft_move_for_kid(kid: ActorData) -> String:
+	if kid == null or not "genome" in kid:
+		return ""
+	var g_var: Variant = kid.get("genome")
+	if not (g_var is Dictionary):
+		return ""
+	var g: Dictionary = g_var
+	if not g.has("grafted"):
+		return ""
+	var grafted: Dictionary = g["grafted"]
+	# Collect all matching graft moves and pick one at random.
+	var candidates: Array[String] = []
+	for key in GRAFT_MOVES.keys():
+		if grafted.has(key) and bool(grafted[key]):
+			candidates.append(String(GRAFT_MOVES[key]))
+	if candidates.is_empty():
+		return ""
+	return candidates[randi() % candidates.size()]
+
 # === Shared mutation pool ===================================================
 #
 # A flat list of "weird features" that any cross-species kid can roll on top
@@ -445,6 +592,10 @@ static func universal_crossover_breed(parent_a: ActorData, parent_b: ActorData) 
 	# the genome palette ended up with, so ActorCard tints + GoatRenderer
 	# stay consistent with the rendered creature.
 	_sync_legacy_palette_from_genome(kid)
+	# Hornbound: roll the hybrid moveset. Cross-species kids get 3 moves with
+	# the slot-3 table; same-species would have gone through their own crossover
+	# above and skipped this branch.
+	kid.moveset = roll_moveset(parent_a, parent_b, true, kid)
 	# Mimic-blood lineage + skill-inheritance probability gates.
 	apply_mimic_lineage(kid, parent_a, parent_b)
 	# Diagnostic: log every cross-species breed so we can see in the console

@@ -338,6 +338,13 @@ func _on_map_settings_button_pressed() -> void:
 func _on_ranch_button_pressed() -> void:
 	get_tree().change_scene_to_file("res://Components/BreedingComponents/Ranch/Ranch.tscn")
 
+## Hornbound: open the new Hub screen. This is the roguelike-monster-rancher
+## entry point — picks a mission contract, builds a squad, departs to the
+## arena's 4-room run controller. The classic Ranch scene stays as a
+## separate option for the breeding/inspection workflow.
+func _on_hub_button_pressed() -> void:
+	get_tree().change_scene_to_file("res://UI/HubScreen.tscn")
+
 func _on_random_seed_toggled(button_pressed: bool) -> void:
 	seed_input.editable = !button_pressed
 

@@ -6,6 +6,14 @@ const DATA: Dictionary = {
 		"weapons": ["Shortsword", "Shortbow"],
 		"abilities": ["Undead Fortitude"],
 		"armor": ["Armor Scraps"],
+		# Hornbound
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.9,
+			"palette.primary": Color(0.88, 0.85, 0.78),  # Bone white
+			"palette.secondary": Color(0.50, 0.45, 0.38),
+			"ornaments.tags": ["bone_protrusion"],
+		},
 	},
 	"Zombie": {
 		"max_health": 22, "armor_class": 8, "damage_amount": 2.0, "element_type": "none",
@@ -14,6 +22,13 @@ const DATA: Dictionary = {
 		"weapons": ["Slam"],
 		"abilities": ["Undead Fortitude"],
 		"armor": ["Tattered Cloth"],
+		# Hornbound
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.05,
+			"palette.primary": Color(0.45, 0.55, 0.40),  # Sickly green-grey
+			"ornaments.tags": ["tattered_cloth", "bone_protrusion"],
+		},
 	},
 	"Ghoul": {
 		"max_health": 22, "armor_class": 12, "damage_amount": 2.0, "element_type": "none",
@@ -102,6 +117,17 @@ const DATA: Dictionary = {
 		"weapons": ["Rotting Fist"],
 		"abilities": ["Mummy Rot"],
 		"armor": ["Natural Armor"],
+		# Hornbound — bandaged corpse: yellowed wrappings, dust-grey skin, glowing amber eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.10,
+			"palette.primary": Color(0.78, 0.65, 0.40),    # yellowed wrappings
+			"palette.secondary": Color(0.50, 0.38, 0.20),
+			"palette.accent": Color(0.92, 0.78, 0.20),     # gold accents
+			"palette.eye": Color(0.95, 0.65, 0.18),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tattered_cloth", "metallic_plate"],
+		},
 	},
 	"Wight": {
 		"max_health": 45, "armor_class": 14, "damage_amount": 2.5, "element_type": "none",
@@ -230,6 +256,17 @@ const DATA: Dictionary = {
 		"weapons": ["Unarmed Strike", "Bite"],
 		"abilities": ["Legendary Resistance", "Misty Escape", "Regeneration", "Spider Climb", "Shapechanger"],
 		"armor": ["Natural Armor"],
+		# Hornbound — pale aristocrat: chalk-white skin, jet-black hair, blood-red eyes, dark cape.
+		"capture_archetype": "kill_lessers",
+		"body_plan_modifiers": {
+			"base.scale": 1.10,
+			"palette.primary": Color(0.88, 0.82, 0.78),    # pale chalk skin
+			"palette.secondary": Color(0.08, 0.05, 0.05),  # black hair / cape
+			"palette.accent": Color(0.78, 0.05, 0.05),     # blood red
+			"palette.eye": Color(0.95, 0.10, 0.10),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tattered_cloth"],
+		},
 	},
 	"Mummy Lord": {
 		"max_health": 97, "armor_class": 17, "damage_amount": 7.0, "element_type": "none",
@@ -254,6 +291,18 @@ const DATA: Dictionary = {
 		"weapons": ["Hellfire Orb", "Longsword"],
 		"abilities": ["Magic Resistance", "Spellcasting", "Marshal Undead", "Parry"],
 		"armor": ["Plate Armor"],
+		# Hornbound — dread warrior in soot-black armor, torn crimson cape, hellfire-red eyes.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 1.25,
+			"palette.primary": Color(0.10, 0.10, 0.14),    # soot-black plate
+			"palette.secondary": Color(0.55, 0.08, 0.05),  # crimson cape
+			"palette.accent": Color(0.95, 0.30, 0.10),     # hellfire glow
+			"palette.eye": Color(1.0, 0.20, 0.10),
+			"face.eye_glow": true,
+			"face.eye_radius": 0.060,
+			"ornaments.tags": ["metallic_plate", "tattered_cloth", "horns"],
+		},
 	},
 	"Demilich": {
 		"max_health": 80, "armor_class": 20, "damage_amount": 8.5, "element_type": "none",
@@ -270,5 +319,18 @@ const DATA: Dictionary = {
 		"weapons": ["Paralyzing Touch"],
 		"abilities": ["Legendary Resistance", "Magic Resistance", "Rejuvenation", "Spellcasting", "Turn Resistance"],
 		"armor": ["Natural Armor"],
+		# Hornbound — skeletal sorcerer: parchment skin stretched over bone, dark purple robes,
+		# golden crown, necrotic green flames in empty eye sockets.
+		"capture_archetype": "kill_lessers",
+		"body_plan_modifiers": {
+			"base.scale": 1.08,
+			"palette.primary": Color(0.78, 0.72, 0.55),    # parchment skin
+			"palette.secondary": Color(0.18, 0.08, 0.30),  # dark purple robes
+			"palette.accent": Color(0.92, 0.78, 0.20),     # gold crown
+			"palette.eye": Color(0.30, 0.95, 0.40),        # necrotic green flames
+			"face.eye_glow": true,
+			"face.eye_radius": 0.055,
+			"ornaments.tags": ["tattered_cloth", "halo", "bone_protrusion"],
+		},
 	},
 }

@@ -300,3 +300,60 @@ static func get_all_categories() -> Array[String]:
 	for key in CATEGORY_MAP.keys():
 		result.append(str(key))
 	return result
+
+# ============================================================================
+# Hornbound extensions — fields consumed by the universal procedural body
+# and the capture system. All optional; missing fields fall back to sane
+# defaults so they don't break legacy entries.
+# ============================================================================
+
+## Returns the species-level body_plan_modifiers dict, or {} if none set.
+## Used by ActorBodyPlanGenerator to overlay per-species tweaks on top of
+## the category template (e.g. Lion → adds "mane" ornament; Fire Dragon →
+## red palette override).
+##
+## Schema (all keys optional):
+##   "base.scale": float (multiplies all body dimensions)
+##   "<dotted.path>": Variant (overwrites the value at that path in shared_body_plan)
+##   Examples:
+##     "ornaments.tags": ["mane", "tail"]
+##     "palette.primary": Color(0.95, 0.40, 0.10)
+##     "face.eye_count": 4
+static func get_body_plan_modifiers(actor_type: String) -> Dictionary:
+	_ensure_init()
+	var d: Dictionary = _types.get(actor_type, {})
+	var m: Variant = d.get("body_plan_modifiers", {})
+	if m is Dictionary:
+		return m
+	return {}
+
+## Returns the capture archetype string for this species. Used by HerdManager
+## to decide what mini-puzzle the capture requires.
+##
+## One of:
+##   "weaken"          — HP < 30%, throw net. The default.
+##   "break_armor"     — Armor must be destroyed first (3+ break points).
+##   "kill_lessers"    — Minor minions must die first.
+##   "counter_charge"  — Must parry a charge attack to expose target.
+static func get_capture_archetype(actor_type: String) -> String:
+	_ensure_init()
+	var d: Dictionary = _types.get(actor_type, {})
+	return String(d.get("capture_archetype", "weaken"))
+
+## Returns the combo move pool entry for a pair of species, or "" if none.
+## Used by the bond system (BondManager) when a pair reaches bond level 2 to
+## unlock a team-up move. Looked up via either species' combo_pool dict.
+##
+## The combo_pool field on each species is a Dictionary[partner_species, combo_name]:
+##   "Goat": { "combo_pool": { "Mimic": "Bait & Charge", "Mushroom": "Spore Sweep" } }
+static func get_combo_for_pair(species_a: String, species_b: String) -> String:
+	_ensure_init()
+	var d_a: Dictionary = _types.get(species_a, {})
+	var pool_a: Variant = d_a.get("combo_pool", {})
+	if pool_a is Dictionary and (pool_a as Dictionary).has(species_b):
+		return String((pool_a as Dictionary)[species_b])
+	var d_b: Dictionary = _types.get(species_b, {})
+	var pool_b: Variant = d_b.get("combo_pool", {})
+	if pool_b is Dictionary and (pool_b as Dictionary).has(species_a):
+		return String((pool_b as Dictionary)[species_a])
+	return ""

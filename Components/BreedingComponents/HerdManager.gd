@@ -10,6 +10,8 @@ var economy_manager: EconomyComponent
 var progression_manager: ProgressionComponent
 var save_manager: SaveComponent
 var breeding_manager: BreedingComponent
+## Hornbound: mission board owning the daily contract refresh + accept flow.
+var mission_board: MissionBoard
 
 var herd: Array[ActorData]:
 	get: return herd_manager.herd
@@ -33,6 +35,24 @@ const NET_CAPTURE_CHANCE: float = 0.5
 ## doesn't belong in GameSettings (which is persistent config) and doesn't
 ## belong on any per-actor data resource.
 var pending_individual_creature: ActorData = null
+
+## Hornbound: when true, the next arena entry spins up a DungeonRunController
+## for a structured 4-room run. When false (default), the arena runs in
+## sandbox / free-play mode (existing behavior).
+## Set by the hub when the player accepts a contract; cleared by Arena on
+## run completion.
+var pending_run_mode: bool = false
+
+## Hornbound: the contract the player accepted at the mission board. Carried
+## through scene change to the arena. The arena reads biome / objective /
+## reward parameters from this to configure the run. Cleared after run end.
+var accepted_contract: ContractData = null
+
+## Hornbound: the full squad (Array[ActorData]) the player picked at the
+## Squad Picker. Index 0 = lead (the monster the player will play as);
+## 1..N = AI pack. The arena reads this on _ready to call
+## DungeonRunController.start_run with the correct squad. Cleared after run.
+var pending_squad: Array = []
 const NET_DISABLE_DURATION: float = 1.6
 const NET_CLOSE_RANGE: float = 2.6
 const NET_THROW_RANGE: float = 12.0
@@ -64,6 +84,13 @@ func _setup_components() -> void:
 	breeding_manager = preload("res://Core/Managers/BreedingComponent.gd").new()
 	breeding_manager.name = "BreedingComponent"
 	add_child(breeding_manager)
+
+	# Hornbound: mission board lives as a child of HerdManager so the hub UI
+	# can reach it via `HerdManager.mission_board` and the day-tick logic can
+	# refresh it after `BondManager.advance_day`.
+	mission_board = preload("res://Components/BreedingComponents/MissionBoard.gd").new()
+	mission_board.name = "MissionBoard"
+	add_child(mission_board)
 
 func _load_initial_state() -> void:
 	var save_data: GoatSaveData = save_manager.load_game()
@@ -176,7 +203,16 @@ func _resolve_capture_attempt(capturer: Actor, target: Actor) -> Dictionary:
 	if not _is_capture_candidate(capturer, target):
 		_emit_capture_message("That target cannot be captured.")
 		return _capture_result(false, false, "Target is not capturable.", 0, NET_CAPTURE_CHANCE, false)
-	
+
+	# Hornbound: check the species' capture archetype precondition. For MVP, only
+	# "weaken" is fully enforced (HP < 30%); the other archetypes are stubbed and
+	# always pass with a log message. Full mini-puzzles are post-MVP work.
+	var species_resolve: String = _resolve_species_id(target).capitalize()
+	var archetype: String = ActorTypeData.get_capture_archetype(species_resolve)
+	if not _check_capture_archetype(target, archetype):
+		_emit_capture_message("%s needs its %s precondition first." % [target.name, archetype])
+		return _capture_result(false, false, "Archetype precondition not met (%s)." % archetype, 0, NET_CAPTURE_CHANCE, false)
+
 	var roll: int = randi() % 20 + 1
 	var success: bool = false
 	
@@ -193,7 +229,19 @@ func _resolve_capture_attempt(capturer: Actor, target: Actor) -> Dictionary:
 	if success:
 		var captured_data: GoatData = _build_captured_data(target, species_id)
 		add_goat(captured_data)
-		
+
+		# Hornbound: record this capture in the TraitLibrary so the species' traits
+		# become breedable in future rolls. Capitalize species_id for ActorTypeData
+		# lookup (species_id is lowercase like "goblin", registry keys are "Goblin").
+		# Engine.has_singleton() doesn't work for autoloads in Godot 4 — use the
+		# scene-tree path check, which is the canonical way.
+		var lib: Node = get_node_or_null("/root/TraitLibrary")
+		if lib:
+			var species_proper: String = species_id.capitalize()
+			var new_traits: Array = lib.call("add_capture", species_proper)
+			if new_traits is Array and not (new_traits as Array).is_empty():
+				_emit_capture_message("Learned %d new traits from %s!" % [(new_traits as Array).size(), species_proper])
+
 		print("[Capture] [%s] net capture roll=%d chance=%.2f -> SUCCESS (%s)" % [capturer.name, roll, NET_CAPTURE_CHANCE, target_name])
 		_emit_capture_message("Captured %s!" % target_name)
 		
@@ -279,6 +327,44 @@ func _resolve_species_id(target: Actor) -> String:
 		return "goblin"
 	return "creature"
 
+## Verify the capture archetype's precondition is met for this target.
+##
+## Archetypes:
+##   "weaken"          — HP < 30% required. The default.
+##   "break_armor"     — Target must have its armor broken (sets meta flag).
+##   "kill_lessers"    — All weaker minions of the same species must be down.
+##   "counter_charge"  — Target must have been parried during a charge (meta flag).
+##
+## Returns true if the precondition is satisfied, false to deny the capture.
+## Non-weaken archetypes are stub-implemented for MVP — they check meta flags
+## that visual / combat code will set in a later phase. Until then they all
+## return true so captures aren't gated.
+func _check_capture_archetype(target: Actor, archetype: String) -> bool:
+	if target == null:
+		return false
+	match archetype:
+		"weaken":
+			# Require HP at or below 30% to capture. Standard archetype.
+			if target.health_component:
+				var hp_ratio: float = target.health_component.current_health / max(1.0, target.health_component.max_health)
+				return hp_ratio <= 0.30
+			return true
+		"break_armor":
+			if target.has_meta("armor_broken"):
+				return bool(target.get_meta("armor_broken"))
+			return true  # Stub-allow for MVP
+		"kill_lessers":
+			if target.has_meta("lessers_cleared"):
+				return bool(target.get_meta("lessers_cleared"))
+			return true  # Stub-allow for MVP
+		"counter_charge":
+			if target.has_meta("charge_countered"):
+				return bool(target.get_meta("charge_countered"))
+			return true  # Stub-allow for MVP
+		_:
+			# Unknown archetype — allow capture by default (forward-compatible).
+			return true
+
 func _build_captured_data(target: Actor, species_id: String) -> GoatData:
 	# Important: duplicate GoatData so GoatActor.die() removing its own data will not remove the captured copy.
 	if target is GoatActor:
@@ -357,3 +443,124 @@ func _capture_result(attempted: bool, success: bool, reason: String, roll: int, 
 		"captured": captured,
 		"creature": creature
 	}
+
+# ============================================================================
+# Hornbound — Active herd + Pension + Squad Loadouts
+# ============================================================================
+##
+## The herd is split into TWO conceptual pools:
+##   ACTIVE  — up to MAX_ACTIVE_HERD creatures. These can be deployed to
+##             squads and sent into runs. Bonded combos are eligible here.
+##   PENSION — unlimited. These creatures can ONLY breed; they can't deploy.
+##             Free, instant swap to active. Pension is the "vault" for
+##             beloved or breeding-only monsters.
+##
+## Both pools live within the existing herd array — active membership is
+## tracked by render_seed in `_active_ids`. This avoids array-shuffling on
+## rotation and keeps the existing herd APIs intact.
+
+const MAX_ACTIVE_HERD: int = 12
+
+## Active-membership tracker. render_seeds of currently-active herd members.
+## Pension members are those in `herd` not in this set.
+var _active_ids: Array[int] = []
+
+## Named squad loadouts. Each loadout is an Array[int] of render_seeds.
+var squad_loadouts: Dictionary = {
+	"Loadout A": [],
+	"Loadout B": [],
+	"Loadout C": [],
+}
+
+signal active_pension_changed()
+
+func _ensure_active_initialized() -> void:
+	if not _active_ids.is_empty():
+		return
+	var ids: Array[int] = []
+	for i in range(min(MAX_ACTIVE_HERD, herd.size())):
+		var m: ActorData = herd[i]
+		if m and "render_seed" in m:
+			ids.append(int(m.render_seed))
+	_active_ids = ids
+
+## Returns the currently-active herd as an Array[ActorData].
+func get_active_herd() -> Array[ActorData]:
+	_ensure_active_initialized()
+	var out: Array[ActorData] = []
+	for member in herd:
+		if member and "render_seed" in member and int(member.render_seed) in _active_ids:
+			out.append(member)
+	return out
+
+## Returns the pension as an Array[ActorData] (everything not active).
+func get_pension() -> Array[ActorData]:
+	_ensure_active_initialized()
+	var out: Array[ActorData] = []
+	for member in herd:
+		if member and "render_seed" in member and not (int(member.render_seed) in _active_ids):
+			out.append(member)
+	return out
+
+## Move a creature from active to pension. Always succeeds.
+func move_to_pension(actor_data: ActorData) -> void:
+	if actor_data == null or not "render_seed" in actor_data:
+		return
+	var rid: int = int(actor_data.render_seed)
+	if rid in _active_ids:
+		_active_ids.erase(rid)
+		active_pension_changed.emit()
+
+## Move a creature from pension to active. Fails silently if active is full.
+func restore_from_pension(actor_data: ActorData) -> bool:
+	if actor_data == null or not "render_seed" in actor_data:
+		return false
+	var rid: int = int(actor_data.render_seed)
+	if rid in _active_ids:
+		return true
+	if _active_ids.size() >= MAX_ACTIVE_HERD:
+		return false
+	_active_ids.append(rid)
+	active_pension_changed.emit()
+	return true
+
+## Swap an active member with a pension member. Always succeeds.
+func swap_active_with_pension(active_member: ActorData, pension_member: ActorData) -> void:
+	if active_member == null or pension_member == null:
+		return
+	if not ("render_seed" in active_member and "render_seed" in pension_member):
+		return
+	var a_id: int = int(active_member.render_seed)
+	var p_id: int = int(pension_member.render_seed)
+	if a_id in _active_ids:
+		_active_ids.erase(a_id)
+	if not (p_id in _active_ids) and _active_ids.size() < MAX_ACTIVE_HERD:
+		_active_ids.append(p_id)
+	active_pension_changed.emit()
+
+## Save a squad loadout. squad is an Array of ActorData.
+func save_loadout(loadout_name: String, squad: Array) -> void:
+	var seeds: Array[int] = []
+	for member in squad:
+		if member is ActorData and "render_seed" in member:
+			seeds.append(int(member.render_seed))
+		elif member is int:
+			seeds.append(int(member))
+		else:
+			seeds.append(0)
+	squad_loadouts[loadout_name] = seeds
+
+## Load a squad loadout. Returns Array[ActorData] — null entries for missing creatures.
+func load_loadout(loadout_name: String) -> Array:
+	var seeds: Array = squad_loadouts.get(loadout_name, [])
+	var out: Array = []
+	for seed_value in seeds:
+		var rid: int = int(seed_value)
+		var found: ActorData = null
+		for member in herd:
+			if member and "render_seed" in member and int(member.render_seed) == rid:
+				found = member
+				break
+		out.append(found)
+	return out
+

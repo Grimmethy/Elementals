@@ -38,6 +38,16 @@ const DATA: Dictionary = {
 		"weapons": ["Sting", "Bite"],
 		"abilities": ["Telepathic Bond", "Magic Resistance"],
 		"armor": ["Natural Armor"],
+		# Hornbound — house-cat-sized red-brown dragon, leathery wings, scorpion tail.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.40,
+			"palette.primary": Color(0.62, 0.30, 0.18),    # rusty red-brown
+			"palette.secondary": Color(0.40, 0.18, 0.10),
+			"palette.accent": Color(0.85, 0.65, 0.30),     # gold belly
+			"palette.eye": Color(0.95, 0.78, 0.20),
+			"ornaments.tags": ["wings", "horns", "tail"],
+		},
 	},
 	"Ambush Drake": {
 		"max_health": 18, "armor_class": 13, "damage_amount": 1.5, "element_type": "none",
@@ -150,6 +160,17 @@ const DATA: Dictionary = {
 		"weapons": ["Bite", "Claws", "Stinger"],
 		"abilities": ["Fly"],
 		"armor": ["Natural Armor"],
+		# Hornbound — drake: dusk-grey scales, big leathery wings, venomous stinger tail. No front legs.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 1.65,
+			"palette.primary": Color(0.42, 0.40, 0.45),    # dusk grey
+			"palette.secondary": Color(0.24, 0.22, 0.28),
+			"palette.accent": Color(0.62, 0.30, 0.45),     # poison-purple stinger
+			"palette.eye": Color(0.95, 0.65, 0.10),
+			"face.eye_glow": true,
+			"ornaments.tags": ["wings", "tail", "bone_protrusion"],
+		},
 	},
 	"Brass Dragon Young": {
 		"max_health": 110, "armor_class": 17, "damage_amount": 4.5, "element_type": "fire",
@@ -238,6 +259,17 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite", "Tail Swipe"],
 		"abilities": ["Frost Breath", "Fly", "Legendary Resistance", "Frightful Presence"],
 		"armor": ["Dragon Scales"],
+		# Hornbound — Huge: pure white scales tinged blue-silver, ice-blue glowing eyes, frost crystals.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.20,
+			"palette.primary": Color(0.92, 0.95, 0.99),    # frost white
+			"palette.secondary": Color(0.55, 0.78, 0.92),  # icy blue shadow
+			"palette.accent": Color(0.30, 0.85, 1.0),      # bright cyan
+			"palette.eye": Color(0.45, 0.95, 1.0),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail", "wings", "horns", "crystal_growth"],
+		},
 	},
 	"Brass Dragon Adult": {
 		"max_health": 172, "armor_class": 18, "damage_amount": 7.0, "element_type": "fire",
@@ -254,6 +286,17 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite", "Tail Swipe"],
 		"abilities": ["Acid Breath", "Fly", "Legendary Resistance", "Frightful Presence", "Amphibious"],
 		"armor": ["Dragon Scales"],
+		# Hornbound — Huge swamp dragon: oil-black scales, single curving horn, sickly green acid eyes.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.30,
+			"palette.primary": Color(0.08, 0.10, 0.08),    # oil-black
+			"palette.secondary": Color(0.20, 0.18, 0.14),
+			"palette.accent": Color(0.45, 0.62, 0.30),     # acid swamp green
+			"palette.eye": Color(0.40, 0.95, 0.30),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail", "wings", "horns", "spike_ridge"],
+		},
 	},
 	"Copper Dragon Adult": {
 		"max_health": 184, "armor_class": 18, "damage_amount": 7.5, "element_type": "none",
@@ -270,6 +313,17 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite", "Tail Swipe"],
 		"abilities": ["Lightning Breath", "Fly", "Legendary Resistance", "Frightful Presence"],
 		"armor": ["Dragon Scales"],
+		# Hornbound — Huge sea-dragon: weathered bronze scales, ridged frill of horns, sea-green eyes.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.30,
+			"palette.primary": Color(0.65, 0.45, 0.18),    # weathered bronze
+			"palette.secondary": Color(0.42, 0.28, 0.10),
+			"palette.accent": Color(0.40, 0.78, 0.72),     # sea-green patina
+			"palette.eye": Color(0.30, 0.85, 0.75),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail", "wings", "horns", "spike_ridge"],
+		},
 	},
 	"Green Dragon Adult": {
 		"max_health": 207, "armor_class": 19, "damage_amount": 7.5, "element_type": "none",
@@ -278,6 +332,17 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite", "Tail Swipe"],
 		"abilities": ["Poison Breath", "Fly", "Legendary Resistance", "Frightful Presence", "Amphibious"],
 		"armor": ["Dragon Scales"],
+		# Hornbound — Huge forest dragon: emerald-jade scales, antler-horns, golden cunning eyes.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.30,
+			"palette.primary": Color(0.18, 0.42, 0.20),    # jade green
+			"palette.secondary": Color(0.10, 0.25, 0.10),
+			"palette.accent": Color(0.65, 0.85, 0.32),
+			"palette.eye": Color(0.95, 0.78, 0.20),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail", "wings", "horns", "spike_ridge"],
+		},
 	},
 	"Silver Dragon Adult": {
 		"max_health": 243, "armor_class": 19, "damage_amount": 8.0, "element_type": "ice",
@@ -286,6 +351,17 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite", "Tail Swipe"],
 		"abilities": ["Frost Breath", "Fly", "Legendary Resistance", "Frightful Presence"],
 		"armor": ["Dragon Scales"],
+		# Hornbound — Huge: polished silver-mirror scales, frill of curved horns, frost-blue eyes.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.35,
+			"palette.primary": Color(0.82, 0.85, 0.92),    # polished silver
+			"palette.secondary": Color(0.55, 0.60, 0.68),
+			"palette.accent": Color(0.95, 0.97, 1.0),
+			"palette.eye": Color(0.65, 0.92, 1.0),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail", "wings", "horns", "crystal_growth"],
+		},
 	},
 	"Blue Dragon Adult": {
 		"max_health": 225, "armor_class": 19, "damage_amount": 8.0, "element_type": "storm",
@@ -294,6 +370,17 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite", "Tail Swipe"],
 		"abilities": ["Lightning Breath", "Fly", "Legendary Resistance", "Frightful Presence"],
 		"armor": ["Dragon Scales"],
+		# Hornbound — Huge: deep azure scales, single massive horn on snout, lightning-blue accents.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.35,
+			"palette.primary": Color(0.18, 0.32, 0.68),    # deep azure
+			"palette.secondary": Color(0.10, 0.18, 0.42),
+			"palette.accent": Color(0.40, 0.85, 1.0),      # lightning crackle
+			"palette.eye": Color(0.92, 0.95, 0.30),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail", "wings", "horns", "spike_ridge"],
+		},
 	},
 	"Gold Dragon Adult": {
 		"max_health": 256, "armor_class": 19, "damage_amount": 8.5, "element_type": "fire",
@@ -302,6 +389,17 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite", "Tail Swipe"],
 		"abilities": ["Fire Breath", "Weakening Breath", "Fly", "Legendary Resistance", "Frightful Presence"],
 		"armor": ["Dragon Scales"],
+		# Hornbound — Huge majestic gold dragon: brilliant gold scales, regal mane of horns, halo glow.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.45,
+			"palette.primary": Color(0.95, 0.75, 0.20),    # brilliant gold
+			"palette.secondary": Color(0.65, 0.45, 0.08),
+			"palette.accent": Color(1.0, 0.95, 0.55),
+			"palette.eye": Color(1.0, 0.95, 0.30),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail", "wings", "horns", "halo"],
+		},
 	},
 	"Red Dragon Adult": {
 		"max_health": 256, "armor_class": 19, "damage_amount": 8.5, "element_type": "fire",
@@ -310,6 +408,18 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite", "Tail Swipe"],
 		"abilities": ["Fire Breath", "Fly", "Legendary Resistance", "Frightful Presence"],
 		"armor": ["Dragon Scales"],
+		# Hornbound — Huge: crimson scales, smoldering gold belly, massive horns, ember-glow eyes.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.40,
+			"palette.primary": Color(0.65, 0.10, 0.05),    # crimson scales
+			"palette.secondary": Color(0.35, 0.04, 0.02),  # deeper red shadow
+			"palette.accent": Color(0.95, 0.78, 0.25),     # gold belly / ember
+			"palette.eye": Color(1.0, 0.85, 0.15),
+			"face.eye_glow": true,
+			"face.eye_radius": 0.080,
+			"ornaments.tags": ["tail", "wings", "horns", "spike_ridge"],
+		},
 	},
 	"Dragon Turtle": {
 		"max_health": 341, "armor_class": 20, "damage_amount": 8.5, "element_type": "none",

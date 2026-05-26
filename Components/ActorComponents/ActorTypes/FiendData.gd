@@ -30,6 +30,13 @@ const DATA: Dictionary = {
 		"weapons": ["Sting"],
 		"abilities": ["Devil's Sight", "Magic Resistance", "Shapechanger", "Invisibility"],
 		"armor": ["Natural Armor"],
+		# Hornbound
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.55,
+			"palette.primary": Color(0.55, 0.18, 0.15),  # Red imp
+			"face.eye_glow": true,
+		},
 	},
 	"Quasit": {
 		"max_health": 7, "armor_class": 13, "damage_amount": 1.0, "element_type": "none",
@@ -62,6 +69,16 @@ const DATA: Dictionary = {
 		"weapons": ["Bite"],
 		"abilities": ["Fire Breath", "Pack Tactics"],
 		"armor": ["Natural Armor"],
+		# Hornbound — large wolf-mastiff: charred black fur, glowing ember veins, fire-red eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.25,
+			"palette.primary": Color(0.12, 0.08, 0.06),    # charred black
+			"palette.secondary": Color(0.05, 0.04, 0.04),
+			"palette.accent": Color(0.95, 0.32, 0.05),     # ember veins
+			"palette.eye": Color(1.0, 0.20, 0.05),
+			"face.eye_glow": true,
+		},
 	},
 	"Barghest": {
 		"max_health": 90, "armor_class": 17, "damage_amount": 3.5, "element_type": "none",
@@ -270,6 +287,19 @@ const DATA: Dictionary = {
 		"weapons": ["Longsword", "Whip"],
 		"abilities": ["Fire Aura", "Magic Resistance", "Magic Weapons", "Fly", "Death Throes"],
 		"armor": ["Natural Armor"],
+		# Hornbound — Huge demon lord: blood-red skin wreathed in flame, vast bat wings,
+		# curved goat horns, white-hot whip in hand.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.10,
+			"palette.primary": Color(0.62, 0.08, 0.04),    # blood red
+			"palette.secondary": Color(0.22, 0.02, 0.02),  # near-black shadow
+			"palette.accent": Color(1.0, 0.55, 0.10),      # white-hot flame
+			"palette.eye": Color(1.0, 0.30, 0.05),
+			"face.eye_glow": true,
+			"face.eye_radius": 0.080,
+			"ornaments.tags": ["wings", "horns", "tail", "spike_ridge"],
+		},
 	},
 	"Pit Fiend": {
 		"max_health": 300, "armor_class": 19, "damage_amount": 9.5, "element_type": "fire",
@@ -278,5 +308,17 @@ const DATA: Dictionary = {
 		"weapons": ["Bite", "Claw", "Mace", "Tail"],
 		"abilities": ["Aura of Fear", "Magic Resistance", "Magic Weapons", "Innate Spellcasting", "Fly"],
 		"armor": ["Natural Armor"],
+		# Hornbound — Huge devil general: dark-red scaled skin, leather bat wings, ram-curl horns,
+		# fanged maw, prehensile barbed tail.
+		"capture_archetype": "kill_lessers",
+		"body_plan_modifiers": {
+			"base.scale": 2.20,
+			"palette.primary": Color(0.55, 0.15, 0.05),    # devil red
+			"palette.secondary": Color(0.28, 0.06, 0.02),
+			"palette.accent": Color(0.92, 0.78, 0.25),     # gold ornament
+			"palette.eye": Color(1.0, 0.85, 0.20),
+			"face.eye_glow": true,
+			"ornaments.tags": ["wings", "horns", "tail", "metallic_plate"],
+		},
 	},
 }
