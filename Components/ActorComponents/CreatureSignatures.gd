@@ -44,16 +44,12 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 
 	# === Beast — bear_like (bulky quadruped, shoulder hump) =========
 	"Bear": "bear_like",
-	"Brown Bear": "bear_like",
-	"Black Bear": "bear_like",
 	"Polar Bear": "bear_like",
 	"Cave Bear": "bear_like",
 	"Walrus": "bear_like",
-	"Bulette": "bear_like",
 
 	# === Beast — swine_like (barrel body, flat-disk snout) ==========
 	"Pig": "swine_like",
-	"Boar": "swine_like",
 	"Dire Boar": "swine_like",
 	"Wild Boar": "swine_like",
 	"Hog": "swine_like",
@@ -71,7 +67,6 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 	"Elephant": "swine_like",     # placeholder — needs pachyderm_like
 
 	# === Beast — small_animal (tiny quadruped, low body) ===========
-	"Cat": "small_animal",
 	"House Cat": "small_animal",
 	"Rat": "small_animal",
 	"Giant Rat": "small_animal",
@@ -87,12 +82,9 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 	"Monkey": "small_animal",
 	"Baboon": "small_animal",
 	"Skunk": "small_animal",
-	"Arctic Stink Squirrel": "small_animal",
 
 	# === Beast — dinosaur_like (bipedal, long tail) ================
 	"Tyrannosaurus": "dinosaur_like",
-	"Allosaurus": "dinosaur_like",
-	"Alioramus": "dinosaur_like",
 	"Velociraptor": "dinosaur_like",
 	"Deinonychus": "dinosaur_like",
 	"Axe Beak": "axe_beak",
@@ -103,7 +95,6 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 	"Giant Crocodile": "lizard_like",
 	"Lizard": "lizard_like",
 	"Giant Lizard": "lizard_like",
-	"Ankylosaurus": "lizard_like",
 	"Stegosaurus": "lizard_like",
 	"Triceratops": "lizard_like",
 	"Dimetrodon": "lizard_like",
@@ -113,7 +104,6 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 
 	# === Beast — bird_like (biped with wings) ======================
 	"Hawk": "bird_like",
-	"Blood Hawk": "bird_like",
 	"Eagle": "bird_like",
 	"Giant Eagle": "bird_like",
 	"Falcon": "bird_like",
@@ -173,7 +163,6 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 	"Goblin Boss": "small_humanoid",
 	"Kobold": "small_humanoid",
 	"Kobold Dragonshield": "small_humanoid",
-	"Bugbear": "brute_humanoid",
 	"Bugbear Chief": "brute_humanoid",
 	"Orc": "brute_humanoid",
 	"Orc War Chief": "brute_humanoid",
@@ -187,7 +176,6 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 	"Veteran": "warrior_humanoid",
 	"Gladiator": "warrior_humanoid",
 	"Mage": "caster_humanoid",
-	"Archmage": "caster_humanoid",
 	"Priest": "caster_humanoid",
 	"Cultist": "caster_humanoid",
 	"Bandit": "warrior_humanoid",
@@ -229,26 +217,21 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 	"Lich": "caster_humanoid",
 	"Mummy": "zombie",
 	"Mummy Lord": "warrior_humanoid",
-	"Banshee": "wraith_floating",
 	"Death Knight": "warrior_humanoid",
 
 	# === Dragon sub-templates =======================================
 	"Pseudodragon": "wyrmling",
 	"Faerie Dragon": "wyrmling",
-	"Ambush Drake": "young_dragon",
 	"Guard Drake": "young_dragon",
 	"Wyvern": "wyvern",
 
 	# === Fey sub-templates ==========================================
 	"Pixie": "tiny_fey",
 	"Sprite": "tiny_fey",
-	"Blink Dog": "wolf_like",  # Fey but visually canine
 	"Satyr": "satyr_humanoid",
-	"Centaur": "centaur",
 	"Dryad": "plant_humanoid",
 	"Sea Hag": "caster_humanoid",
 	"Green Hag": "caster_humanoid",
-	"Annis Hag": "caster_humanoid",
 	"Night Hag": "caster_humanoid",
 
 	# === Fiend sub-templates ========================================
@@ -260,14 +243,11 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 	"Bearded Devil": "brute_humanoid",
 	"Spined Devil": "tiny_winged_fiend",
 	"Hell Hound": "wolf_like",
-	"Barbed Devil": "brute_humanoid",
 	"Pit Fiend": "winged_huge",
-	"Balor": "winged_huge",
 	"Marilith": "serpent_humanoid",
 
 	# === Construct sub-templates ====================================
 	"Scarecrow": "small_humanoid",
-	"Animated Armor": "warrior_humanoid",
 	"Flying Sword": "tiny_floating",
 	"Homunculus": "tiny_winged_fiend",
 	"Iron Golem": "golem_large",
@@ -354,7 +334,6 @@ const SUB_TEMPLATE_HINTS: Dictionary = {
 	"Gelatinous Cube": "cube_ooze",
 	"Gray Ooze": "blob",
 	"Ochre Jelly": "blob",
-	"Black Pudding": "blob",
 	"Oblex Spawn": "blob",
 	"Adult Oblex": "adult_oblex",
 

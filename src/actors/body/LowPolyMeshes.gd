@@ -43,10 +43,6 @@ const SUPPORTED: Array[String] = [
 	"floating_eye",
 	"wraith_floating",
 	"tiny_floating",
-	# De-aliased humanoid variants — each has a distinct silhouette
-	"warrior_humanoid",
-	"caster_humanoid",
-	"satyr_humanoid",
 	# Elementals (one builder, branches on plan.meta.element_type)
 	"elemental_humanoid",
 	# Split off from bear_like so Pig/Mammoth get their own anatomy.
@@ -7362,7 +7358,7 @@ static func _build_alioramus(plan: Dictionary, root: Node3D) -> void:
 	# ============================================================================
 	var tail_sections: Array = []
 	var tail_segs: int = 6
-	var tail_start := spine_path[0]["pos"]
+	var tail_start: Vector3 = spine_path[0]["pos"]
 	for i in range(tail_segs):
 		var t: float = float(i) / float(tail_segs - 1)
 		var tz: float = tail_start.z - t * d * 0.95
@@ -7810,7 +7806,7 @@ static func _build_allosaurus(plan: Dictionary, root: Node3D) -> void:
 	# ============================================================================
 	var tail_sections: Array = []
 	var tail_segs: int = 7
-	var tail_start := spine_points[0]["pos"]
+	var tail_start: Vector3 = spine_points[0]["pos"]
 	for i in range(tail_segs):
 		var t: float = float(i) / float(tail_segs - 1)
 		var tz: float = tail_start.z - t * d * 1.10
@@ -12662,8 +12658,9 @@ static func _build_arctic_skate(plan: Dictionary, root: Node3D) -> void:
 		var tt: float = float(ti) / float(thorn_count - 1)
 		var thorn_pos := Vector3(0, body_y + h * (0.08 - 0.04 * tt), lerpf(-d * 0.30, -d * 1.10, tt))
 		thorn_path.append(thorn_pos)
-	for thorn in thorn_path:
-		var thorn_tip := thorn + Vector3(0, h * 0.10, 0)
+	for thorn_var in thorn_path:
+		var thorn: Vector3 = thorn_var
+		var thorn_tip: Vector3 = thorn + Vector3(0, h * 0.10, 0)
 		_build_tapered_segment(root, thorn, w * 0.025, thorn_tip, w * 0.004,
 			thorn_color, 0.50)
 
