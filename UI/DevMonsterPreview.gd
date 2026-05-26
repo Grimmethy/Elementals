@@ -23,6 +23,10 @@ extends Control
 @onready var random_btn: Button = $Panel/HBox/Controls/RandomBtn
 @onready var next_btn: Button = $Panel/HBox/Controls/NextBtn
 @onready var reroll_btn: Button = $Panel/HBox/Controls/RerollBtn
+## Stamps the currently-previewed species + body plan into a GoatData and
+## drops it in the herd so the player can breed-test the variant they liked.
+@onready var keep_btn: Button = $Panel/HBox/Controls/KeepBtn
+@onready var keep_feedback: Label = $Panel/HBox/Controls/KeepFeedback
 @onready var close_btn: Button = $Panel/HBox/Controls/CloseBtn
 
 var _all_species: Array[String] = []
@@ -43,6 +47,8 @@ func _ready() -> void:
 		next_btn.pressed.connect(_on_next)
 	if reroll_btn:
 		reroll_btn.pressed.connect(_on_reroll)
+	if keep_btn:
+		keep_btn.pressed.connect(_on_keep_for_breeding)
 	if close_btn:
 		close_btn.pressed.connect(_on_close)
 	if category_filter:
@@ -159,6 +165,54 @@ func _render_current() -> void:
 			float(d.get("constitution", 0.0)),
 			ActorTypeData.get_capture_archetype(species),
 		]
+
+## "Keep for Breeding" — stamp the current previewed species (its plan + seed
+## + stat block) into a GoatData and drop it in the herd so the player can
+## bring two of them together in the Ranch to test breeding. We use GoatData
+## (rather than the species' own subclass) because the captured-from-wild
+## path in HerdManager._build_captured_data established the convention that
+## non-goat species ride into the herd as a GoatData with the species' visual
+## config stamped on — so this lines up cleanly with breeding/UI code that
+## already handles "GoatData carrying foreign-species body plans."
+func _on_keep_for_breeding() -> void:
+	if _filtered_species.is_empty():
+		return
+	var species: String = _filtered_species[_current_index]
+	var defaults: Dictionary = ActorTypeData.get_defaults(species)
+	var data := GoatData.new()
+	data.goat_name = "(Dev) " + species
+	# Genders alternate by call-count would be confusing; coin-flip per spawn
+	# so a player who hits Keep twice has a chance at a breeding pair.
+	data.gender = ActorData.Gender.MALE if randf() < 0.5 else ActorData.Gender.FEMALE
+	data.is_selected = false
+	data.is_exhausted = false
+	# Stamp stats from the species' ActorTypeData entry so the kept creature
+	# matches the stat block shown in the preview's StatsLabel.
+	if not defaults.is_empty():
+		data.strength = float(defaults.get("strength", data.strength))
+		data.dexterity = float(defaults.get("dexterity", data.dexterity))
+		data.constitution = float(defaults.get("constitution", data.constitution))
+		data.intelligence = float(defaults.get("intelligence", data.intelligence))
+		data.wisdom = float(defaults.get("wisdom", data.wisdom))
+		data.charisma = float(defaults.get("charisma", data.charisma))
+		var hp_val: Variant = defaults.get("max_health", null)
+		if hp_val != null and "max_health" in data:
+			data.set("max_health", float(hp_val))
+	# Render config — the herd-card / Ranch / arena previews all rebuild from
+	# shared_body_plan + render_seed, so copying both makes the kept creature
+	# visually identical to what's on screen right now.
+	data.render_seed = _current_seed
+	if _current_body and _current_body.override_plan is Dictionary \
+			and not (_current_body.override_plan as Dictionary).is_empty():
+		data.shared_body_plan = (_current_body.override_plan as Dictionary).duplicate(true)
+	# Hand it to the herd via the singleton — same path the cheat panel uses.
+	HerdManager.add_goat(data)
+	# UI feedback — a tiny line under the button so the dev knows it landed
+	# (we don't tear down the preview; the user may want to keep several).
+	if keep_feedback:
+		var gender_marker: String = "♂" if data.gender == ActorData.Gender.MALE else "♀"
+		keep_feedback.text = "Added %s %s to herd" % [gender_marker, data.goat_name]
+	print("[DevMonsterPreview] Kept %s (seed %d) for breeding." % [species, _current_seed])
 
 func _on_close() -> void:
 	queue_free()

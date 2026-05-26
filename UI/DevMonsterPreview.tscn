@@ -124,6 +124,18 @@ text = "→ Next in List"
 layout_mode = 2
 text = "↻ Re-roll Seed (same species)"
 
+[node name="KeepBtn" type="Button" parent="Panel/HBox/Controls"]
+layout_mode = 2
+text = "♥ Keep for Breeding"
+theme_override_colors/font_color = Color(0.6, 1, 0.7, 1)
+
+[node name="KeepFeedback" type="Label" parent="Panel/HBox/Controls"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.6, 0.95, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+
 [node name="Spacer3" type="Control" parent="Panel/HBox/Controls"]
 layout_mode = 2
 size_flags_vertical = 3
