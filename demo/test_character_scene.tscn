@@ -1,60 +1,60 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cyvv4y8x5kuol"]
 
-[ext_resource type="Script" path="res://demo/test_character_scene.gd" id="1_scene"]
-[ext_resource type="Script" path="res://demo/creature_character.gd" id="2_char"]
-[ext_resource type="Script" path="res://addons/procedural_creature/core/creature_generator.gd" id="3_cgen"]
-[ext_resource type="Resource" path="res://creatures/definitions/humanoid_base.tres" id="4_humbase"]
-[ext_resource type="Script" path="res://addons/procedural_creature/core/locomotion_controller.gd" id="5_loco"]
-[ext_resource type="Script" path="res://addons/procedural_creature/core/secondary_motion_controller.gd" id="6_secondary"]
-
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
-radius = 0.3
-height = 1.8
+[ext_resource type="Script" uid="uid://bv82tknujy3w3" path="res://demo/test_character_scene.gd" id="1_scene"]
+[ext_resource type="Script" uid="uid://ccotlebqxv8cd" path="res://demo/creature_character.gd" id="2_char"]
+[ext_resource type="Script" uid="uid://bgfxhlriucvuv" path="res://addons/procedural_creature/core/creature_generator.gd" id="3_cgen"]
+[ext_resource type="Resource" uid="uid://c85kidciwx4n7" path="res://creatures/definitions/humanoid_base.tres" id="4_humbase"]
+[ext_resource type="Script" uid="uid://cpitli8l41tau" path="res://addons/procedural_creature/core/locomotion_controller.gd" id="5_loco"]
+[ext_resource type="Script" uid="uid://hgo7hqquq5fa" path="res://addons/procedural_creature/core/secondary_motion_controller.gd" id="6_secondary"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]
-size = Vector3(20.0, 0.2, 20.0)
+size = Vector3(20, 0.2, 20)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_1"]
-size = Vector2(20.0, 20.0)
+size = Vector2(20, 20)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
 albedo_color = Color(0.35, 0.55, 0.28, 1)
 roughness = 0.95
 
-[node name="TestCharacterScene" type="Node3D"]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.3
+height = 1.8
+
+[node name="TestCharacterScene" type="Node3D" unique_id=985143747]
 script = ExtResource("1_scene")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=972670135]
 transform = Transform3D(0.707, -0.5, 0.5, 0, 0.707, 0.707, -0.707, -0.5, 0.5, 5, 8, 5)
 shadow_enabled = true
 directional_shadow_max_distance = 40.0
 
-[node name="Ground" type="StaticBody3D" parent="."]
+[node name="Ground" type="StaticBody3D" parent="." unique_id=1878568003]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=725749422]
 shape = SubResource("BoxShape3D_1")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=208707186]
 mesh = SubResource("PlaneMesh_1")
 surface_material_override/0 = SubResource("StandardMaterial3D_1")
 
-[node name="Player" type="CharacterBody3D" parent="."]
+[node name="Player" type="CharacterBody3D" parent="." unique_id=1556293789]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
 script = ExtResource("2_char")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1757409034]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_1")
 
-[node name="CreatureGenerator" type="Node3D" parent="Player"]
+[node name="CreatureGenerator" type="Node3D" parent="Player" unique_id=188204792]
 script = ExtResource("3_cgen")
 definition = ExtResource("4_humbase")
 
-[node name="LocomotionController" type="Node" parent="Player/CreatureGenerator"]
+[node name="LocomotionController" type="Node" parent="Player/CreatureGenerator" unique_id=199546097]
 script = ExtResource("5_loco")
 
-[node name="SecondaryMotionController" type="Node" parent="Player/CreatureGenerator"]
+[node name="SecondaryMotionController" type="Node" parent="Player/CreatureGenerator" unique_id=471143364]
 script = ExtResource("6_secondary")
 
-[node name="Camera3D" type="Camera3D" parent="."]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1829792]
 transform = Transform3D(1, 0, 0, 0, 0.921, -0.391, 0, 0.391, 0.921, 0, 3.7, 7.1)

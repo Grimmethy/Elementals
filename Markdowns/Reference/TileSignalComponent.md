@@ -53,7 +53,7 @@ Removes the specified trigger by reference identity, stopping any future callbac
 
 ```gdscript
 func _get_hex_distance(a: Vector2i, b: Vector2i) -> int:
-    return (abs(a.x - b.x) + abs(a.x + a.y - b.x - b.y) + abs(a.y - b.y)) / 2
+	return (abs(a.x - b.x) + abs(a.x + a.y - b.x - b.y) + abs(a.y - b.y)) / 2
 ```
 
 - On tile change, each trigger's radius is rechecked. If an actor crosses into range, `_activate_trigger_for_actor` fires the callback and emits `trigger_activated`; if it leaves, `_deactivate_trigger_for_actor` emits `trigger_deactivated`.
@@ -75,7 +75,7 @@ _perception_trigger = arena.tile_signals.register_trigger(
     current_tile,
     hex_radius,
     _on_perception_trigger_activated,
-    {'continuous': true}
+	{'continuous': true}
 )
 ```
 
@@ -85,7 +85,7 @@ _trigger = tile_signal_component.register_trigger(
     center_tile,
     dormant_radius_tiles,
     _on_trigger_activated,
-    {'previous_state': _previous_state}
+	{'previous_state': _previous_state}
 )
 ```
 
@@ -96,7 +96,7 @@ tile_signals.register_trigger(
     tile,
     2,
     Callable(),
-    {'weight': weight, 'is_static_obstacle': true}
+	{'weight': weight, 'is_static_obstacle': true}
 )
 ```
 
@@ -115,6 +115,6 @@ tile_signal_comp.register_trigger(
     camp_tile,
     8,
     _on_camp_trigger_activated,
-    {'quest_id': quest_id, 'camp_index': camp_index, 'camp_id': camp_id}
+	{'quest_id': quest_id, 'camp_index': camp_index, 'camp_id': camp_id}
 )
 ```

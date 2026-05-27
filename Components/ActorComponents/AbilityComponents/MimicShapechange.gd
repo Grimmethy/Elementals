@@ -9,7 +9,7 @@ const COOLDOWN: float = 0.45
 const CreatureMorphComponentScript = preload("res://Components/ActorComponents/CreatureMorphComponent.gd")
 const SkillCopyComponentScript = preload("res://Components/ActorComponents/SkillCopyComponent.gd")
 
-var _cooldown_left: float = 0.0
+var _cooldown := Cooldown.new()
 
 func _init(p_actor: Actor, p_component: Node) -> void:
 	super(p_actor, p_component)
@@ -18,7 +18,7 @@ func _init(p_actor: Actor, p_component: Node) -> void:
 	ability_usage = "Press R while aiming at a creature to copy it. Press R with no target to toggle object form or revert."
 
 func can_execute(type: String) -> bool:
-	return type == "ability_r" and _cooldown_left <= 0.0 and actor != null and not actor.is_dead
+	return type == "ability_r" and _cooldown.is_ready() and actor != null and not actor.is_dead
 
 func execute(type: String, value = null) -> void:
 	if not can_execute(type):
@@ -44,7 +44,7 @@ func execute(type: String, value = null) -> void:
 			_emit_message("%s transformed into %s." % [actor.name, target.name])
 		else:
 			_emit_message("Shapechange failed: invalid target.")
-		_cooldown_left = COOLDOWN
+		_cooldown.start(COOLDOWN)
 		return
 
 	if bool(morph_component.get("is_morphed")):
@@ -63,11 +63,10 @@ func execute(type: String, value = null) -> void:
 			else:
 				_emit_message("Shapechange failed: no valid body to mimic.")
 
-	_cooldown_left = COOLDOWN
+	_cooldown.start(COOLDOWN)
 
 func update(delta: float) -> void:
-	if _cooldown_left > 0.0:
-		_cooldown_left = maxf(0.0, _cooldown_left - delta)
+	_cooldown.advance(delta)
 
 func _find_target_for_position(world_position: Vector3, max_distance: float) -> Actor:
 	if actor == null:

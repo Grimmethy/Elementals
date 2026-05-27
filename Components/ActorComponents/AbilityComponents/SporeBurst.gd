@@ -21,7 +21,7 @@ const POISON_DAMAGE: float = 4.0
 const STUN_DURATION: float = 0.6
 const COOLDOWN: float = 7.5
 
-var _cooldown_left: float = 0.0
+var _cooldown := Cooldown.new()
 
 func _init(p_actor: Actor, p_component: Node) -> void:
 	super(p_actor, p_component)
@@ -30,7 +30,7 @@ func _init(p_actor: Actor, p_component: Node) -> void:
 	ability_usage = "Press R to release spores around you."
 
 func can_execute(type: String) -> bool:
-	return type == "ability_r" and _cooldown_left <= 0.0 and actor != null and not actor.is_dead
+	return type == "ability_r" and _cooldown.is_ready() and actor != null and not actor.is_dead
 
 func execute(type: String, _value = null) -> void:
 	if not can_execute(type):
@@ -38,12 +38,11 @@ func execute(type: String, _value = null) -> void:
 	var radius: float = _resolve_burst_radius()
 	var struck_count: int = _apply_burst_damage(radius)
 	_spawn_burst_visual(radius)
-	_cooldown_left = COOLDOWN
+	_cooldown.start(COOLDOWN)
 	_emit_message("%s released a spore burst, hitting %d target(s)." % [actor.name, struck_count])
 
 func update(delta: float) -> void:
-	if _cooldown_left > 0.0:
-		_cooldown_left = maxf(0.0, _cooldown_left - delta)
+	_cooldown.advance(delta)
 
 func _resolve_burst_radius() -> float:
 	var bonus: float = 0.0

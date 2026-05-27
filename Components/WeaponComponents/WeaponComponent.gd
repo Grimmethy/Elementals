@@ -23,7 +23,7 @@ const MeleeHitboxScript = preload("res://Components/WeaponComponents/MeleeHitbox
 const RangedComponentScript = preload("res://Components/WeaponComponents/RangedComponent.gd")
 const VisualComponentScript = preload("res://Components/WeaponComponents/WeaponVisualComponent.gd")
 
-var _cooldown: float = 0.0
+var _cooldown := Cooldown.new()
 var _melee_hitbox: Node3D
 var _ranged_component: Node
 var _visual_component: Node3D
@@ -147,11 +147,10 @@ func drop_inventory() -> void:
 	unequip_weapon()
 
 func _process(delta: float) -> void:
-	if _cooldown > 0:
-		_cooldown -= delta
+	_cooldown.advance(delta)
 
 func is_on_cooldown() -> bool:
-	return _cooldown > 0
+	return not _cooldown.is_ready()
 
 ## Returns the effective attack range for the current weapon state.
 ## For melee weapons (or thrown weapons with 1 or less ammo), returns the weapon's effective_range.
@@ -167,7 +166,7 @@ func get_attack_range() -> float:
 
 func get_main_action_progress() -> float:
 	if weapon_data and weapon_data.cooldown > 0:
-		return 1.0 - (_cooldown / weapon_data.cooldown)
+		return _cooldown.progress()
 	if _owner_actor and _owner_actor.mana_component:
 		var mc: ManaComponent = _owner_actor.mana_component
 		return mc.current_mana / mc.max_mana
@@ -272,7 +271,7 @@ func _execute_net_capture(target_pos: Vector3, consume_net: bool) -> bool:
 			print("[Net] No nets left to throw.")
 		return false
 	
-	_cooldown = weapon_data.cooldown
+	_cooldown.start(weapon_data.cooldown)
 	update_attack_direction(target_pos)
 	attack_performed.emit(target_pos)
 	
@@ -348,7 +347,7 @@ func secondary_attack(target_pos: Vector3, forced: bool = false) -> bool:
 	return true
 
 func _perform_attack(target_pos: Vector3, is_secondary: bool) -> void:
-	_cooldown = weapon_data.cooldown
+	_cooldown.start(weapon_data.cooldown)
 	
 	update_attack_direction(target_pos)
 	attack_performed.emit(target_pos)

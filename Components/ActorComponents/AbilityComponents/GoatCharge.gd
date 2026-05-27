@@ -7,7 +7,7 @@ extends AbilityAction
 var _is_charging: bool = false
 var _charge_direction: Vector3 = Vector3.ZERO
 var _charge_remaining_dist: float = 0.0
-var _charge_cooldown_timer: float = 0.0
+var _charge_cooldown := Cooldown.new()
 
 var is_charging: bool:
 	get: return _is_charging
@@ -25,8 +25,7 @@ func execute(type: String, value = null) -> void:
 		_start_charge(target_pos)
 
 func update(delta: float) -> void:
-	if _charge_cooldown_timer > 0:
-		_charge_cooldown_timer -= delta
+	_charge_cooldown.advance(delta)
 
 func process_physics(delta: float) -> void:
 	if not actor:
@@ -46,7 +45,7 @@ func process_collisions() -> void:
 	_process_charge_collisions()
 
 func _start_charge(target_pos: Vector3) -> void:
-	if _is_charging or _charge_cooldown_timer > 0 or actor.is_stunned():
+	if _is_charging or not _charge_cooldown.is_ready() or actor.is_stunned():
 		return
 
 	var diff := target_pos - actor.global_position
@@ -60,7 +59,7 @@ func _start_charge(target_pos: Vector3) -> void:
 		var multiplier: float = actor.terrain_speed_modifier_component.get_speed_multiplier()
 
 		_charge_remaining_dist = actor.charge_distance * multiplier
-		_charge_cooldown_timer = actor.charge_cooldown
+		_charge_cooldown.start(actor.charge_cooldown)
 
 		actor.velocity = dir * (actor.charge_speed * multiplier)
 		_play_swoosh()
