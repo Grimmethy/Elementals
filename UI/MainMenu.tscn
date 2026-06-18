@@ -263,6 +263,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "RANCH"
 
+[node name="HubButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=2091591580]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "HUB (Hornbound)"
+
 [node name="ControlsPanel" type="MarginContainer" parent="." unique_id=1179954196]
 layout_mode = 1
 anchors_preset = 3
@@ -286,3 +291,4 @@ layout_mode = 2
 [connection signal="pressed" from="CenterContainer/VBoxContainer/MapSettingsButton" to="." method="_on_map_settings_button_pressed"]
 [connection signal="pressed" from="CenterContainer/VBoxContainer/PlayButton" to="." method="_on_play_button_pressed"]
 [connection signal="pressed" from="CenterContainer/VBoxContainer/RanchButton" to="." method="_on_ranch_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/HubButton" to="." method="_on_hub_button_pressed"]

@@ -42,6 +42,17 @@ alignment = 1
 flat = true
 select_all_on_focus = true
 
+[node name="InspectBtn" type="Button" parent="VBoxContainer/TopRow"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+focus_mode = 0
+tooltip_text = "Inspect — full-size view with orbit / zoom / pan"
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
+text = "[I]"
+
 [node name="GoatRenderer" parent="VBoxContainer" instance=ExtResource("2_r8y2u")]
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2

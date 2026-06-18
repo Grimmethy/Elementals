@@ -6,6 +6,21 @@ const DATA: Dictionary = {
 		"weapons": ["Eye Rays", "Bite"],
 		"abilities": ["Eye Rays", "Antimagic Cone"],
 		"armor": ["Natural Armor"],
+		# Hornbound — floating brown-purple orb: ONE massive central eye, ring of eyestalks,
+		# fanged maw under the main eye.
+		"capture_archetype": "kill_lessers",
+		"body_plan_modifiers": {
+			"base.scale": 1.55,
+			"palette.primary": Color(0.42, 0.30, 0.28),    # mottled chitinous purple-brown
+			"palette.secondary": Color(0.62, 0.45, 0.40),
+			"palette.accent": Color(0.55, 0.10, 0.10),     # eyestalk pink
+			"palette.eye": Color(0.95, 0.85, 0.10),        # huge central eye
+			"face.eye_count": 1,
+			"face.eye_radius": 0.240,                       # huge single eye
+			"face.eye_glow": true,
+			"face.mouth_style": "maw_horizontal",
+			"ornaments.tags": ["tentacles", "spike_ridge"],  # eyestalks
+		},
 	},
 	"Aboleth": {
 		"max_health": 135, "armor_class": 17, "damage_amount": 4.0, "element_type": "none",
@@ -14,6 +29,20 @@ const DATA: Dictionary = {
 		"weapons": ["Tentacle", "Tail"],
 		"abilities": ["Enslave", "Mucous Cloud", "Probing Telepathy"],
 		"armor": ["Natural Armor"],
+		# Hornbound — Huge alien fish: blue-green slimy body, 4 long tentacles, 3 eyes stacked
+		# vertically, gaping toothless maw.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.00,
+			"palette.primary": Color(0.20, 0.38, 0.45),    # deep teal slime
+			"palette.secondary": Color(0.42, 0.55, 0.38),
+			"palette.accent": Color(0.85, 0.42, 0.25),     # orange underbelly
+			"palette.eye": Color(0.95, 0.20, 0.10),
+			"face.eye_count": 3,                            # 3 stacked eyes
+			"face.eye_glow": true,
+			"face.eye_radius": 0.060,
+			"ornaments.tags": ["tentacles", "tail"],
+		},
 	},
 	"Balhannoth": {
 		"max_health": 114, "armor_class": 17, "damage_amount": 4.0, "element_type": "none",
@@ -318,6 +347,18 @@ const DATA: Dictionary = {
 		"weapons": ["Tentacle", "Bite"],
 		"abilities": ["Mind Blast", "Extract Brain", "Innate Spellcasting", "Telepathy"],
 		"armor": ["Natural Armor"],
+		# Hornbound — humanoid illithid: deep purple skin, octopus-like head with 4 face-tentacles,
+		# pale milky eyes, ceremonial dark robes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.10,
+			"palette.primary": Color(0.45, 0.28, 0.55),    # rich purple skin
+			"palette.secondary": Color(0.22, 0.12, 0.32),  # dark robes
+			"palette.accent": Color(0.78, 0.55, 0.92),     # lavender highlights
+			"palette.eye": Color(0.95, 0.92, 0.85),        # milky pale eyes
+			"face.eye_glow": true,
+			"ornaments.tags": ["tentacles", "tattered_cloth"],
+		},
 	},
 	"Mind Flayer Clairvoyant": {
 		"max_health": 71, "armor_class": 15, "damage_amount": 3.5, "element_type": "none",

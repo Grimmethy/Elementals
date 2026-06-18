@@ -14,6 +14,18 @@ const DATA: Dictionary = {
 		"weapons": ["Greataxe", "Gore"],
 		"abilities": ["Charge", "Labyrinthine Recall"],
 		"armor": ["Natural Armor"],
+		# Hornbound — bull-headed humanoid: dark brown muscular body, massive curved bull horns,
+		# blood-red eyes, bull-tail. Holds a greataxe.
+		"capture_archetype": "counter_charge",
+		"body_plan_modifiers": {
+			"base.scale": 1.40,
+			"palette.primary": Color(0.42, 0.30, 0.18),    # bull-brown hide
+			"palette.secondary": Color(0.25, 0.16, 0.08),
+			"palette.accent": Color(0.92, 0.88, 0.78),     # ivory horns
+			"palette.eye": Color(0.95, 0.20, 0.10),
+			"face.eye_glow": true,
+			"ornaments.tags": ["horns", "tail", "metallic_plate"],
+		},
 	},
 	"Basilisk": {
 		"max_health": 52, "armor_class": 15, "damage_amount": 2.5, "element_type": "none",
@@ -182,6 +194,17 @@ const DATA: Dictionary = {
 		"weapons": ["Claws", "Bite", "Tail Spike"],
 		"abilities": ["Tail Spike Volley", "Fly"],
 		"armor": ["Natural Armor"],
+		# Hornbound — chimeric: tawny lion body, bat-wings, human-like maned face, spike-tail.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.45,
+			"palette.primary": Color(0.68, 0.45, 0.22),    # tawny lion coat
+			"palette.secondary": Color(0.42, 0.25, 0.10),
+			"palette.accent": Color(0.92, 0.88, 0.78),     # ivory spikes
+			"palette.eye": Color(0.92, 0.20, 0.10),
+			"face.eye_glow": true,
+			"ornaments.tags": ["wings", "tail", "mane", "spike_ridge"],
+		},
 	},
 	"Owlbear": {
 		"max_health": 59, "armor_class": 13, "damage_amount": 2.5, "element_type": "none",
@@ -190,6 +213,19 @@ const DATA: Dictionary = {
 		"weapons": ["Claws", "Beak"],
 		"abilities": ["Keen Sight and Smell"],
 		"armor": ["Natural Armor"],
+		# Hornbound — bear-owl hybrid: russet-brown bear body, huge feathered owl head, hooked beak,
+		# huge golden owl eyes, taloned forepaws.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.55,
+			"palette.primary": Color(0.42, 0.30, 0.18),    # russet bear fur
+			"palette.secondary": Color(0.65, 0.50, 0.32),  # lighter belly
+			"palette.accent": Color(0.92, 0.78, 0.18),     # golden beak
+			"palette.eye": Color(0.95, 0.80, 0.20),
+			"face.eye_glow": true,
+			"face.eye_radius": 0.085,                       # giant owl eyes
+			"ornaments.tags": ["tail", "wings"],
+		},
 	},
 	"Phase Spider": {
 		"max_health": 32, "armor_class": 13, "damage_amount": 2.5, "element_type": "none",

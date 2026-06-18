@@ -118,6 +118,17 @@ const DATA: Dictionary = {
 		"weapons": ["Slam"],
 		"abilities": ["Air Form", "Whirlwind"],
 		"armor": ["Natural Armor"],
+		# Hornbound — whirlwind humanoid: translucent pale-blue, white wisps, lightning-blue eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.40,
+			"palette.primary": Color(0.78, 0.86, 0.95),    # pale sky-blue
+			"palette.secondary": Color(0.55, 0.68, 0.85),  # darker wisps
+			"palette.accent": Color(0.95, 0.97, 1.0),      # bright white highlights
+			"palette.eye": Color(0.55, 0.85, 1.0),
+			"face.eye_glow": true,
+			"ornaments.tags": ["wings"],
+		},
 	},
 	"Earth Elemental": {
 		"max_health": 126, "armor_class": 17, "damage_amount": 4.0, "element_type": "none",
@@ -126,6 +137,17 @@ const DATA: Dictionary = {
 		"weapons": ["Slam"],
 		"abilities": ["Earth Glide", "Siege Monster"],
 		"armor": ["Natural Armor"],
+		# Hornbound — Large stone giant: cracked grey rock body, dirt-brown clay seams, gem clusters.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 1.65,
+			"palette.primary": Color(0.50, 0.42, 0.32),    # weathered rock
+			"palette.secondary": Color(0.30, 0.24, 0.18),  # dirt seams
+			"palette.accent": Color(0.85, 0.68, 0.35),     # gold ore veins
+			"palette.eye": Color(0.95, 0.65, 0.20),
+			"face.eye_glow": true,
+			"ornaments.tags": ["crystal_growth", "metallic_plate"],
+		},
 	},
 	"Fire Elemental": {
 		"max_health": 102, "armor_class": 13, "damage_amount": 4.0, "element_type": "fire",
@@ -134,6 +156,18 @@ const DATA: Dictionary = {
 		"weapons": ["Touch"],
 		"abilities": ["Fire Form", "Illumination"],
 		"armor": ["Natural Armor"],
+		# Hornbound — flame humanoid: bright orange-red body, white-hot core, yellow flame eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.35,
+			"palette.primary": Color(1.0, 0.45, 0.10),     # bright orange
+			"palette.secondary": Color(0.65, 0.18, 0.05),  # deep red
+			"palette.accent": Color(1.0, 0.95, 0.45),      # white-hot core
+			"palette.eye": Color(1.0, 0.95, 0.35),
+			"face.eye_glow": true,
+			"face.eye_radius": 0.060,
+			"ornaments.tags": ["crystal_growth"],            # flame spikes
+		},
 	},
 	"Water Elemental": {
 		"max_health": 114, "armor_class": 14, "damage_amount": 4.0, "element_type": "ice",
@@ -142,6 +176,17 @@ const DATA: Dictionary = {
 		"weapons": ["Slam"],
 		"abilities": ["Water Form", "Freeze"],
 		"armor": ["Natural Armor"],
+		# Hornbound — flowing water humanoid: deep blue translucent body, cyan crests, glowing eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.40,
+			"palette.primary": Color(0.18, 0.42, 0.78),    # deep ocean blue
+			"palette.secondary": Color(0.10, 0.25, 0.55),
+			"palette.accent": Color(0.65, 0.92, 1.0),      # cyan foam crest
+			"palette.eye": Color(0.85, 0.97, 1.0),
+			"face.eye_glow": true,
+			"ornaments.tags": ["crystal_growth"],            # ice crests
+		},
 	},
 	"Salamander": {
 		"max_health": 90, "armor_class": 15, "damage_amount": 4.0, "element_type": "fire",

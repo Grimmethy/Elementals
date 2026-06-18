@@ -6,6 +6,12 @@ const DATA: Dictionary = {
 		"weapons": ["Pitchfork", "Scythe"],
 		"abilities": ["Hard Work"],
 		"armor": ["Cloth"],
+		# Hornbound
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"palette.primary": Color(0.82, 0.68, 0.55),
+			"palette.secondary": Color(0.55, 0.40, 0.30),
+		},
 	},
 	"Knight": {
 		"max_health": 52, "armor_class": 18, "damage_amount": 3.0, "element_type": "none",
@@ -51,6 +57,16 @@ const DATA: Dictionary = {
 		"ability_pool": ["nimble_escape", "redirect_attack"],
 		"ammo_dice_count": 2,
 		"ammo_dice_sides": 10,
+		# Hornbound
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.7,
+			"palette.primary": Color(0.42, 0.55, 0.32),  # Goblin green
+			"palette.secondary": Color(0.30, 0.40, 0.20),
+		},
+		"combo_pool": {
+			"Goat": "Stab & Smash",
+		},
 	},
 	"Kobold": {
 		"max_health": 5, "armor_class": 12, "damage_amount": 1.0, "element_type": "none",
@@ -59,6 +75,16 @@ const DATA: Dictionary = {
 		"weapons": ["Dagger", "Sling"],
 		"abilities": ["Pack Tactics", "Sunlight Sensitivity"],
 		"armor": ["Leather"],
+		# Hornbound — small reptilian: dusty red-orange scales, yellow underbelly, hooked tail.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.55,
+			"palette.primary": Color(0.55, 0.30, 0.15),    # rust-red scales
+			"palette.secondary": Color(0.85, 0.65, 0.22),  # yellow underbelly
+			"palette.accent": Color(0.30, 0.18, 0.08),     # dark spots
+			"palette.eye": Color(0.92, 0.55, 0.10),
+			"ornaments.tags": ["tail"],
+		},
 	},
 	"Orc": {
 		"max_health": 15, "armor_class": 13, "damage_amount": 2.5, "element_type": "none",
@@ -67,6 +93,16 @@ const DATA: Dictionary = {
 		"weapons": ["Greataxe", "Javelin"],
 		"abilities": ["Aggressive", "Relentless"],
 		"armor": ["Hide", "Shield"],
+		# Hornbound — slate-green muscular brute, jutting boar-tusks, hide armor.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.15,
+			"palette.primary": Color(0.42, 0.55, 0.32),    # slate green
+			"palette.secondary": Color(0.28, 0.38, 0.18),
+			"palette.accent": Color(0.92, 0.88, 0.78),     # white tusks
+			"palette.eye": Color(0.92, 0.75, 0.15),
+			"ornaments.tags": ["bone_protrusion"],
+		},
 	},
 	"Gnoll": {
 		"max_health": 22, "armor_class": 15, "damage_amount": 2.0, "element_type": "none",
@@ -83,6 +119,17 @@ const DATA: Dictionary = {
 		"weapons": ["Morningstar", "Javelin"],
 		"abilities": ["Brute", "Surprise Attack"],
 		"armor": ["Hide", "Shield"],
+		# Hornbound — hulking goblinoid: shaggy red-brown fur, long arms, yellow predator eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.30,
+			"palette.primary": Color(0.50, 0.32, 0.18),    # shaggy red-brown
+			"palette.secondary": Color(0.32, 0.20, 0.10),
+			"palette.accent": Color(0.65, 0.45, 0.22),
+			"palette.eye": Color(0.95, 0.78, 0.18),
+			"face.eye_glow": true,
+			"ornaments.tags": ["mane"],
+		},
 	},
 	"Merfolk": {
 		"max_health": 11, "armor_class": 11, "damage_amount": 0.5, "element_type": "none",
@@ -147,6 +194,17 @@ const DATA: Dictionary = {
 		"weapons": ["Shortsword", "Hand Crossbow"],
 		"abilities": ["Fey Ancestry", "Sunlight Sensitivity", "Innate Spellcasting"],
 		"armor": ["Chain Shirt"],
+		# Hornbound — slim Underdark elf: obsidian-dark skin, snow-white hair, violet glowing eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.00,
+			"palette.primary": Color(0.18, 0.15, 0.20),    # obsidian-dark skin
+			"palette.secondary": Color(0.95, 0.95, 0.95),  # snow-white hair
+			"palette.accent": Color(0.55, 0.10, 0.65),     # arcane purple
+			"palette.eye": Color(0.85, 0.30, 0.95),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tattered_cloth"],
+		},
 	},
 	"Thug": {
 		"max_health": 32, "armor_class": 11, "damage_amount": 1.0, "element_type": "none",
@@ -171,6 +229,16 @@ const DATA: Dictionary = {
 		"weapons": ["Longsword", "Longbow"],
 		"abilities": ["Martial Advantage"],
 		"armor": ["Chain Mail"],
+		# Hornbound — military goblinoid: rust-red skin, lacquered black-red armor, yellow eyes.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 1.05,
+			"palette.primary": Color(0.68, 0.32, 0.22),    # rust-red skin
+			"palette.secondary": Color(0.35, 0.18, 0.12),
+			"palette.accent": Color(0.18, 0.10, 0.10),     # black lacquered armor
+			"palette.eye": Color(0.95, 0.85, 0.20),
+			"ornaments.tags": ["metallic_plate"],
+		},
 	},
 	"Lizardfolk": {
 		"max_health": 22, "armor_class": 15, "damage_amount": 1.0, "element_type": "none",
@@ -179,6 +247,17 @@ const DATA: Dictionary = {
 		"weapons": ["Bite", "Claws", "Javelin"],
 		"abilities": ["Hold Breath"],
 		"armor": ["Natural Armor"],
+		# Hornbound — bipedal reptile: swamp-green scales, ridged dorsal spines, slit-pupil yellow eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.10,
+			"palette.primary": Color(0.30, 0.45, 0.22),    # swamp green scales
+			"palette.secondary": Color(0.20, 0.32, 0.15),
+			"palette.accent": Color(0.85, 0.75, 0.40),     # yellow throat / underbelly
+			"palette.eye": Color(0.95, 0.80, 0.20),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail", "spike_ridge"],
+		},
 	},
 	"Sahuagin": {
 		"max_health": 22, "armor_class": 12, "damage_amount": 1.0, "element_type": "none",
@@ -227,6 +306,17 @@ const DATA: Dictionary = {
 		"weapons": ["Scimitar", "Shortbow"],
 		"abilities": ["Magic Resistance", "Innate Spellcasting", "Poison Immunity"],
 		"armor": ["Natural Armor"],
+		# Hornbound — serpent-touched human: olive skin with greenish scale patches, slit eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.05,
+			"palette.primary": Color(0.55, 0.50, 0.32),    # olive skin
+			"palette.secondary": Color(0.30, 0.42, 0.22),  # scale patches
+			"palette.accent": Color(0.40, 0.20, 0.55),     # purple temple markings
+			"palette.eye": Color(0.95, 0.85, 0.18),
+			"face.eye_glow": true,
+			"ornaments.tags": ["tattered_cloth"],
+		},
 	},
 	"Bandit Captain": {
 		"max_health": 65, "armor_class": 15, "damage_amount": 2.0, "element_type": "none",

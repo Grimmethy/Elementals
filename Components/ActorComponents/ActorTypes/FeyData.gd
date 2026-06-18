@@ -22,6 +22,14 @@ const DATA: Dictionary = {
 		"weapons": ["Longsword"],
 		"abilities": ["Superior Invisibility", "Magic Resistance", "Innate Spellcasting"],
 		"armor": ["Natural Armor"],
+		# Hornbound
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.35,
+			"palette.primary": Color(0.95, 0.85, 0.95),  # Pale fairy
+			"palette.accent": Color(1.0, 0.65, 0.85),
+			"face.eye_glow": true,
+		},
 	},
 	"Sprite": {
 		"max_health": 2, "armor_class": 15, "damage_amount": 0.5, "element_type": "none",
@@ -38,6 +46,17 @@ const DATA: Dictionary = {
 		"weapons": ["Ram", "Shortsword"],
 		"abilities": ["Magic Resistance"],
 		"armor": ["Natural Armor"],
+		# Hornbound — half-human half-goat: tanned olive skin upper, shaggy brown goat legs,
+		# curling ram-horns, golden mischievous eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.00,
+			"palette.primary": Color(0.78, 0.62, 0.42),    # tanned skin
+			"palette.secondary": Color(0.45, 0.28, 0.15),  # goat-leg fur
+			"palette.accent": Color(0.92, 0.78, 0.42),     # golden ram horns
+			"palette.eye": Color(0.95, 0.78, 0.18),
+			"ornaments.tags": ["horns", "tail"],
+		},
 	},
 	"Darkling": {
 		"max_health": 13, "armor_class": 14, "damage_amount": 1.0, "element_type": "shadow",
@@ -54,6 +73,18 @@ const DATA: Dictionary = {
 		"weapons": ["Club"],
 		"abilities": ["Speak with Beasts and Plants", "Tree Stride", "Innate Spellcasting"],
 		"armor": ["Natural Armor"],
+		# Hornbound — tree spirit: wood-brown skin patterned with bark, green leafy hair,
+		# flowers crowning the head, soft glowing forest-green eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.95,
+			"palette.primary": Color(0.55, 0.42, 0.25),    # wood-brown skin
+			"palette.secondary": Color(0.30, 0.48, 0.20),  # leafy hair
+			"palette.accent": Color(0.95, 0.50, 0.78),     # pink blossoms
+			"palette.eye": Color(0.50, 0.92, 0.45),
+			"face.eye_glow": true,
+			"ornaments.tags": ["flowering_accents", "mane"],
+		},
 	},
 	"Quickling": {
 		"max_health": 10, "armor_class": 16, "damage_amount": 1.5, "element_type": "none",

@@ -25,6 +25,14 @@ const DATA: Dictionary = {
 		"charge_alert_duration": 1.0,
 		"charge_cooldown_duration": 3.0,
 		"ability_pool": ["goat_charge"],
+		# Hornbound — bond combos
+		"combo_pool": {
+			"Mimic": "Bait & Charge",
+			"Mushroom": "Spore Sweep",
+			"Goblin": "Stab & Smash",
+			"Wolf": "Wild Stampede",
+		},
+		"capture_archetype": "counter_charge",
 	},
 	"Chicken": {
 		"max_health": 4, "armor_class": 8, "damage_amount": 0.5, "element_type": "none",
@@ -41,6 +49,13 @@ const DATA: Dictionary = {
 		"weapons": ["Headbutt", "Gore"],
 		"abilities": ["Stampede", "Moo"],
 		"armor": ["Hide"],
+		# Hornbound: universal procedural body + capture mechanic.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.4,
+			"ornaments.tags": ["tail", "horns"],
+			"palette.primary": Color(0.85, 0.78, 0.65),
+		},
 	},
 	"Pig": {
 		"max_health": 11, "armor_class": 9, "damage_amount": 1.0, "element_type": "none",
@@ -49,6 +64,13 @@ const DATA: Dictionary = {
 		"weapons": ["Bite", "Tusk Slam"],
 		"abilities": ["Root", "Mudroll"],
 		"armor": ["Hide"],
+		# Hornbound
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.85,
+			"palette.primary": Color(0.78, 0.65, 0.55),
+			"ornaments.tags": ["tail"],
+		},
 	},
 	"Sheep": {
 		"max_health": 8, "armor_class": 9, "damage_amount": 0.5, "element_type": "none",
@@ -57,6 +79,14 @@ const DATA: Dictionary = {
 		"weapons": ["Headbutt", "Hoof Strike"],
 		"abilities": ["Herd Mentality"],
 		"armor": ["Wool", "Fleece"],
+		# Hornbound
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.9,
+			"palette.primary": Color(0.92, 0.90, 0.84),  # Wool
+			"palette.secondary": Color(0.55, 0.45, 0.35),
+			"ornaments.tags": ["tail", "mane"],  # Woolly tuft on top
+		},
 	},
 	"Wolf": {
 		"max_health": 11, "armor_class": 13, "damage_amount": 2.0, "element_type": "none",
@@ -65,6 +95,15 @@ const DATA: Dictionary = {
 		"weapons": ["Bite", "Claw"],
 		"abilities": ["Pack Tactics", "Howl"],
 		"armor": ["Fur"],
+		# Hornbound
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.85,
+			"ornaments.tags": ["tail"],
+			"palette.primary": Color(0.45, 0.42, 0.40),
+			"palette.secondary": Color(0.30, 0.28, 0.25),
+			"face.eye_glow": true,
+		},
 	},
 	"Earthworm": {
 		"max_health": 8, "armor_class": 9, "damage_amount": 0.5, "element_type": "none",
@@ -321,6 +360,16 @@ const DATA: Dictionary = {
 		"weapons": ["Tusk"],
 		"abilities": ["Charge", "Relentless"],
 		"armor": ["Natural Armor"],
+		# Hornbound — squat bristly brown body with curved white tusks jutting from the lower jaw.
+		"capture_archetype": "counter_charge",
+		"body_plan_modifiers": {
+			"base.scale": 0.9,
+			"palette.primary": Color(0.30, 0.20, 0.12),
+			"palette.secondary": Color(0.45, 0.32, 0.18),
+			"palette.accent": Color(0.92, 0.88, 0.78),     # bone-white tusks
+			"palette.eye": Color(0.20, 0.10, 0.05),
+			"ornaments.tags": ["tail", "bone_protrusion"],
+		},
 	},
 	"Brontosaurus": {
 		"max_health": 121, "armor_class": 15, "damage_amount": 3.5, "element_type": "none",
@@ -337,6 +386,15 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite"],
 		"abilities": ["Keen Smell"],
 		"armor": ["Natural Armor"],
+		# Hornbound — dark brown, bulky, towering on hind legs in combat.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.45,
+			"palette.primary": Color(0.32, 0.20, 0.10),    # rich dark brown
+			"palette.secondary": Color(0.18, 0.10, 0.05),   # near-black shadow
+			"palette.accent": Color(0.55, 0.42, 0.28),      # tan claws
+			"palette.eye": Color(0.18, 0.08, 0.05),
+		},
 	},
 	"Camel": {
 		"max_health": 15, "armor_class": 9, "damage_amount": 0.5, "element_type": "none",
@@ -353,6 +411,16 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite"],
 		"abilities": ["Keen Smell"],
 		"armor": ["Natural Armor"],
+		# Hornbound — massive prehistoric bear, near-black fur, ivory claws and fangs.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.65,
+			"palette.primary": Color(0.20, 0.14, 0.08),
+			"palette.secondary": Color(0.12, 0.08, 0.04),
+			"palette.accent": Color(0.92, 0.88, 0.78),     # bone-ivory
+			"palette.eye": Color(0.50, 0.25, 0.05),
+			"ornaments.tags": ["tail", "bone_protrusion"],
+		},
 	},
 	"Centipede": {
 		"max_health": 2, "armor_class": 13, "damage_amount": 0.0, "element_type": "none",
@@ -577,6 +645,17 @@ const DATA: Dictionary = {
 		"weapons": ["Talons"],
 		"abilities": ["Keen Sight"],
 		"armor": ["Feathers"],
+		# Hornbound — bald eagle: dark brown body, white head, golden hooked beak.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.75,
+			"palette.primary": Color(0.32, 0.20, 0.10),    # dark brown wings
+			"palette.secondary": Color(0.92, 0.90, 0.85),  # white head
+			"palette.accent": Color(0.92, 0.65, 0.18),     # gold beak/talons
+			"palette.eye": Color(0.92, 0.65, 0.18),
+			"face.eye_glow": true,
+			"ornaments.tags": ["wings", "tail"],
+		},
 	},
 	"Giant Eagle": {
 		"max_health": 26, "armor_class": 13, "damage_amount": 2.0, "element_type": "none",
@@ -969,6 +1048,18 @@ const DATA: Dictionary = {
 		"weapons": ["Bite"],
 		"abilities": ["Echolocation", "Hold Breath", "Keen Hearing"],
 		"armor": ["Natural Armor"],
+		# Hornbound — orca: glossy black above, sharp white below, eye-patch white markings.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 2.30,
+			"palette.primary": Color(0.06, 0.06, 0.08),    # black
+			"palette.secondary": Color(0.94, 0.94, 0.97),  # white belly
+			"palette.accent": Color(0.92, 0.88, 0.78),     # tooth ivory
+			"palette.eye": Color(0.20, 0.10, 0.05),
+			"limbs.has_legs": false,                        # streamlined body, no legs
+			"limbs.leg_count": 0,
+			"ornaments.tags": ["tail"],
+		},
 	},
 	"Krill": {
 		"max_health": 1, "armor_class": 5, "damage_amount": 0.0, "element_type": "none",
@@ -1009,6 +1100,16 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite"],
 		"abilities": ["Pack Tactics", "Pounce", "Keen Smell"],
 		"armor": ["Natural Armor"],
+		# Hornbound — tawny gold body, dark mane around the head, amber eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.30,
+			"palette.primary": Color(0.78, 0.62, 0.32),    # tawny gold coat
+			"palette.secondary": Color(0.55, 0.42, 0.20),
+			"palette.accent": Color(0.42, 0.25, 0.10),     # dark mane
+			"palette.eye": Color(0.92, 0.65, 0.18),
+			"ornaments.tags": ["tail", "mane"],
+		},
 	},
 	"Lizard": {
 		"max_health": 2, "armor_class": 10, "damage_amount": 0.0, "element_type": "none",
@@ -1057,6 +1158,16 @@ const DATA: Dictionary = {
 		"weapons": ["Gore", "Stomp"],
 		"abilities": ["Trampling Charge"],
 		"armor": ["Natural Armor"],
+		# Hornbound — Huge: long shaggy auburn coat, massive curved ivory tusks.
+		"capture_archetype": "counter_charge",
+		"body_plan_modifiers": {
+			"base.scale": 2.40,
+			"palette.primary": Color(0.42, 0.28, 0.14),    # auburn shaggy fur
+			"palette.secondary": Color(0.25, 0.15, 0.06),
+			"palette.accent": Color(0.92, 0.88, 0.74),     # huge tusks
+			"palette.eye": Color(0.30, 0.18, 0.06),
+			"ornaments.tags": ["tail", "horns", "bone_protrusion"],
+		},
 	},
 	"Mastiff": {
 		"max_health": 5, "armor_class": 12, "damage_amount": 0.5, "element_type": "none",
@@ -1233,6 +1344,18 @@ const DATA: Dictionary = {
 		"weapons": ["Talons"],
 		"abilities": ["Keen Hearing and Sight", "Flyby"],
 		"armor": ["Feathers"],
+		# Hornbound — soft brown plumage, round head, oversized luminous golden eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.55,
+			"palette.primary": Color(0.55, 0.40, 0.25),
+			"palette.secondary": Color(0.75, 0.62, 0.42),
+			"palette.accent": Color(0.92, 0.88, 0.74),
+			"palette.eye": Color(0.95, 0.75, 0.18),
+			"face.eye_radius": 0.080,                       # giant owl eyes
+			"face.eye_glow": true,
+			"ornaments.tags": ["wings"],
+		},
 	},
 	"Giant Owl": {
 		"max_health": 19, "armor_class": 12, "damage_amount": 1.0, "element_type": "none",
@@ -1281,6 +1404,17 @@ const DATA: Dictionary = {
 		"weapons": ["Claw", "Bite"],
 		"abilities": ["Keen Smell"],
 		"armor": ["Fur"],
+		# Hornbound — pristine white fur, black nose and claws, icy blue glint in the eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.55,
+			"palette.primary": Color(0.94, 0.95, 0.97),    # pure white fur
+			"palette.secondary": Color(0.78, 0.82, 0.88),
+			"palette.accent": Color(0.10, 0.10, 0.12),     # black nose/claws
+			"palette.eye": Color(0.45, 0.78, 0.92),        # icy blue
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail"],
+		},
 	},
 	"Polar Oarfish": {
 		"max_health": 13, "armor_class": 11, "damage_amount": 1.0, "element_type": "none",
@@ -1417,6 +1551,16 @@ const DATA: Dictionary = {
 		"weapons": ["Bite", "Claw"],
 		"abilities": ["Pounce", "Keen Smell"],
 		"armor": ["Natural Armor"],
+		# Hornbound — tawny coat, dark spots, massive ivory fangs (saber teeth) flanking the maw.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.45,
+			"palette.primary": Color(0.65, 0.50, 0.28),    # tawny prehistoric coat
+			"palette.secondary": Color(0.40, 0.28, 0.12),
+			"palette.accent": Color(0.92, 0.88, 0.78),     # ivory sabers
+			"palette.eye": Color(0.85, 0.55, 0.10),
+			"ornaments.tags": ["tail", "bone_protrusion"],
+		},
 	},
 	"Scorpion": {
 		"max_health": 1, "armor_class": 11, "damage_amount": 0.0, "element_type": "none",
@@ -1609,6 +1753,20 @@ const DATA: Dictionary = {
 		"weapons": ["Bite"],
 		"abilities": ["Spider Climb", "Web", "Poison"],
 		"armor": ["Chitin"],
+		# Hornbound — chitin-black bulbous abdomen, 8 spindly legs, cluster of 8 glowing red eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.30,
+			"palette.primary": Color(0.10, 0.08, 0.06),    # chitin black
+			"palette.secondary": Color(0.04, 0.04, 0.04),
+			"palette.accent": Color(0.55, 0.05, 0.10),     # red venom marking
+			"palette.eye": Color(0.95, 0.20, 0.10),
+			"face.eye_count": 8,
+			"face.eye_glow": true,
+			"face.eye_radius": 0.030,
+			"ornaments.tags": ["chitin_plate"],
+			"limbs.leg_count": 8,
+		},
 	},
 	"Spiny Dogfish": {
 		"max_health": 10, "armor_class": 12, "damage_amount": 0.5, "element_type": "none",
@@ -1689,6 +1847,17 @@ const DATA: Dictionary = {
 		"weapons": ["Bite", "Claw"],
 		"abilities": ["Pounce", "Keen Smell"],
 		"armor": ["Natural Armor"],
+		# Hornbound — bright orange-tan coat, black tiger stripes, golden-yellow eyes.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 1.20,
+			"palette.primary": Color(0.85, 0.52, 0.18),    # orange tiger coat
+			"palette.secondary": Color(0.10, 0.06, 0.04),  # black stripes
+			"palette.accent": Color(0.95, 0.92, 0.85),     # white belly
+			"palette.eye": Color(0.95, 0.78, 0.18),        # tiger-eye yellow
+			"face.eye_glow": true,
+			"ornaments.tags": ["tail"],
+		},
 	},
 	"Titanothere": {
 		"max_health": 52, "armor_class": 12, "damage_amount": 3.0, "element_type": "none",
@@ -1769,6 +1938,18 @@ const DATA: Dictionary = {
 		"weapons": ["Bite", "Tail"],
 		"abilities": [],
 		"armor": ["Natural Armor"],
+		# Hornbound — Huge biped: dark olive-green hide, tiny forearms, massive head with rows of teeth.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 2.60,
+			"palette.primary": Color(0.32, 0.40, 0.22),    # dark olive
+			"palette.secondary": Color(0.18, 0.22, 0.10),
+			"palette.accent": Color(0.92, 0.88, 0.78),     # tooth ivory
+			"palette.eye": Color(0.85, 0.18, 0.08),
+			"face.eye_glow": true,
+			"face.eye_radius": 0.06,
+			"ornaments.tags": ["tail", "spike_ridge"],
+		},
 	},
 	"Valkur's Fish": {
 		"max_health": 3, "armor_class": 9, "damage_amount": 0.0, "element_type": "none",
@@ -1785,6 +1966,16 @@ const DATA: Dictionary = {
 		"weapons": ["Bite", "Claw"],
 		"abilities": ["Pack Tactics"],
 		"armor": ["Natural Armor"],
+		# Hornbound — small biped: mottled green scales, feathered crest, hooked sickle-claws.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"base.scale": 0.85,
+			"palette.primary": Color(0.30, 0.42, 0.20),
+			"palette.secondary": Color(0.18, 0.28, 0.12),
+			"palette.accent": Color(0.65, 0.45, 0.20),     # feather crest
+			"palette.eye": Color(0.92, 0.55, 0.10),
+			"ornaments.tags": ["tail", "spike_ridge"],
+		},
 	},
 	"Venomous Snake": {
 		"max_health": 5, "armor_class": 13, "damage_amount": 0.5, "element_type": "none",

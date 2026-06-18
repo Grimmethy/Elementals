@@ -6,6 +6,18 @@ const DATA: Dictionary = {
 		"weapons": ["Spore Burst", "Root Slam"],
 		"abilities": ["Poison Spores", "Regrowth"],
 		"armor": ["Natural Armor"],
+		# Hornbound — specialist renderer (ProceduralMushroomBody) takes precedence;
+		# modifiers below apply only when fallback ProceduralCreatureBody renders.
+		"capture_archetype": "weaken",
+		"body_plan_modifiers": {
+			"palette.primary": Color(0.86, 0.25, 0.25),  # Red cap
+			"palette.secondary": Color(0.92, 0.85, 0.65),  # Cream stem
+			"palette.accent": Color(0.95, 0.95, 0.88),
+		},
+		"combo_pool": {
+			"Goat": "Spore Sweep",
+			"Mimic": "Fungal Trap",
+		},
 	},
 	"Shrieker": {
 		"max_health": 13, "armor_class": 5, "damage_amount": 0.0, "element_type": "none",
@@ -142,5 +154,18 @@ const DATA: Dictionary = {
 		"weapons": ["Slam", "Rock"],
 		"abilities": ["False Appearance", "Siege Monster", "Animate Trees"],
 		"armor": ["Natural Armor"],
+		# Hornbound — Huge walking oak: thick gnarled bark, green canopy of leaves,
+		# branches for arms, deep-set glowing amber eyes in a knotted face.
+		"capture_archetype": "break_armor",
+		"body_plan_modifiers": {
+			"base.scale": 2.50,
+			"palette.primary": Color(0.42, 0.28, 0.15),    # bark brown
+			"palette.secondary": Color(0.62, 0.45, 0.25),  # lighter wood
+			"palette.accent": Color(0.30, 0.50, 0.18),     # canopy green
+			"palette.eye": Color(0.92, 0.65, 0.18),        # amber glow
+			"face.eye_glow": true,
+			"face.eye_radius": 0.090,
+			"ornaments.tags": ["flowering_accents", "crystal_growth"],
+		},
 	},
 }

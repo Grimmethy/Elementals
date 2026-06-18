@@ -95,6 +95,22 @@ func _notify_pool() -> void:
 		pool.show_bar(self, current_health, max_health, bar_color, bar_offset, bar_visible_always)
 
 func take_damage(amount: float, type: String = "normal", direction: Vector3 = Vector3.ZERO) -> void:
+	# Hornbound: honor possession i-frames + damp window. When the player has
+	# just possessed a new body (after their previous controlled monster fell),
+	# the new body gets 0.5s full invulnerability + 2s reduced damage. This
+	# prevents instant-deaths from being possessed into an already-burning area
+	# and gives the player a brief moment to assess the new body's situation.
+	#
+	# The multiplier lives on PlayerInputComponent (the source of truth for
+	# "did the player just possess this body?"). Only consulted for player-
+	# controlled actors — wild creatures see no modifier.
+	var parent: Node = get_parent()
+	if parent and parent is Actor and (parent as Actor).is_controlled:
+		var arena: Node = parent.get_parent()
+		if arena and "player_input" in arena and arena.player_input != null:
+			var mult: float = float(arena.player_input.call("post_possession_damage_multiplier"))
+			amount *= mult
+
 	current_health -= amount
 	damage_received.emit(amount, type)
 	_show_damage_indicator(amount, direction)

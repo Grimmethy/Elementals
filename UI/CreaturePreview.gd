@@ -19,6 +19,7 @@ extends SubViewportContainer
 
 const ProceduralMimicChestScript = preload("res://src/actors/types/ProceduralMimicChest.gd")
 const ProceduralMushroomBodyScript = preload("res://src/actors/types/ProceduralMushroomBody.gd")
+const ProceduralCreatureBodyScript = preload("res://src/actors/body/ProceduralCreatureBody.gd")
 
 @onready var _viewport: SubViewport = $SubViewport
 @onready var _creature_container: Node3D = $SubViewport/CreatureContainer
@@ -73,6 +74,16 @@ func _rebuild() -> void:
 	if actor_data == null:
 		return
 	# Build the matching procedural body.
+	# FIRST: if the actor_data carries a populated shared_body_plan with a
+	# species stamped in meta (i.e., it was captured / dev-kept from another
+	# species and pretends to be a GoatData for breeding compat), route it
+	# through the universal ProceduralCreatureBody so it actually RENDERS as
+	# the species it carries instead of the goat-tan-cube placeholder.
+	# This is what makes the "Keep for Breeding" dev tool show real visuals
+	# in the herd / ranch cards.
+	if _has_universal_body_plan(actor_data):
+		_spawn_universal_creature(actor_data)
+		return
 	if actor_data is MimicData:
 		_spawn_mimic_preview(actor_data as MimicData)
 	elif actor_data is MushroomData:
@@ -84,6 +95,48 @@ func _rebuild() -> void:
 	else:
 		# Unknown type — show a neutral block so the slot isn't empty.
 		_spawn_generic_placeholder()
+
+## True if this actor_data has a shared_body_plan that was filled in by
+## ActorBodyPlanGenerator (i.e., has a meta.species stamped). The default
+## empty plan returned by ActorData.default_shared_body_plan() has no meta
+## key, so the absence of meta is the bright-line for "render as goat".
+func _has_universal_body_plan(data: ActorData) -> bool:
+	if data == null:
+		return false
+	if not (data.shared_body_plan is Dictionary):
+		return false
+	var plan: Dictionary = data.shared_body_plan
+	if not plan.has("meta"):
+		return false
+	var meta_var: Variant = plan["meta"]
+	if not (meta_var is Dictionary):
+		return false
+	var species_str: String = String((meta_var as Dictionary).get("species", ""))
+	return species_str != ""
+
+## Spawn the universal procedural body, the same code path the arena uses.
+## Routing through this for dev-kept exotics means the herd card preview
+## matches exactly what the player saw on the Dev Summoner screen.
+func _spawn_universal_creature(data: ActorData) -> void:
+	var body: Node = ProceduralCreatureBodyScript.new()
+	body.name = "UniversalPreviewBody"
+	# ProceduralCreatureBody supports `override_plan` for previews where
+	# actor_data isn't directly assigned, but here we have a full ActorData
+	# so the natural path is to assign it and let rebuild_from_genome pick
+	# up the plan via actor_data.shared_body_plan.
+	body.set("actor_data", data)
+	body.set("override_plan", data.shared_body_plan)
+	# Position + yaw so the face is camera-facing (consistent with the
+	# Mimic / Mushroom previews above).
+	if body is Node3D:
+		var node3d := body as Node3D
+		node3d.position = Vector3(0, -0.30, 0)
+		node3d.rotation_degrees = Vector3(0, preview_yaw_degrees, 0)
+	_creature_container.add_child(body)
+	# Force a rebuild now that the body is in the tree, so the preview
+	# renders before the next frame (matches the DevMonsterPreview flow).
+	if body.has_method("rebuild_from_genome"):
+		body.call("rebuild_from_genome", data.shared_body_plan)
 
 # --- Spawners --------------------------------------------------------------
 

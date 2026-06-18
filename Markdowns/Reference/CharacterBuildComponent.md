@@ -1,7 +1,8 @@
 # CharacterBuildComponent
 
-**Version:** v0.1 — Draft
-**Status:** Planned
+**Version:** v1.0
+**Status:** Implemented (verified 2026-05-25)
+**Source:** `Components/ActorComponents/CharacterBuildComponent.gd`
 **Depends on:** `ActorTypeData`, `AbilityComponent`, `ArmorClassComponent`, `FactionComponent`, `HealthComponent`, `GameSettings`
 
 ---

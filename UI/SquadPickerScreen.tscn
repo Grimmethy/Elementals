@@ -1,0 +1,149 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/SquadPickerScreen.gd" id="1"]
+
+[node name="SquadPickerScreen" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchor_left = 0.05
+anchor_top = 0.05
+anchor_right = 0.95
+anchor_bottom = 0.95
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+text = "SELECT YOUR SQUAD"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 24
+
+[node name="HBox" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="ActiveColumn" type="VBoxContainer" parent="Panel/Margin/VBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ActiveLabel" type="Label" parent="Panel/Margin/VBox/HBox/ActiveColumn"]
+layout_mode = 2
+text = "Active Herd (12)"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel/Margin/VBox/HBox/ActiveColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/Margin/VBox/HBox/ActiveColumn/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SquadColumn" type="VBoxContainer" parent="Panel/Margin/VBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="SquadLabel" type="Label" parent="Panel/Margin/VBox/HBox/SquadColumn"]
+layout_mode = 2
+text = "Squad — the LEAD is who you play as"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+
+[node name="LeadBanner" type="Label" parent="Panel/Margin/VBox/HBox/SquadColumn"]
+layout_mode = 2
+text = "⭐ YOUR CHARACTER ⭐"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 0.85, 0.35, 1)
+theme_override_font_sizes/font_size = 13
+
+[node name="SlotA" type="Button" parent="Panel/Margin/VBox/HBox/SquadColumn"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 64)
+text = "⭐ LEAD: (empty)"
+theme_override_colors/font_color = Color(1, 0.92, 0.55, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.95, 0.7, 1)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.65, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="PackSeparator" type="HSeparator" parent="Panel/Margin/VBox/HBox/SquadColumn"]
+layout_mode = 2
+
+[node name="PackLabel" type="Label" parent="Panel/Margin/VBox/HBox/SquadColumn"]
+layout_mode = 2
+text = "Pack (AI companions)"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.75, 0.75, 0.78, 1)
+theme_override_font_sizes/font_size = 12
+
+[node name="SlotB" type="Button" parent="Panel/Margin/VBox/HBox/SquadColumn"]
+layout_mode = 2
+text = "Pack 1: (empty)"
+
+[node name="SlotC" type="Button" parent="Panel/Margin/VBox/HBox/SquadColumn"]
+layout_mode = 2
+text = "Pack 2: (empty)"
+
+[node name="SlotD" type="Button" parent="Panel/Margin/VBox/HBox/SquadColumn"]
+layout_mode = 2
+text = "Pack 3: (empty)"
+
+[node name="PensionColumn" type="VBoxContainer" parent="Panel/Margin/VBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PensionLabel" type="Label" parent="Panel/Margin/VBox/HBox/PensionColumn"]
+layout_mode = 2
+text = "Pension (∞)"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel/Margin/VBox/HBox/PensionColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/Margin/VBox/HBox/PensionColumn/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BottomRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LoadoutA" type="Button" parent="Panel/Margin/VBox/BottomRow"]
+layout_mode = 2
+text = "Loadout A"
+
+[node name="LoadoutB" type="Button" parent="Panel/Margin/VBox/BottomRow"]
+layout_mode = 2
+text = "Loadout B"
+
+[node name="LoadoutC" type="Button" parent="Panel/Margin/VBox/BottomRow"]
+layout_mode = 2
+text = "Loadout C"
+
+[node name="Spacer" type="Control" parent="Panel/Margin/VBox/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CancelBtn" type="Button" parent="Panel/Margin/VBox/BottomRow"]
+layout_mode = 2
+text = "Cancel"
+
+[node name="DepartBtn" type="Button" parent="Panel/Margin/VBox/BottomRow"]
+layout_mode = 2
+text = "DEPART →"

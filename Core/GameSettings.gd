@@ -144,7 +144,13 @@ func _ensure_brightness_overlay() -> void:
 		return
 	_brightness_layer = CanvasLayer.new()
 	_brightness_layer.name = "BrightnessOverlay"
-	_brightness_layer.layer = 128  # very top, above all gameplay layers
+	# Layer 1: sits ABOVE 3D rendering (default canvas layer 0) but BELOW
+	# normal UI CanvasLayers (which typically use layer 2+). This way the
+	# brightness overlay tones the world but doesn't wash out HUD elements
+	# like the minimap, quest tracker, or hotbar. Previously this was 128
+	# (above everything), which made the minimap "almost whited out" when
+	# brightness > 1.0 because the additive-white overlay covered it too.
+	_brightness_layer.layer = 1
 	root.add_child(_brightness_layer)
 	_brightness_rect = ColorRect.new()
 	_brightness_rect.name = "BrightnessRect"

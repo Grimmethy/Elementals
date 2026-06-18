@@ -4,6 +4,11 @@ extends DisplayCardBase
 @onready var actor_renderer: GoatRenderer = $VBoxContainer/GoatRenderer
 @onready var creature_preview: CreaturePreview = $VBoxContainer/CreaturePreview
 @onready var name_edit: LineEdit = $VBoxContainer/TopRow/NameEdit
+## Tiny "[I]" button next to the name. Opens an InspectPopup hosting a
+## big orbit-camera view of this card's creature so the player can spin,
+## zoom in to face detail, or zoom way out to read the silhouette — the
+## in-card preview is too small + fixed-camera for that.
+@onready var inspect_button: Button = $VBoxContainer/TopRow/InspectBtn
 @onready var info_label: Label = $VBoxContainer/InfoLabel
 @onready var str_label: Label = $VBoxContainer/StatsGrid/StrLabel
 @onready var dex_label: Label = $VBoxContainer/StatsGrid/DexLabel
@@ -74,9 +79,37 @@ func _ready() -> void:
 	arena_checkbox.toggled.connect(_on_arena_toggled)
 	if play_as_button:
 		play_as_button.pressed.connect(_on_play_as_pressed)
+	if inspect_button:
+		inspect_button.pressed.connect(_on_inspect_pressed)
 	if name_edit:
 		name_edit.text_submitted.connect(_on_name_submitted)
 		name_edit.focus_exited.connect(_on_name_focus_exited)
+
+## "[I]" inspect button — spawn an InspectPopup overlay parented at the
+## scene-tree root so it covers the whole screen (parenting under the card
+## would clip it to ~160px). Pass the card's actor_resource so the popup
+## resolves the same body (universal procedural for foreign-species GoatData,
+## per-subclass body otherwise). Multiple cards can each open their own
+## popup; the popup queue_free()s itself on close.
+func _on_inspect_pressed() -> void:
+	if actor_resource == null:
+		return
+	var popup_scene: PackedScene = load("res://UI/InspectPopup.tscn") as PackedScene
+	if popup_scene == null:
+		push_warning("[ActorCard] InspectPopup.tscn missing — inspect button no-op.")
+		return
+	var popup: Node = popup_scene.instantiate()
+	popup.set("actor_data", actor_resource)
+	# Resolve a title — display name if present, else species, else type.
+	var t: String = ""
+	if "goat_name" in actor_resource:
+		t = String(actor_resource.goat_name)
+	elif "creature_name" in actor_resource:
+		t = String(actor_resource.creature_name)
+	if t == "":
+		t = actor_resource.get_actor_type()
+	popup.set("title", t)
+	get_tree().root.add_child(popup)
 
 ## Solo arena entry — store the creature's data on HerdManager so the
 ## ArenaSpawner picks it up as the player-controlled actor (no group spawn),
@@ -106,7 +139,13 @@ func _update_resource_ui() -> void:
 	# Mushroom / Goblin / hybrid) -> CreaturePreview, which spawns the actual
 	# procedural body in a SubViewport so the player can SEE what they're
 	# picking to breed (chest shape, mushroom limbs, goblin tint, etc.).
-	if actor_resource is GoatData:
+	#
+	# EXCEPTION: a GoatData carrying a foreign-species shared_body_plan (i.e.,
+	# a wild-captured or dev-summoned exotic that was wrapped in GoatData for
+	# breeding compatibility) skips the goat sprite and goes through
+	# CreaturePreview so the card shows the actual 3D species, not a tan goat.
+	# CreaturePreview's own dispatch handles the universal-renderer path.
+	if actor_resource is GoatData and not _is_foreign_species_goat(actor_resource as GoatData):
 		actor_renderer.visible = true
 		actor_renderer.goat_data = actor_resource as GoatData
 		if creature_preview:
@@ -255,3 +294,21 @@ func _set_display_name(new_name: String) -> void:
 		actor_resource.goat_name = new_name
 	elif "creature_name" in actor_resource:
 		actor_resource.creature_name = new_name
+
+## True if this GoatData is actually a wrapped foreign species (wild-captured
+## exotic or dev-summoned monster carrying its own body plan). Detection:
+## the shared_body_plan has a meta.species stamped — a fresh GoatData's
+## default plan has no meta key. Used to route those cards through the 3D
+## CreaturePreview instead of the legacy 2D goat sprite.
+func _is_foreign_species_goat(g: GoatData) -> bool:
+	if g == null:
+		return false
+	if not (g.shared_body_plan is Dictionary):
+		return false
+	var plan: Dictionary = g.shared_body_plan
+	if not plan.has("meta"):
+		return false
+	var meta_var: Variant = plan["meta"]
+	if not (meta_var is Dictionary):
+		return false
+	return String((meta_var as Dictionary).get("species", "")) != ""
